@@ -62,32 +62,32 @@ function PatientHealthRecordSheet({ patient, clinic, encounters, isPdfMode = fal
 
     return (
         <div className={cn(
-            "bg-white text-black font-sans w-full max-w-[800px] mx-auto border-2 border-black p-8 sm:p-12 shadow-2xl relative select-none",
-            isPdfMode ? "w-[210mm] min-h-[297mm] p-[20mm]" : ""
+            "bg-white dark:bg-zinc-950 text-black dark:text-zinc-50 font-sans w-full border-2 border-black dark:border-zinc-800 p-8 sm:p-12 shadow-2xl relative select-none",
+            isPdfMode ? "w-[210mm] min-h-[297mm] p-[20mm] bg-white text-black border-black" : "max-w-none"
         )}>
             {/* Top Header */}
-            <div className="flex justify-between items-end border-b-2 border-black pb-4 mb-6">
+            <div className="flex justify-between items-end border-b-2 border-black dark:border-zinc-800 pb-4 mb-6">
                 <div>
-                    <h1 className="text-3xl font-extrabold tracking-tight text-black font-headline uppercase">MEDICAL HEALTH RECORD</h1>
-                    <p className="text-[10px] text-gray-500 font-mono tracking-wider">ORELIS MEDICAL SYSTEM</p>
+                    <h1 className="text-3xl font-extrabold tracking-tight text-black dark:text-zinc-50 font-headline uppercase">MEDICAL HEALTH RECORD</h1>
+                    <p className="text-[10px] text-gray-500 dark:text-zinc-400 font-mono tracking-wider">ORELIS MEDICAL SYSTEM</p>
                 </div>
                 <div className="text-right">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">ISSUED DATE</p>
-                    <p className="text-sm font-bold text-black mt-1">{formattedIssuedDate}</p>
+                    <p className="text-[10px] font-bold text-gray-400 dark:text-zinc-550 uppercase tracking-widest leading-none">ISSUED DATE</p>
+                    <p className="text-sm font-bold text-black dark:text-zinc-50 mt-1">{formattedIssuedDate}</p>
                 </div>
             </div>
 
             {/* Main Columns Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 text-black">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 text-black dark:text-zinc-200">
                 {/* Left Profile Column */}
-                <div className="md:col-span-4 border-r border-gray-200 pr-6 space-y-6">
+                <div className="md:col-span-4 border-r border-gray-200 dark:border-zinc-800 pr-6 space-y-6">
                     <div>
-                        <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-2">YOUR PROFILE</p>
-                        <h2 className="text-3xl font-black text-black leading-tight mb-4">{patient.surname} {patient.firstName}</h2>
+                        <p className="text-[10px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-wider mb-2">YOUR PROFILE</p>
+                        <h2 className="text-3xl font-black text-black dark:text-zinc-50 leading-tight mb-4">{patient.surname} {patient.firstName}</h2>
                         
                         {/* Profile Photo Frame */}
-                        <div className="w-32 h-36 border border-gray-300 bg-gray-50 flex items-center justify-center mb-6 overflow-hidden relative group">
-                            <UserIcon className="w-16 h-16 text-gray-300" />
+                        <div className="w-32 h-36 border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900 flex items-center justify-center mb-6 overflow-hidden relative group">
+                            <UserIcon className="w-16 h-16 text-gray-300 dark:text-zinc-600" />
                             {patient.photoUrl && (
                                 <img src={patient.photoUrl} alt="Patient Portrait" className="w-full h-full object-cover absolute inset-0" />
                             )}
@@ -97,76 +97,76 @@ function PatientHealthRecordSheet({ patient, clinic, encounters, isPdfMode = fal
                     {/* Profile Fields */}
                     <div className="space-y-4 text-xs">
                         <div>
-                            <p className="text-[9px] font-bold uppercase text-gray-400 tracking-widest">DATE OF BIRTH</p>
-                            <p className="text-sm font-bold text-gray-800">{formattedDob}</p>
+                            <p className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">DATE OF BIRTH</p>
+                            <p className="text-sm font-bold text-gray-800 dark:text-zinc-250">{formattedDob}</p>
                         </div>
                         <div>
-                            <p className="text-[9px] font-bold uppercase text-gray-400 tracking-widest">GENDER</p>
-                            <p className="text-sm font-bold text-gray-800">{patient.sex}</p>
+                            <p className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">GENDER</p>
+                            <p className="text-sm font-bold text-gray-800 dark:text-zinc-250">{patient.sex}</p>
                         </div>
                         <div>
-                            <p className="text-[9px] font-bold uppercase text-gray-400 tracking-widest">MARITAL STATUS</p>
-                            <p className="text-sm font-bold text-gray-800">{patient.maritalStatus}</p>
+                            <p className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">MARITAL STATUS</p>
+                            <p className="text-sm font-bold text-gray-800 dark:text-zinc-250">{patient.maritalStatus}</p>
                         </div>
                         <div>
-                            <p className="text-[9px] font-bold uppercase text-gray-400 tracking-widest">PHONE</p>
-                            <p className="text-sm font-bold text-gray-800">{patient.phone}</p>
+                            <p className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">PHONE</p>
+                            <p className="text-sm font-bold text-gray-800 dark:text-zinc-250">{patient.phone}</p>
                         </div>
                         <div>
-                            <p className="text-[9px] font-bold uppercase text-gray-400 tracking-widest">ADDRESS</p>
-                            <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-line">{patient.address}</p>
+                            <p className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">ADDRESS</p>
+                            <p className="text-sm text-gray-800 dark:text-zinc-250 leading-relaxed whitespace-pre-line">{patient.address}</p>
                         </div>
                         <div>
-                            <p className="text-[9px] font-bold uppercase text-gray-400 tracking-widest">ETHNICITY</p>
-                            <p className="text-sm font-bold text-gray-800">{patient.origin || 'African'}</p>
+                            <p className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">ETHNICITY</p>
+                            <p className="text-sm font-bold text-gray-800 dark:text-zinc-250">{patient.origin || 'African'}</p>
                         </div>
                         <div>
-                            <p className="text-[9px] font-bold uppercase text-gray-400 tracking-widest">LANGUAGE SPOKEN</p>
-                            <p className="text-sm font-bold text-gray-800">{patient.tribe || 'English'}</p>
+                            <p className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">LANGUAGE SPOKEN</p>
+                            <p className="text-sm font-bold text-gray-800 dark:text-zinc-250">{patient.tribe || 'English'}</p>
                         </div>
                     </div>
 
-                    <hr className="border-gray-200" />
+                    <hr className="border-gray-200 dark:border-zinc-800" />
 
                     {/* Guardian / Next of Kin */}
                     <div className="space-y-4 text-xs">
-                        <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">GUARDIAN</p>
+                        <p className="text-[10px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-wider">GUARDIAN</p>
                         <div>
-                            <p className="text-[9px] font-bold uppercase text-gray-400 tracking-widest">{patient.nextOfKin?.relation?.toUpperCase() || 'NEXT OF KIN'}</p>
-                            <p className="text-sm font-bold text-gray-800">{patient.nextOfKin?.name || 'N/A'}</p>
+                            <p className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">{patient.nextOfKin?.relation?.toUpperCase() || 'NEXT OF KIN'}</p>
+                            <p className="text-sm font-bold text-gray-800 dark:text-zinc-250">{patient.nextOfKin?.name || 'N/A'}</p>
                         </div>
                         {patient.nextOfKin?.phone && (
                             <div>
-                                <p className="text-[9px] font-bold uppercase text-gray-400 tracking-widest">PHONE</p>
-                                <p className="text-sm font-bold text-gray-800">{patient.nextOfKin.phone}</p>
+                                <p className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">PHONE</p>
+                                <p className="text-sm font-bold text-gray-800 dark:text-zinc-250">{patient.nextOfKin.phone}</p>
                             </div>
                         )}
                         {patient.nextOfKin?.address && (
                             <div>
-                                <p className="text-[9px] font-bold uppercase text-gray-400 tracking-widest">ADDRESS</p>
-                                <p className="text-sm text-gray-800 leading-relaxed">{patient.nextOfKin.address}</p>
+                                <p className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">ADDRESS</p>
+                                <p className="text-sm text-gray-800 dark:text-zinc-250 leading-relaxed">{patient.nextOfKin.address}</p>
                             </div>
                         )}
                     </div>
 
-                    <hr className="border-gray-200" />
+                    <hr className="border-gray-200 dark:border-zinc-800" />
 
                     {/* Provider */}
                     <div className="space-y-4 text-xs">
-                        <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">PROVIDER</p>
+                        <p className="text-[10px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-wider">PROVIDER</p>
                         <div>
-                            <p className="text-sm font-bold text-gray-800">{clinic?.name || 'Ashby Medical Center'}</p>
+                            <p className="text-sm font-bold text-gray-800 dark:text-zinc-250">{clinic?.name || 'Ashby Medical Center'}</p>
                         </div>
                         {clinic?.phone && (
                             <div>
-                                <p className="text-[9px] font-bold uppercase text-gray-400 tracking-widest">PHONE</p>
-                                <p className="text-sm font-bold text-gray-800">{clinic.phone}</p>
+                                <p className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">PHONE</p>
+                                <p className="text-sm font-bold text-gray-800 dark:text-zinc-250">{clinic.phone}</p>
                             </div>
                         )}
                         {clinic?.address && (
                             <div>
-                                <p className="text-[9px] font-bold uppercase text-gray-400 tracking-widest">ADDRESS</p>
-                                <p className="text-sm text-gray-800 leading-relaxed">{clinic.address}</p>
+                                <p className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">ADDRESS</p>
+                                <p className="text-sm text-gray-800 dark:text-zinc-250 leading-relaxed">{clinic.address}</p>
                             </div>
                         )}
                     </div>
@@ -175,29 +175,29 @@ function PatientHealthRecordSheet({ patient, clinic, encounters, isPdfMode = fal
                 {/* Right Notes & Medical Tables Column */}
                 <div className="md:col-span-8 pl-0 md:pl-4 space-y-8">
                     <div>
-                        <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-4">IMPORTANT NOTES</p>
+                        <p className="text-[10px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-wider mb-4">IMPORTANT NOTES</p>
                         
                         {/* Allergies Section */}
                         <div className="space-y-4">
                             <div className="flex items-center gap-3">
-                                <div className="w-6 h-6 border-2 border-black flex items-center justify-center font-bold text-black text-sm select-none">✓</div>
+                                <div className="w-6 h-6 border-2 border-black dark:border-zinc-200 flex items-center justify-center font-bold text-black dark:text-zinc-50 text-sm select-none">✓</div>
                                 <div>
-                                    <h3 className="text-lg font-bold text-black leading-none">Allergies</h3>
-                                    <p className="text-[11px] text-gray-500 italic mt-0.5">You have {allergiesList.length} known allergies.</p>
+                                    <h3 className="text-lg font-bold text-black dark:text-zinc-50 leading-none">Allergies</h3>
+                                    <p className="text-[11px] text-gray-500 dark:text-zinc-400 italic mt-0.5">You have {allergiesList.length} known allergies.</p>
                                 </div>
                             </div>
                             
                             <table className="w-full text-left text-xs border-collapse">
                                 <thead>
-                                    <tr className="border-b border-gray-300 text-gray-400 font-bold uppercase tracking-wider text-[9px]">
+                                    <tr className="border-b border-gray-300 dark:border-zinc-800 text-gray-400 dark:text-zinc-500 font-bold uppercase tracking-wider text-[9px]">
                                         <th className="pb-2 font-bold">NAME</th>
                                         <th className="pb-2 font-bold">SEVERITY</th>
                                         <th className="pb-2 font-bold">REACTION</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-gray-100 dark:divide-zinc-800/50">
                                     {allergiesList.map((allergy: any, idx: number) => (
-                                        <tr key={idx} className="text-gray-800">
+                                        <tr key={idx} className="text-gray-800 dark:text-zinc-200">
                                             <td className="py-2.5 font-semibold">{allergy.name}</td>
                                             <td className="py-2.5">{allergy.severity}</td>
                                             <td className="py-2.5">{allergy.reaction}</td>
@@ -208,69 +208,69 @@ function PatientHealthRecordSheet({ patient, clinic, encounters, isPdfMode = fal
                         </div>
                     </div>
 
-                    <hr className="border-gray-200" />
+                    <hr className="border-gray-200 dark:border-zinc-800" />
 
                     {/* Immunizations Section */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-3">
-                            <div className="w-6 h-6 bg-black flex items-center justify-center text-white text-xs">
+                            <div className="w-6 h-6 bg-black dark:bg-zinc-800 flex items-center justify-center text-white dark:text-zinc-100 text-xs">
                                 <Pill className="w-3.5 h-3.5" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-black leading-none">Immunizations</h3>
-                                <p className="text-[11px] text-gray-500 italic mt-0.5">You have {immunizationsList.length} upcoming immunizations.</p>
+                                <h3 className="text-lg font-bold text-black dark:text-zinc-50 leading-none">Immunizations</h3>
+                                <p className="text-[11px] text-gray-500 dark:text-zinc-400 italic mt-0.5">You have {immunizationsList.length} upcoming immunizations.</p>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {immunizationsList.map((imm: any, idx: number) => (
-                                <div key={idx} className="border border-dashed border-gray-300 p-4 rounded bg-gray-50/50 relative">
-                                    <span className="absolute top-2 right-2 text-[9px] uppercase tracking-wider font-bold text-gray-400 bg-white/80 px-1 py-0.5 rounded">Due by {imm.due}</span>
+                                <div key={idx} className="border border-dashed border-gray-300 dark:border-zinc-700 p-4 rounded bg-gray-50/50 dark:bg-zinc-900/30 relative">
+                                    <span className="absolute top-2 right-2 text-[9px] uppercase tracking-wider font-bold text-gray-400 dark:text-zinc-500 bg-white/80 dark:bg-zinc-900/80 px-1 py-0.5 rounded">Due by {imm.due}</span>
                                     
-                                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">NAME</p>
-                                    <p className="text-xs font-bold text-black leading-tight mb-2.5 pr-14">{imm.name}</p>
+                                    <p className="text-[8px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest mt-1">NAME</p>
+                                    <p className="text-xs font-bold text-black dark:text-zinc-200 leading-tight mb-2.5 pr-14">{imm.name}</p>
                                     
-                                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">TYPE AND DOSE</p>
-                                    <p className="text-xs text-gray-800 mb-2.5">{imm.type}</p>
+                                    <p className="text-[8px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">TYPE AND DOSE</p>
+                                    <p className="text-xs text-gray-800 dark:text-zinc-350 mb-2.5">{imm.type}</p>
                                     
-                                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">VALUE / UNIT</p>
-                                    <p className="text-xs text-gray-800 mb-2.5">{imm.value}</p>
+                                    <p className="text-[8px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">VALUE / UNIT</p>
+                                    <p className="text-xs text-gray-800 dark:text-zinc-350 mb-2.5">{imm.value}</p>
                                     
-                                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">EDUCATION / INSTRUCTIONS</p>
-                                    <p className="text-xs text-gray-600 leading-snug">{imm.instructions}</p>
+                                    <p className="text-[8px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">EDUCATION / INSTRUCTIONS</p>
+                                    <p className="text-xs text-gray-650 dark:text-zinc-400 leading-snug">{imm.instructions}</p>
                                 </div>
                             ))}
                         </div>
                     </div>
 
-                    <hr className="border-gray-200" />
+                    <hr className="border-gray-200 dark:border-zinc-800" />
 
                     {/* Plan of Care Section */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-3">
-                            <div className="w-6 h-6 bg-gray-100 border border-black flex items-center justify-center">
-                                <FileText className="w-3.5 h-3.5 text-black" />
+                            <div className="w-6 h-6 bg-gray-100 dark:bg-zinc-900 border border-black dark:border-zinc-700 flex items-center justify-center">
+                                <FileText className="w-3.5 h-3.5 text-black dark:text-zinc-200" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-black leading-none">Plan of Care</h3>
-                                <p className="text-[11px] text-gray-500 italic mt-0.5">You have {planOfCareList.length} recommendations from your doctor.</p>
+                                <h3 className="text-lg font-bold text-black dark:text-zinc-50 leading-none">Plan of Care</h3>
+                                <p className="text-[11px] text-gray-500 dark:text-zinc-400 italic mt-0.5">You have {planOfCareList.length} recommendations from your doctor.</p>
                             </div>
                         </div>
 
                         <table className="w-full text-left text-xs border-collapse">
                             <thead>
-                                <tr className="border-b border-gray-300 text-gray-400 font-bold uppercase tracking-wider text-[9px]">
+                                <tr className="border-b border-gray-300 dark:border-zinc-800 text-gray-400 dark:text-zinc-500 font-bold uppercase tracking-wider text-[9px]">
                                     <th className="pb-2 font-bold">NAME</th>
                                     <th className="pb-2 font-bold">PLANNED DATE</th>
                                     <th className="pb-2 font-bold">INSTRUCTIONS</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="divide-y divide-gray-100 dark:divide-zinc-800/50">
                                 {planOfCareList.map((plan: any, idx: number) => (
-                                    <tr key={idx} className="text-gray-800">
+                                    <tr key={idx} className="text-gray-800 dark:text-zinc-200">
                                         <td className="py-2.5 font-semibold">{plan.name}</td>
                                         <td className="py-2.5">{plan.date}</td>
-                                        <td className="py-2.5 text-gray-500">{plan.instructions || 'N/A'}</td>
+                                        <td className="py-2.5 text-gray-500 dark:text-zinc-400">{plan.instructions || 'N/A'}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -279,8 +279,23 @@ function PatientHealthRecordSheet({ patient, clinic, encounters, isPdfMode = fal
                 </div>
             </div>
 
+            {/* Doctor's Notes Section (Mimics doctor writing notes directly on paper medical record) */}
+            <hr className="border-gray-200 dark:border-zinc-800 my-6" />
+            <div className="space-y-4 text-black dark:text-zinc-250">
+                <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 bg-black dark:bg-zinc-800 flex items-center justify-center text-white dark:text-zinc-100 text-xs font-bold font-mono">N</div>
+                    <div>
+                        <h3 className="text-lg font-bold text-black dark:text-zinc-50 leading-none">Clinical History / Doctor's Notes</h3>
+                        <p className="text-[11px] text-gray-500 dark:text-zinc-400 italic mt-0.5">Doctor's handwritten or recorded general patient history notes.</p>
+                    </div>
+                </div>
+                <div className="min-h-[120px] border border-dashed border-gray-300 dark:border-zinc-700 p-4 rounded bg-gray-50/50 dark:bg-zinc-900/30 text-xs text-gray-800 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                    {patient.notes || "No clinical history notes recorded. Doctors can register clinical notes directly by using the 'Edit' patient button above."}
+                </div>
+            </div>
+
             {/* Bottom Footer */}
-            <div className="flex justify-between items-center border-t border-gray-200 mt-12 pt-4 text-[9px] font-mono text-gray-400 uppercase tracking-wider">
+            <div className="flex justify-between items-center border-t border-gray-200 dark:border-zinc-800 mt-12 pt-4 text-[9px] font-mono text-gray-400 dark:text-zinc-500 uppercase tracking-wider">
                 <span>MEDICAL HEALTH RECORD: PATIENT PROFILE</span>
                 <span>PAGE 1 OF 1</span>
             </div>
@@ -603,32 +618,21 @@ export default function PatientDetailPage() {
                         </CardHeader>
                         <CardContent className="pt-4 space-y-4">
                             {encounters && encounters.length > 0 ? encounters.map((enc) => (
-                                <div key={enc.id} className="p-4 rounded-xl border border-dashed border-border hover:border-primary/45 transition-colors group">
-                                    <div className="flex justify-between items-start mb-2">
+                                <div key={enc.id} className="p-2.5 rounded-xl border border-dashed border-border hover:border-primary/45 transition-colors group">
+                                    <div className="flex justify-between items-start mb-1">
                                         <div>
-                                            <p className="font-bold text-sm uppercase">{enc.type} Encounter</p>
-                                            <p className="text-xs text-muted-foreground">{format(new Date(enc.date), 'PPP')}</p>
+                                            <p className="font-bold text-sm uppercase flex items-center gap-2">
+                                                {enc.type} Encounter
+                                                <Badge variant={enc.status === 'Finalized' ? 'outline' : 'secondary'} className="text-[9px] py-0 px-1">
+                                                    {enc.status}
+                                                </Badge>
+                                            </p>
+                                            <p className="text-[10px] text-muted-foreground">{format(new Date(enc.date), 'PPP')}</p>
                                         </div>
-                                        <Badge variant={enc.status === 'Finalized' ? 'outline' : 'secondary'} className="text-[10px]">
-                                            {enc.status}
-                                        </Badge>
-                                    </div>
-                                    <div className="grid grid-cols-4 gap-2 py-2">
-                                        {enc.vitals?.slice(0, 4).map(v => (
-                                            <div key={v.id} className="text-center p-1 bg-muted/50 rounded">
-                                                <p className="text-[8px] uppercase text-muted-foreground">{v.type.split('_')[0]}</p>
-                                                <p className="text-[10px] font-bold">{v.value}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <p className="text-xs text-muted-foreground line-clamp-2 italic mt-2 border-l-2 border-border pl-2">
-                                        {enc.soap.assessment}
-                                    </p>
-                                    <div className="mt-4 flex justify-end">
                                         <Dialog>
                                             <DialogTrigger asChild>
-                                                <Button variant="ghost" size="sm" className="h-8 text-xs font-bold gap-1 text-primary hover:bg-primary/5">
-                                                    <FileText className="h-3 w-3" /> View Full Details
+                                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-bold gap-1 text-primary hover:bg-primary/5">
+                                                    <FileText className="h-3 w-3" /> View Details
                                                 </Button>
                                             </DialogTrigger>
                                             <DialogContent className="max-w-2xl max-h-[90vh] p-0 overflow-hidden border-dashed">
@@ -695,6 +699,17 @@ export default function PatientDetailPage() {
                                             </DialogContent>
                                         </Dialog>
                                     </div>
+                                    <div className="grid grid-cols-4 gap-1.5 py-1">
+                                        {enc.vitals?.slice(0, 4).map(v => (
+                                            <div key={v.id} className="text-center p-0.5 bg-muted/40 rounded">
+                                                <p className="text-[7.5px] uppercase text-muted-foreground">{v.type.split('_')[0]}</p>
+                                                <p className="text-[9.5px] font-bold">{v.value}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="text-[11px] text-muted-foreground line-clamp-1 italic mt-1 border-l-2 border-border pl-2">
+                                        {enc.soap.assessment}
+                                    </p>
                                 </div>
                             )) : (
                                 <div className="py-10 text-center text-muted-foreground border-2 border-dashed rounded-xl">

@@ -5,7 +5,7 @@ const withPWA = require('next-pwa')({
   dest: 'public',
   register: true,
   skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development',
+  disable: true, // Disable next-pwa completely to resolve Next.js 15 App Router build crashes
   buildExcludes: [/app-build-manifest\.json$/, /middleware-build-manifest\.json$/],
 });
 

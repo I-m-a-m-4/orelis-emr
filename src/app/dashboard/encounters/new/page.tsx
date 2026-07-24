@@ -329,10 +329,10 @@ export default function NewEncounterPage() {
 
     if (!patientId || !patient) {
         return (
-            <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto py-6">
+            <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-full px-4 md:px-8 py-6">
                 
                 {/* Header */}
-                <div className="flex justify-between items-center px-4 md:px-0">
+                <div className="flex justify-between items-center">
                     <div>
                         <h1 className="font-semibold text-lg md:text-2xl">New Consultation (Direct Register & SOAP)</h1>
                         <p className="text-xs text-muted-foreground mt-1 font-sans">Fill out the patient file and record the consultation SOAP notes simultaneously.</p>
@@ -344,8 +344,11 @@ export default function NewEncounterPage() {
 
                 {/* Blank Medical Health Record Sheet */}
                 <div className={cn(
-                    "bg-white dark:bg-zinc-950 text-black dark:text-zinc-50 font-sans w-full border-2 border-black dark:border-zinc-800 p-8 sm:p-12 shadow-2xl relative select-none"
+                    "bg-white dark:bg-zinc-950 text-black dark:text-zinc-50 font-sans w-full p-8 sm:p-12 shadow-md rounded-lg relative select-none"
                 )}>
+                    {/* Hospital Letterhead */}
+                    <MedicalLetterhead clinicName={clinic?.name} clinicAddress={clinic?.address} clinicPhone={clinic?.phone} clinicEmail={clinic?.email} className="border-b border-zinc-200 dark:border-zinc-800 pb-4 mb-6" />
+
                     {/* Top Header */}
                     <div className="flex justify-between items-end border-b-2 border-black dark:border-zinc-800 pb-4 mb-6">
                         <div>
@@ -363,14 +366,14 @@ export default function NewEncounterPage() {
                         {/* Left Profile Column */}
                         <div className="md:col-span-4 border-r border-gray-200 dark:border-zinc-800 pr-6 space-y-6">
                             <div>
-                                <p className="text-[10px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-wider mb-2">PATIENT DETAILS</p>
+                                <p className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans mb-2">Patient Details</p>
                                 <div className="space-y-3">
                                     <div>
-                                        <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">FIRST NAME *</Label>
+                                        <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans">First Name *</Label>
                                         <Input className="h-8 text-xs font-bold border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus-visible:ring-1" value={newPatient.firstName} onChange={e => setNewPatient({ ...newPatient, firstName: e.target.value })} placeholder="John" />
                                     </div>
                                     <div>
-                                        <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">SURNAME *</Label>
+                                        <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans">Surname *</Label>
                                         <Input className="h-8 text-xs font-bold border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus-visible:ring-1" value={newPatient.surname} onChange={e => setNewPatient({ ...newPatient, surname: e.target.value })} placeholder="Doe" />
                                     </div>
                                 </div>
@@ -379,11 +382,11 @@ export default function NewEncounterPage() {
                             {/* Profile Fields */}
                             <div className="space-y-4 text-xs">
                                 <div>
-                                    <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-550 tracking-widest">DATE OF BIRTH</Label>
+                                    <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans">Date of Birth</Label>
                                     <Input type="date" className="h-8 text-xs font-bold border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700" value={newPatient.dob} onChange={e => setNewPatient({ ...newPatient, dob: e.target.value })} />
                                 </div>
                                 <div>
-                                    <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-550 tracking-widest">GENDER</Label>
+                                    <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans">Gender</Label>
                                     <Select value={newPatient.sex} onValueChange={val => setNewPatient({ ...newPatient, sex: val })}>
                                         <SelectTrigger className="h-8 text-xs font-bold border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700">
                                             <SelectValue />
@@ -396,7 +399,7 @@ export default function NewEncounterPage() {
                                     </Select>
                                 </div>
                                 <div>
-                                    <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-550 tracking-widest">MARITAL STATUS</Label>
+                                    <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans">Marital Status</Label>
                                     <Select value={newPatient.maritalStatus} onValueChange={val => setNewPatient({ ...newPatient, maritalStatus: val })}>
                                         <SelectTrigger className="h-8 text-xs font-bold border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700">
                                             <SelectValue />
@@ -410,19 +413,19 @@ export default function NewEncounterPage() {
                                     </Select>
                                 </div>
                                 <div>
-                                    <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-550 tracking-widest">PHONE</Label>
+                                    <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans">Phone</Label>
                                     <Input className="h-8 text-xs font-bold border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus-visible:ring-1" value={newPatient.phone} onChange={e => setNewPatient({ ...newPatient, phone: e.target.value })} placeholder="+234..." />
                                 </div>
                                 <div>
-                                    <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-555 tracking-widest">ADDRESS</Label>
+                                    <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans">Address</Label>
                                     <Input className="h-8 text-xs font-bold border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus-visible:ring-1" value={newPatient.address} onChange={e => setNewPatient({ ...newPatient, address: e.target.value })} placeholder="123 Main St..." />
                                 </div>
                                 <div>
-                                    <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-555 tracking-widest">STATE OF ORIGIN</Label>
+                                    <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans">State of Origin</Label>
                                     <Input className="h-8 text-xs font-bold border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus-visible:ring-1" value={newPatient.origin} onChange={e => setNewPatient({ ...newPatient, origin: e.target.value })} placeholder="e.g. Lagos" />
                                 </div>
                                 <div>
-                                    <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-555 tracking-widest">TRIBE</Label>
+                                    <Label className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-sans">Tribe</Label>
                                     <Input className="h-8 text-xs font-bold border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus-visible:ring-1" value={newPatient.tribe} onChange={e => setNewPatient({ ...newPatient, tribe: e.target.value })} placeholder="e.g. Yoruba" />
                                 </div>
                             </div>
@@ -432,24 +435,24 @@ export default function NewEncounterPage() {
                         <div className="md:col-span-8 pl-0 md:pl-4 space-y-8">
                             <div>
                                 <div className="flex justify-between items-center mb-4">
-                                    <p className="text-[10px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-wider">ALLERGIES</p>
+                                    <p className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans">Allergies</p>
                                     <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] font-bold border border-dashed text-primary hover:bg-primary/5" onClick={() => setNewAllergies([...newAllergies, { name: '', severity: '', reaction: '' }])}>+ Add Allergy</Button>
                                 </div>
                                 
                                 <div className="space-y-2">
                                     {newAllergies.map((allergy, idx) => (
                                         <div key={idx} className="flex gap-2 items-center">
-                                            <Input className="h-8 text-xs border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700" placeholder="Allergy Name (e.g. Penicillin)" value={allergy.name} onChange={e => {
+                                            <Input className="h-8 text-xs border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-black dark:text-white" placeholder="Allergy Name (e.g. Penicillin)" value={allergy.name} onChange={e => {
                                                 const list = [...newAllergies];
                                                 list[idx].name = e.target.value;
                                                 setNewAllergies(list);
                                             }} />
-                                            <Input className="h-8 text-xs border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700" placeholder="Severity (e.g. Severe)" value={allergy.severity} onChange={e => {
+                                            <Input className="h-8 text-xs border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-black dark:text-white" placeholder="Severity (e.g. Severe)" value={allergy.severity} onChange={e => {
                                                 const list = [...newAllergies];
                                                 list[idx].severity = e.target.value;
                                                 setNewAllergies(list);
                                             }} />
-                                            <Input className="h-8 text-xs border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700" placeholder="Reaction (e.g. Hives)" value={allergy.reaction} onChange={e => {
+                                            <Input className="h-8 text-xs border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-black dark:text-white" placeholder="Reaction (e.g. Hives)" value={allergy.reaction} onChange={e => {
                                                 const list = [...newAllergies];
                                                 list[idx].reaction = e.target.value;
                                                 setNewAllergies(list);
@@ -464,7 +467,7 @@ export default function NewEncounterPage() {
 
                             <div>
                                 <div className="flex justify-between items-center mb-4">
-                                    <p className="text-[10px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-wider">IMMUNIZATIONS</p>
+                                    <p className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-sans">Immunizations</p>
                                     <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] font-bold border border-dashed text-primary hover:bg-primary/5" onClick={() => setNewImmunizations([...newImmunizations, { name: '', due: '', type: '', value: '', instructions: '' }])}>+ Add Immunization</Button>
                                 </div>
 
@@ -472,32 +475,32 @@ export default function NewEncounterPage() {
                                     {newImmunizations.map((imm, idx) => (
                                         <div key={idx} className="border border-dashed border-gray-300 dark:border-zinc-700 p-4 rounded bg-gray-50/50 dark:bg-zinc-900/30 relative space-y-2">
                                             <div className="flex justify-between items-center">
-                                                <Label className="text-[9px] font-bold text-gray-400 dark:text-zinc-550 uppercase tracking-widest">Immunization #{idx + 1}</Label>
+                                                <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans">Immunization #{idx + 1}</Label>
                                                 <Button type="button" variant="ghost" className="h-6 w-6 text-destructive text-sm p-0" onClick={() => setNewImmunizations(newImmunizations.filter((_, i) => i !== idx))}>×</Button>
                                             </div>
                                             <div className="grid grid-cols-2 gap-2">
-                                                <Input className="h-8 text-xs border-dashed dark:bg-zinc-900 border-zinc-300" placeholder="Vaccine Name" value={imm.name} onChange={e => {
+                                                <Input className="h-8 text-xs border-dashed dark:bg-zinc-900 border-zinc-300 text-black dark:text-white" placeholder="Vaccine Name" value={imm.name} onChange={e => {
                                                     const list = [...newImmunizations];
                                                     list[idx].name = e.target.value;
                                                     setNewImmunizations(list);
                                                 }} />
-                                                <Input className="h-8 text-xs border-dashed dark:bg-zinc-900 border-zinc-300" placeholder="Due Date (e.g. Dec 2026)" value={imm.due} onChange={e => {
+                                                <Input className="h-8 text-xs border-dashed dark:bg-zinc-900 border-zinc-300 text-black dark:text-white" placeholder="Due Date (e.g. Dec 2026)" value={imm.due} onChange={e => {
                                                     const list = [...newImmunizations];
                                                     list[idx].due = e.target.value;
                                                     setNewImmunizations(list);
                                                 }} />
-                                                <Input className="h-8 text-xs border-dashed dark:bg-zinc-900 border-zinc-300" placeholder="Type (e.g. Intramuscular)" value={imm.type} onChange={e => {
+                                                <Input className="h-8 text-xs border-dashed dark:bg-zinc-900 border-zinc-300 text-black dark:text-white" placeholder="Type (e.g. Intramuscular)" value={imm.type} onChange={e => {
                                                     const list = [...newImmunizations];
                                                     list[idx].type = e.target.value;
                                                     setNewImmunizations(list);
                                                 }} />
-                                                <Input className="h-8 text-xs border-dashed dark:bg-zinc-900 border-zinc-300" placeholder="Dose Value (e.g. 50 mcg)" value={imm.value} onChange={e => {
+                                                <Input className="h-8 text-xs border-dashed dark:bg-zinc-900 border-zinc-300 text-black dark:text-white" placeholder="Dose Value (e.g. 50 mcg)" value={imm.value} onChange={e => {
                                                     const list = [...newImmunizations];
                                                     list[idx].value = e.target.value;
                                                     setNewImmunizations(list);
                                                 }} />
                                             </div>
-                                            <Input className="h-8 text-xs border-dashed dark:bg-zinc-900 border-zinc-300" placeholder="Education / Instructions" value={imm.instructions} onChange={e => {
+                                            <Input className="h-8 text-xs border-dashed dark:bg-zinc-900 border-zinc-300 text-black dark:text-white" placeholder="Education / Instructions" value={imm.instructions} onChange={e => {
                                                 const list = [...newImmunizations];
                                                 list[idx].instructions = e.target.value;
                                                 setNewImmunizations(list);
@@ -511,7 +514,7 @@ export default function NewEncounterPage() {
 
                             <div>
                                 <div className="flex justify-between items-center mb-4">
-                                    <p className="text-[10px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-wider">PLAN OF CARE</p>
+                                    <p className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-sans">Plan of Care</p>
                                     <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] font-bold border border-dashed text-primary hover:bg-primary/5" onClick={() => setNewPlanOfCare([...newPlanOfCare, { name: '', date: '', instructions: '' }])}>+ Add Plan</Button>
                                 </div>
 
@@ -551,12 +554,12 @@ export default function NewEncounterPage() {
                                 <p className="text-[11px] text-gray-550 dark:text-zinc-400 italic mt-0.5">Doctor's handwritten or recorded general patient history notes.</p>
                             </div>
                         </div>
-                        <Textarea className="w-full min-h-[100px] border border-dashed border-gray-300 dark:border-zinc-700 p-4 rounded bg-gray-50/50 dark:bg-zinc-900/30 text-xs font-serif italic" placeholder="Enter general historical notes..." value={newPatient.notes} onChange={e => setNewPatient({ ...newPatient, notes: e.target.value })} />
+                        <Textarea className="w-full min-h-[100px] border border-zinc-200 dark:border-zinc-800 p-4 rounded bg-white dark:bg-zinc-900 text-xs font-sans text-black dark:text-white" placeholder="Enter general historical notes..." value={newPatient.notes} onChange={e => setNewPatient({ ...newPatient, notes: e.target.value })} />
                     </div>
                 </div>
 
                 {/* --- VITALS SECTION --- */}
-                <section className="bg-white dark:bg-zinc-900 border border-dashed border-border shadow-sm p-8 relative">
+                <section className="bg-white dark:bg-zinc-900 shadow-md rounded-lg p-8 relative">
                     <div className="absolute top-0 right-0 p-4 opacity-5 rotate-12">
                         <Activity className="w-16 h-16" />
                     </div>
@@ -566,30 +569,30 @@ export default function NewEncounterPage() {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         <div className="space-y-1">
-                            <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-tighter flex items-center gap-1.5"><Thermometer className="h-3 w-3" /> Temp (°C)</Label>
-                            <Input type="number" step="0.1" className="bg-transparent border-0 border-b border-dashed rounded-none h-9 px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold text-lg" value={vitals.temp} onChange={e => setVitals({ ...vitals, temp: e.target.value })} placeholder="36.5" />
+                            <Label className="text-xs font-bold uppercase text-zinc-955 dark:text-zinc-100 tracking-wider flex items-center gap-1.5"><Thermometer className="h-3 w-3" /> Temp (°C)</Label>
+                            <Input type="number" step="0.1" className="bg-transparent border-0 border-b border-dashed rounded-none h-9 px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold text-lg text-black dark:text-white" value={vitals.temp} onChange={e => setVitals({ ...vitals, temp: e.target.value })} placeholder="36.5" />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-tighter flex items-center gap-1.5"><Heart className="h-3 w-3" /> BP (Systolic/Diastolic)</Label>
+                            <Label className="text-xs font-bold uppercase text-zinc-955 dark:text-zinc-100 tracking-wider flex items-center gap-1.5"><Heart className="h-3 w-3" /> BP (Systolic/Diastolic)</Label>
                             <div className="flex items-end gap-2">
-                                <Input type="number" className="bg-transparent border-0 border-b border-dashed rounded-none h-9 px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold text-lg min-w-[60px]" value={vitals.bp_sys} onChange={e => setVitals({ ...vitals, bp_sys: e.target.value })} placeholder="120" />
+                                <Input type="number" className="bg-transparent border-0 border-b border-dashed rounded-none h-9 px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold text-lg min-w-[60px] text-black dark:text-white" value={vitals.bp_sys} onChange={e => setVitals({ ...vitals, bp_sys: e.target.value })} placeholder="120" />
                                 <span className="text-xl opacity-30">/</span>
-                                <Input type="number" className="bg-transparent border-0 border-b border-dashed rounded-none h-9 px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold text-lg min-w-[60px]" value={vitals.bp_dia} onChange={e => setVitals({ ...vitals, bp_dia: e.target.value })} placeholder="80" />
+                                <Input type="number" className="bg-transparent border-0 border-b border-dashed rounded-none h-9 px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold text-lg min-w-[60px] text-black dark:text-white" value={vitals.bp_dia} onChange={e => setVitals({ ...vitals, bp_dia: e.target.value })} placeholder="80" />
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-tighter flex items-center gap-1.5"><Activity className="h-3 w-3" /> Pulse (bpm)</Label>
-                            <Input type="number" className="bg-transparent border-0 border-b border-dashed rounded-none h-9 px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold text-lg" value={vitals.hr} onChange={e => setVitals({ ...vitals, hr: e.target.value })} placeholder="72" />
+                            <Label className="text-xs font-bold uppercase text-zinc-955 dark:text-zinc-100 tracking-wider flex items-center gap-1.5"><Activity className="h-3 w-3" /> Pulse (bpm)</Label>
+                            <Input type="number" className="bg-transparent border-0 border-b border-dashed rounded-none h-9 px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold text-lg text-black dark:text-white" value={vitals.hr} onChange={e => setVitals({ ...vitals, hr: e.target.value })} placeholder="72" />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-tighter flex items-center gap-1.5"><Droplets className="h-3 w-3" /> SpO2 (%)</Label>
-                            <Input type="number" className="bg-transparent border-0 border-b border-dashed rounded-none h-9 px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold text-lg" value={vitals.spo2} onChange={e => setVitals({ ...vitals, spo2: e.target.value })} placeholder="98" />
+                            <Label className="text-xs font-bold uppercase text-zinc-955 dark:text-zinc-100 tracking-wider flex items-center gap-1.5"><Droplets className="h-3 w-3" /> SpO2 (%)</Label>
+                            <Input type="number" className="bg-transparent border-0 border-b border-dashed rounded-none h-9 px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold text-lg text-black dark:text-white" value={vitals.spo2} onChange={e => setVitals({ ...vitals, spo2: e.target.value })} placeholder="98" />
                         </div>
                     </div>
                 </section>
 
                 {/* --- SOAP DATA --- */}
-                <section className="bg-white dark:bg-zinc-900 border border-dashed border-border shadow-sm p-8 space-y-10 min-h-[400px] relative">
+                <section className="bg-white dark:bg-zinc-900 shadow-md rounded-lg p-8 space-y-10 min-h-[400px] relative">
                     <div className="flex items-center gap-2 mb-3 border-b border-dashed border-primary/20 pb-2">
                         <Stethoscope className="h-5 w-5 text-primary" />
                         <h3 className="text-sm font-black uppercase tracking-widest text-primary">Consultation SOAP Note Details</h3>
@@ -603,7 +606,7 @@ export default function NewEncounterPage() {
                                 Subjective History
                             </h4>
                         </div>
-                        <Textarea className="w-full min-h-[100px] bg-transparent border-0 focus-visible:ring-0 p-0 text-sm leading-relaxed font-serif italic" placeholder="Patient reports progressive symptoms including..." value={soap.subjective} onChange={e => setSoap({ ...soap, subjective: e.target.value })} />
+                        <Textarea className="w-full min-h-[100px] border border-zinc-200 dark:border-zinc-800 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-sans" placeholder="Patient reports progressive symptoms including..." value={soap.subjective} onChange={e => setSoap({ ...soap, subjective: e.target.value })} />
                     </div>
 
                     {/* (O) Objective */}
@@ -614,7 +617,7 @@ export default function NewEncounterPage() {
                                 Objective Findings
                             </h4>
                         </div>
-                        <Textarea className="w-full min-h-[100px] bg-transparent border-0 focus-visible:ring-0 p-0 text-sm leading-relaxed" placeholder="Physical exam reveals significant findings in..." value={soap.objective} onChange={e => setSoap({ ...soap, objective: e.target.value })} />
+                        <Textarea className="w-full min-h-[100px] border border-zinc-200 dark:border-zinc-800 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-sans" placeholder="Physical exam reveals significant findings in..." value={soap.objective} onChange={e => setSoap({ ...soap, objective: e.target.value })} />
                     </div>
 
                     {/* (A) Assessment */}
@@ -625,7 +628,7 @@ export default function NewEncounterPage() {
                                 Clinical Assessment
                             </h4>
                         </div>
-                        <Textarea className="w-full min-h-[80px] bg-emerald-500/5 dark:bg-emerald-500/10 border-0 focus-visible:ring-0 p-4 text-sm font-bold leading-relaxed" placeholder="1. Diagnosis..." value={soap.assessment} onChange={e => setSoap({ ...soap, assessment: e.target.value })} />
+                        <Textarea className="w-full min-h-[100px] border border-zinc-200 dark:border-zinc-800 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-sans font-bold" placeholder="1. Diagnosis..." value={soap.assessment} onChange={e => setSoap({ ...soap, assessment: e.target.value })} />
                     </div>
 
                     {/* (P) Plan */}
@@ -636,24 +639,24 @@ export default function NewEncounterPage() {
                                 Management Plan
                             </h4>
                         </div>
-                        <Textarea className="w-full min-h-[100px] bg-transparent border-0 focus-visible:ring-0 p-0 text-sm leading-relaxed border-l-4 border-purple-500/20 pl-4 py-2" placeholder="Initiation of treatment protocol including..." value={soap.plan} onChange={e => setSoap({ ...soap, plan: e.target.value })} />
+                        <Textarea className="w-full min-h-[100px] border border-zinc-200 dark:border-zinc-800 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-sans" placeholder="Initiation of treatment protocol including..." value={soap.plan} onChange={e => setSoap({ ...soap, plan: e.target.value })} />
                     </div>
 
                     {/* Prescription Section */}
-                    <div className="mt-12 bg-primary/5 p-6 border-2 border-dashed border-primary/20">
+                    <div className="mt-12 bg-primary/5 p-6 border border-zinc-200 dark:border-zinc-850">
                         <div className="flex items-center justify-between mb-4">
                             <h4 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
                                 <Pill className="h-3 w-3 text-primary" /> Authorized Prescriptions (Rₓ)
                             </h4>
                         </div>
                         <div className="flex gap-2 mb-4">
-                            <Input className="h-10 bg-background border-dashed text-sm" placeholder="Add medication (dosage, freq)..." value={prescriptionInput} onChange={e => setPrescriptionInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addPrescription()} />
+                            <Input className="h-10 bg-background border border-zinc-200 dark:border-zinc-800 text-sm text-black dark:text-white" placeholder="Add medication (dosage, freq)..." value={prescriptionInput} onChange={e => setPrescriptionInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addPrescription()} />
                             <Button size="sm" onClick={addPrescription}>Add Script</Button>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {prescriptions.map((p, i) => (
-                                <div key={i} className="bg-background border border-dashed p-2 px-3 rounded flex items-center justify-between group">
-                                    <span className="text-xs font-bold font-mono uppercase truncate pr-4">{p}</span>
+                                <div key={i} className="bg-background border border-zinc-200 dark:border-zinc-800 p-2 px-3 rounded flex items-center justify-between group">
+                                    <span className="text-xs font-bold font-mono uppercase truncate pr-4 text-black dark:text-white">{p}</span>
                                     <button onClick={() => removePrescription(i)} className="text-destructive opacity-40 group-hover:opacity-100 transition-opacity">×</button>
                                 </div>
                             ))}
@@ -687,10 +690,15 @@ export default function NewEncounterPage() {
     }
 
     return (
-        <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto py-6">
+        <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-full px-4 md:px-8 py-6">
+
+            {/* Hospital Letterhead */}
+            <div className="bg-white dark:bg-zinc-950 p-6 shadow-md rounded-lg">
+                <MedicalLetterhead clinicName={clinic?.name} clinicAddress={clinic?.address} clinicPhone={clinic?.phone} clinicEmail={clinic?.email} className="mb-0 pb-0 border-b-0" />
+            </div>
 
             {/* Patient Info Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between p-6 border border-dashed bg-card shadow-sm gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-card shadow-md rounded-lg gap-4">
                 <div className="flex items-center gap-4">
                     <Avatar className="h-14 w-14 border-2 border-primary/20">
                         <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">
@@ -719,7 +727,7 @@ export default function NewEncounterPage() {
 
             <div className="flex flex-col gap-8">
                 {/* --- VITALS SECTION (Paper Segment) --- */}
-                <section className="bg-white dark:bg-zinc-900 border border-dashed border-border shadow-sm p-8 relative">
+                <section className="bg-white dark:bg-zinc-900 shadow-md rounded-lg p-8 relative">
                     <div className="absolute top-0 right-0 p-4 opacity-5 rotate-12">
                         <Activity className="w-16 h-16" />
                     </div>
@@ -729,30 +737,30 @@ export default function NewEncounterPage() {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         <div className="space-y-1">
-                            <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-tighter flex items-center gap-1.5"><Thermometer className="h-3 w-3" /> Temp (°C)</Label>
-                            <Input type="number" step="0.1" className="bg-transparent border-0 border-b border-dashed rounded-none h-9 px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold text-lg" value={vitals.temp} onChange={e => setVitals({ ...vitals, temp: e.target.value })} placeholder="36.5" />
+                            <Label className="text-xs font-bold uppercase text-zinc-955 dark:text-zinc-100 tracking-wider flex items-center gap-1.5"><Thermometer className="h-3 w-3" /> Temp (°C)</Label>
+                            <Input type="number" step="0.1" className="bg-transparent border-0 border-b border-dashed rounded-none h-9 px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold text-lg text-black dark:text-white" value={vitals.temp} onChange={e => setVitals({ ...vitals, temp: e.target.value })} placeholder="36.5" />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-tighter flex items-center gap-1.5"><Heart className="h-3 w-3" /> BP (Systolic/Diastolic)</Label>
+                            <Label className="text-xs font-bold uppercase text-zinc-955 dark:text-zinc-100 tracking-wider flex items-center gap-1.5"><Heart className="h-3 w-3" /> BP (Systolic/Diastolic)</Label>
                             <div className="flex items-end gap-2">
-                                <Input type="number" className="bg-transparent border-0 border-b border-dashed rounded-none h-9 px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold text-lg min-w-[60px]" value={vitals.bp_sys} onChange={e => setVitals({ ...vitals, bp_sys: e.target.value })} placeholder="120" />
+                                <Input type="number" className="bg-transparent border-0 border-b border-dashed rounded-none h-9 px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold text-lg min-w-[60px] text-black dark:text-white" value={vitals.bp_sys} onChange={e => setVitals({ ...vitals, bp_sys: e.target.value })} placeholder="120" />
                                 <span className="text-xl opacity-30">/</span>
-                                <Input type="number" className="bg-transparent border-0 border-b border-dashed rounded-none h-9 px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold text-lg min-w-[60px]" value={vitals.bp_dia} onChange={e => setVitals({ ...vitals, bp_dia: e.target.value })} placeholder="80" />
+                                <Input type="number" className="bg-transparent border-0 border-b border-dashed rounded-none h-9 px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold text-lg min-w-[60px] text-black dark:text-white" value={vitals.bp_dia} onChange={e => setVitals({ ...vitals, bp_dia: e.target.value })} placeholder="80" />
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-tighter flex items-center gap-1.5"><Activity className="h-3 w-3" /> Pulse (bpm)</Label>
-                            <Input type="number" className="bg-transparent border-0 border-b border-dashed rounded-none h-9 px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold text-lg" value={vitals.hr} onChange={e => setVitals({ ...vitals, hr: e.target.value })} placeholder="72" />
+                            <Label className="text-xs font-bold uppercase text-zinc-955 dark:text-zinc-100 tracking-wider flex items-center gap-1.5"><Activity className="h-3 w-3" /> Pulse (bpm)</Label>
+                            <Input type="number" className="bg-transparent border-0 border-b border-dashed rounded-none h-9 px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold text-lg text-black dark:text-white" value={vitals.hr} onChange={e => setVitals({ ...vitals, hr: e.target.value })} placeholder="72" />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-tighter flex items-center gap-1.5"><Droplets className="h-3 w-3" /> SpO2 (%)</Label>
-                            <Input type="number" className="bg-transparent border-0 border-b border-dashed rounded-none h-9 px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold text-lg" value={vitals.spo2} onChange={e => setVitals({ ...vitals, spo2: e.target.value })} placeholder="98" />
+                            <Label className="text-xs font-bold uppercase text-zinc-955 dark:text-zinc-100 tracking-wider flex items-center gap-1.5"><Droplets className="h-3 w-3" /> SpO2 (%)</Label>
+                            <Input type="number" className="bg-transparent border-0 border-b border-dashed rounded-none h-9 px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold text-lg text-black dark:text-white" value={vitals.spo2} onChange={e => setVitals({ ...vitals, spo2: e.target.value })} placeholder="98" />
                         </div>
                     </div>
                 </section>
 
                 {/* --- SOAP DATA (The "Paper" Content) --- */}
-                <section className="bg-white dark:bg-zinc-900 border border-dashed border-border shadow-sm p-8 space-y-10 min-h-[800px] relative">
+                <section className="bg-white dark:bg-zinc-900 shadow-md rounded-lg p-8 space-y-10 min-h-[800px] relative">
                     <div className="absolute inset-0 bg-grid-slate-100/[0.03] pointer-events-none" />
 
                     {/* (S) Subjective */}
@@ -765,7 +773,7 @@ export default function NewEncounterPage() {
                             <span className="text-[9px] text-muted-foreground italic ml-auto">Patient symptoms & chief complaints</span>
                         </div>
                         <Textarea
-                            className="w-full min-h-[120px] bg-transparent border-0 focus-visible:ring-0 p-0 text-sm leading-relaxed font-serif italic selection:bg-primary/20"
+                            className="w-full min-h-[120px] border border-dashed border-zinc-300 dark:border-zinc-700 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-sans"
                             placeholder="Patient reports progressive symptoms including..."
                             value={soap.subjective}
                             onChange={e => setSoap({ ...soap, subjective: e.target.value })}
@@ -782,7 +790,7 @@ export default function NewEncounterPage() {
                             <span className="text-[9px] text-muted-foreground italic ml-auto">Clinical physical examination & results</span>
                         </div>
                         <Textarea
-                            className="w-full min-h-[120px] bg-transparent border-0 focus-visible:ring-0 p-0 text-sm leading-relaxed selection:bg-blue-500/20"
+                            className="w-full min-h-[120px] border border-dashed border-zinc-300 dark:border-zinc-700 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-sans"
                             placeholder="Physical exam reveals significant findings in..."
                             value={soap.objective}
                             onChange={e => setSoap({ ...soap, objective: e.target.value })}
@@ -799,7 +807,7 @@ export default function NewEncounterPage() {
                             <span className="text-[9px] text-muted-foreground italic ml-auto">Diagnostic impressions (e.g. ICD-10)</span>
                         </div>
                         <Textarea
-                            className="w-full min-h-[100px] bg-emerald-500/5 dark:bg-emerald-500/10 border-0 focus-visible:ring-0 p-4 text-sm font-bold leading-relaxed selection:bg-emerald-500/20"
+                            className="w-full min-h-[100px] border border-dashed border-zinc-300 dark:border-zinc-700 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-sans font-bold"
                             placeholder="1. Primary diagnosis...
 2. Secondary findings..."
                             value={soap.assessment}
@@ -817,7 +825,7 @@ export default function NewEncounterPage() {
                             <span className="text-[9px] text-muted-foreground italic ml-auto">Treatment, meds, and follow-up</span>
                         </div>
                         <Textarea
-                            className="w-full min-h-[150px] bg-transparent border-0 focus-visible:ring-0 p-0 text-sm leading-relaxed border-l-4 border-purple-500/20 pl-4 py-2 selection:bg-purple-500/20"
+                            className="w-full min-h-[150px] border border-dashed border-zinc-300 dark:border-zinc-700 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-sans"
                             placeholder="Initiation of treatment protocol including..."
                             value={soap.plan}
                             onChange={e => setSoap({ ...soap, plan: e.target.value })}

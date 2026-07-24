@@ -39,7 +39,13 @@ export function FeaturesClientPage() {
             <div className="relative mt-6 overflow-hidden border border-dashed border-border">
                 <div className="pointer-events-none absolute inset-0">
                     <div className="absolute top-1/2 left-1/2 w-1/2 h-1/2 bg-orange-400/20 rounded-full animate-pulse-glow blur-3xl"></div>
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,.7)_1px,transparent_1px)] bg-[size:28px_28px] opacity-[0.18] [mask-image:radial-gradient(80%_80%_at_50%_50%,black,transparent)]"></div>
+                    <div 
+                      className="absolute inset-0 [mask-image:radial-gradient(80%_80%_at_50%_50%,black,transparent)]" 
+                      style={{ 
+                        backgroundImage: 'linear-gradient(to right, rgba(120, 120, 120, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(120, 120, 120, 0.15) 1px, transparent 1px)', 
+                        backgroundSize: '28px 28px' 
+                      }}
+                    ></div>
                     <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-transparent to-background"></div>
                 </div>
 
@@ -80,7 +86,13 @@ export function FeaturesClientPage() {
               <div className="animate-on-scroll relative mt-6 overflow-hidden border border-dashed border-border noisy-bg [animation:fadeSlideIn_0.8s_ease-out_0.1s_both]">
                   <div className="pointer-events-none absolute inset-0">
                       <div className="absolute inset-0 bg-[radial-gradient(1200px_400px_at_50%_-10%,rgba(16,185,129,0.25),transparent),radial-gradient(1200px_600px_at_50%_120%,rgba(59,130,246,0.2),transparent)] opacity-70 [mask-image:radial-gradient(65%_65%_at_50%_50%,black,transparent)] card-glow"></div>
-                      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,.7)_1px,transparent_1px)] bg-[size:28px_28px] opacity-[0.18] [mask-image:radial-gradient(80%_80%_at_50%_50%,black,transparent)]"></div>
+                      <div 
+                        className="absolute inset-0 [mask-image:radial-gradient(80%_80%_at_50%_50%,black,transparent)]" 
+                        style={{ 
+                          backgroundImage: 'linear-gradient(to right, rgba(120, 120, 120, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(120, 120, 120, 0.15) 1px, transparent 1px)', 
+                          backgroundSize: '28px 28px' 
+                        }}
+                      ></div>
                       <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-transparent to-background"></div>
                   </div>
                   <div className="relative p-8 sm:p-16">

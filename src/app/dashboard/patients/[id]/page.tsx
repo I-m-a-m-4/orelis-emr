@@ -62,7 +62,7 @@ function PatientHealthRecordSheet({ patient, clinic, encounters, isPdfMode = fal
 
     return (
         <div className={cn(
-            "bg-white dark:bg-zinc-950 text-black dark:text-zinc-50 font-sans w-full p-8 sm:p-12 shadow-md rounded-lg relative select-none",
+            "bg-white dark:bg-zinc-950 text-black dark:text-zinc-50 font-dm-sans w-full p-8 sm:p-12 shadow-md rounded-lg relative select-none",
             isPdfMode ? "w-[210mm] min-h-[297mm] p-[20mm] bg-white text-black" : "max-w-none"
         )}>
             {/* Hospital Letterhead */}
@@ -71,12 +71,12 @@ function PatientHealthRecordSheet({ patient, clinic, encounters, isPdfMode = fal
             {/* Top Header */}
             <div className="flex justify-between items-end border-b border-zinc-200 dark:border-zinc-800 pb-4 mb-6">
                 <div>
-                    <h1 className="text-3xl font-extrabold tracking-tight text-black dark:text-zinc-50 font-headline uppercase font-sans">Medical Health Record</h1>
-                    <p className="text-[10px] text-gray-550 dark:text-zinc-400 font-mono tracking-wider font-sans">ORELIS MEDICAL SYSTEM</p>
+                    <h1 className="text-3xl font-extrabold tracking-tight text-black dark:text-zinc-50 font-headline uppercase font-dm-sans">Medical Health Record</h1>
+                    <p className="text-[10px] text-gray-550 dark:text-zinc-400 font-mono tracking-wider font-dm-sans">ORELIS MEDICAL SYSTEM</p>
                 </div>
                 <div className="text-right">
-                    <p className="text-[10px] font-bold text-gray-400 dark:text-zinc-550 uppercase tracking-widest leading-none font-sans">Issued Date</p>
-                    <p className="text-sm font-bold text-black dark:text-zinc-50 mt-1 font-sans">{formattedIssuedDate}</p>
+                    <p className="text-[10px] font-bold text-gray-400 dark:text-zinc-550 uppercase tracking-widest leading-none font-dm-sans">Issued Date</p>
+                    <p className="text-sm font-bold text-black dark:text-zinc-50 mt-1 font-dm-sans">{formattedIssuedDate}</p>
                 </div>
             </div>
 
@@ -85,7 +85,7 @@ function PatientHealthRecordSheet({ patient, clinic, encounters, isPdfMode = fal
                 {/* Left Profile Column */}
                 <div className="md:col-span-4 border-r border-gray-200 dark:border-zinc-800 pr-6 space-y-6">
                     <div>
-                        <p className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans mb-2">Patient Profile</p>
+                        <p className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-dm-sans mb-2">Patient Profile</p>
                         <h2 className="text-3xl font-black text-black dark:text-zinc-50 leading-tight mb-4">{patient.surname} {patient.firstName}</h2>
                         
                         {/* Profile Photo Frame */}
@@ -584,71 +584,71 @@ export default function PatientDetailPage() {
                         const enc = encounters?.[currentPage - 2];
                         if (!enc) return null;
                         return (
-                            <div className="bg-white dark:bg-zinc-950 text-black dark:text-zinc-50 font-sans w-full p-8 sm:p-12 shadow-md rounded-lg relative select-none">
+                            <div className="bg-white dark:bg-zinc-950 text-black dark:text-zinc-50 font-dm-sans w-full p-8 sm:p-12 shadow-md rounded-lg relative select-none">
                                 <MedicalLetterhead clinicName={clinic?.name} clinicAddress={clinic?.address} clinicPhone={clinic?.phone} clinicEmail={clinic?.email} className="border-b border-zinc-200 dark:border-zinc-800 pb-4 mb-6" />
                                 
                                 <div className="flex justify-between items-end border-b-2 border-black dark:border-zinc-800 pb-4 mb-6">
                                     <div>
-                                        <h1 className="text-3xl font-extrabold tracking-tight text-black dark:text-zinc-50 font-headline uppercase font-sans">{enc.type} Encounter</h1>
-                                        <p className="text-[10px] text-gray-550 dark:text-zinc-400 font-mono tracking-wider font-sans">ORELIS CLINICAL RECORD</p>
+                                        <h1 className="text-3xl font-extrabold tracking-tight text-black dark:text-zinc-50 font-headline uppercase font-dm-sans">{enc.type} Encounter</h1>
+                                        <p className="text-[10px] text-gray-550 dark:text-zinc-400 font-mono tracking-wider font-dm-sans">ORELIS CLINICAL RECORD</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-[10px] font-bold text-gray-400 dark:text-zinc-555 uppercase tracking-widest leading-none font-sans">DATE</p>
-                                        <p className="text-sm font-bold text-black dark:text-zinc-50 mt-1 font-sans">{format(new Date(enc.date), 'dd MMM yyyy')}</p>
+                                        <p className="text-[10px] font-bold text-gray-400 dark:text-zinc-555 uppercase tracking-widest leading-none font-dm-sans">DATE</p>
+                                        <p className="text-sm font-bold text-black dark:text-zinc-50 mt-1 font-dm-sans">{format(new Date(enc.date), 'dd MMM yyyy')}</p>
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-black dark:text-zinc-200">
                                     <div>
-                                        <p className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-sans">Attending Doctor</p>
-                                        <p className="text-sm font-semibold text-gray-800 dark:text-zinc-250 mt-1 font-sans">{enc.doctorName}</p>
+                                        <p className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-dm-sans">Attending Doctor</p>
+                                        <p className="text-sm font-semibold text-gray-800 dark:text-zinc-250 mt-1 font-dm-sans">{enc.doctorName}</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-sans">Encounter Type</p>
-                                        <p className="text-sm font-semibold text-gray-800 dark:text-zinc-250 mt-1 font-sans">{enc.type}</p>
+                                        <p className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-dm-sans">Encounter Type</p>
+                                        <p className="text-sm font-semibold text-gray-800 dark:text-zinc-250 mt-1 font-dm-sans">{enc.type}</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-sans">Status</p>
-                                        <p className="text-sm font-semibold text-gray-800 dark:text-zinc-250 mt-1 font-sans">{enc.status}</p>
+                                        <p className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-dm-sans">Status</p>
+                                        <p className="text-sm font-semibold text-gray-800 dark:text-zinc-250 mt-1 font-dm-sans">{enc.status}</p>
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 bg-gray-50/50 dark:bg-zinc-900/30 p-4 rounded border border-dashed">
                                     {enc.vitals?.map(v => (
                                         <div key={v.id}>
-                                            <p className="text-[9px] uppercase font-bold text-zinc-955 dark:text-zinc-100 font-sans">{v.type.replace('_', ' ')}</p>
-                                            <p className="text-sm font-black text-black dark:text-white mt-1 font-sans">{v.value} {v.unit}</p>
+                                            <p className="text-[9px] uppercase font-bold text-zinc-955 dark:text-zinc-100 font-dm-sans">{v.type.replace('_', ' ')}</p>
+                                            <p className="text-sm font-black text-black dark:text-white mt-1 font-dm-sans">{v.value} {v.unit}</p>
                                         </div>
                                     ))}
                                 </div>
 
                                 <div className="space-y-6">
                                     <div>
-                                        <h4 className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-sans mb-2 border-b border-dashed pb-1">Subjective Findings</h4>
-                                        <p className="text-sm text-gray-800 dark:text-zinc-300 leading-relaxed font-sans">{enc.soap.subjective || 'N/A'}</p>
+                                        <h4 className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-dm-sans mb-2 border-b border-dashed pb-1">Subjective Findings</h4>
+                                        <p className="text-sm text-gray-800 dark:text-zinc-300 leading-relaxed font-dm-sans">{enc.soap.subjective || 'N/A'}</p>
                                     </div>
                                     <div>
-                                        <h4 className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-sans mb-2 border-b border-dashed pb-1">Objective Findings</h4>
-                                        <p className="text-sm text-gray-800 dark:text-zinc-300 leading-relaxed font-sans">{enc.soap.objective || 'N/A'}</p>
+                                        <h4 className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-dm-sans mb-2 border-b border-dashed pb-1">Objective Findings</h4>
+                                        <p className="text-sm text-gray-800 dark:text-zinc-300 leading-relaxed font-dm-sans">{enc.soap.objective || 'N/A'}</p>
                                     </div>
                                     <div>
-                                        <h4 className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-sans mb-2 border-b border-dashed pb-1">Clinical Assessment</h4>
-                                        <p className="text-sm text-gray-800 dark:text-zinc-300 leading-relaxed font-sans font-bold">{enc.soap.assessment || 'N/A'}</p>
+                                        <h4 className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-dm-sans mb-2 border-b border-dashed pb-1">Clinical Assessment</h4>
+                                        <p className="text-sm text-gray-800 dark:text-zinc-300 leading-relaxed font-dm-sans font-bold">{enc.soap.assessment || 'N/A'}</p>
                                     </div>
                                     <div>
-                                        <h4 className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-sans mb-2 border-b border-dashed pb-1">Management Plan</h4>
-                                        <p className="text-sm text-gray-800 dark:text-zinc-300 leading-relaxed font-sans">{enc.soap.plan || 'N/A'}</p>
+                                        <h4 className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-dm-sans mb-2 border-b border-dashed pb-1">Management Plan</h4>
+                                        <p className="text-sm text-gray-800 dark:text-zinc-300 leading-relaxed font-dm-sans">{enc.soap.plan || 'N/A'}</p>
                                     </div>
                                 </div>
 
                                 {enc.prescriptions && enc.prescriptions.length > 0 && (
                                     <div className="mt-8 bg-primary/5 p-6 border border-zinc-200 dark:border-zinc-800 rounded-lg">
-                                        <h4 className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-sans mb-3 flex items-center gap-2">
+                                        <h4 className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-dm-sans mb-3 flex items-center gap-2">
                                             <Pill className="h-3.5 w-3.5 text-primary" /> Authorized Prescriptions (Rₓ)
                                         </h4>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                             {enc.prescriptions.map((p, i) => (
-                                                <div key={i} className="bg-background border border-zinc-200 dark:border-zinc-800 p-2.5 px-3 rounded flex items-center gap-2 text-xs font-semibold text-black dark:text-white font-sans">
+                                                <div key={i} className="bg-background border border-zinc-200 dark:border-zinc-800 p-2.5 px-3 rounded flex items-center gap-2 text-xs font-semibold text-black dark:text-white font-dm-sans">
                                                     <div className="w-1.5 h-1.5 rounded-full bg-primary" />
                                                     {p}
                                                 </div>
@@ -672,7 +672,7 @@ export default function PatientDetailPage() {
                 >
                     Previous Page
                 </Button>
-                <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 font-sans">
+                <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 font-dm-sans">
                     Page {currentPage} of {1 + (encounters?.length || 0)}
                 </span>
                 <Button 

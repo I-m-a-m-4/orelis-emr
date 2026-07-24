@@ -335,7 +335,7 @@ export default function NewEncounterPage() {
                 <div className="flex justify-between items-center">
                     <div>
                         <h1 className="font-semibold text-lg md:text-2xl">New Consultation (Direct Register & SOAP)</h1>
-                        <p className="text-xs text-muted-foreground mt-1 font-sans">Fill out the patient file and record the consultation SOAP notes simultaneously.</p>
+                        <p className="text-xs text-muted-foreground mt-1 font-dm-sans">Fill out the patient file and record the consultation SOAP notes simultaneously.</p>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => router.push('/dashboard/patients')}>
                         Patients Directory
@@ -344,7 +344,7 @@ export default function NewEncounterPage() {
 
                 {/* Blank Medical Health Record Sheet */}
                 <div className={cn(
-                    "bg-white dark:bg-zinc-950 text-black dark:text-zinc-50 font-sans w-full p-8 sm:p-12 shadow-md rounded-lg relative select-none"
+                    "bg-white dark:bg-zinc-950 text-black dark:text-zinc-50 font-dm-sans w-full p-8 sm:p-12 shadow-md rounded-lg relative select-none"
                 )}>
                     {/* Hospital Letterhead */}
                     <MedicalLetterhead clinicName={clinic?.name} clinicAddress={clinic?.address} clinicPhone={clinic?.phone} clinicEmail={clinic?.email} className="border-b border-zinc-200 dark:border-zinc-800 pb-4 mb-6" />
@@ -366,14 +366,14 @@ export default function NewEncounterPage() {
                         {/* Left Profile Column */}
                         <div className="md:col-span-4 border-r border-gray-200 dark:border-zinc-800 pr-6 space-y-6">
                             <div>
-                                <p className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans mb-2">Patient Details</p>
+                                <p className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-dm-sans mb-2">Patient Details</p>
                                 <div className="space-y-3">
                                     <div>
-                                        <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans">First Name *</Label>
+                                        <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-dm-sans">First Name *</Label>
                                         <Input className="h-8 text-xs font-bold border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus-visible:ring-1" value={newPatient.firstName} onChange={e => setNewPatient({ ...newPatient, firstName: e.target.value })} placeholder="John" />
                                     </div>
                                     <div>
-                                        <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans">Surname *</Label>
+                                        <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-dm-sans">Surname *</Label>
                                         <Input className="h-8 text-xs font-bold border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus-visible:ring-1" value={newPatient.surname} onChange={e => setNewPatient({ ...newPatient, surname: e.target.value })} placeholder="Doe" />
                                     </div>
                                 </div>
@@ -382,11 +382,11 @@ export default function NewEncounterPage() {
                             {/* Profile Fields */}
                             <div className="space-y-4 text-xs">
                                 <div>
-                                    <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans">Date of Birth</Label>
+                                    <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-dm-sans">Date of Birth</Label>
                                     <Input type="date" className="h-8 text-xs font-bold border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700" value={newPatient.dob} onChange={e => setNewPatient({ ...newPatient, dob: e.target.value })} />
                                 </div>
                                 <div>
-                                    <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans">Gender</Label>
+                                    <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-dm-sans">Gender</Label>
                                     <Select value={newPatient.sex} onValueChange={val => setNewPatient({ ...newPatient, sex: val })}>
                                         <SelectTrigger className="h-8 text-xs font-bold border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700">
                                             <SelectValue />
@@ -399,7 +399,7 @@ export default function NewEncounterPage() {
                                     </Select>
                                 </div>
                                 <div>
-                                    <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans">Marital Status</Label>
+                                    <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-dm-sans">Marital Status</Label>
                                     <Select value={newPatient.maritalStatus} onValueChange={val => setNewPatient({ ...newPatient, maritalStatus: val })}>
                                         <SelectTrigger className="h-8 text-xs font-bold border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700">
                                             <SelectValue />
@@ -413,19 +413,19 @@ export default function NewEncounterPage() {
                                     </Select>
                                 </div>
                                 <div>
-                                    <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans">Phone</Label>
+                                    <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-dm-sans">Phone</Label>
                                     <Input className="h-8 text-xs font-bold border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus-visible:ring-1" value={newPatient.phone} onChange={e => setNewPatient({ ...newPatient, phone: e.target.value })} placeholder="+234..." />
                                 </div>
                                 <div>
-                                    <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans">Address</Label>
+                                    <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-dm-sans">Address</Label>
                                     <Input className="h-8 text-xs font-bold border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus-visible:ring-1" value={newPatient.address} onChange={e => setNewPatient({ ...newPatient, address: e.target.value })} placeholder="123 Main St..." />
                                 </div>
                                 <div>
-                                    <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans">State of Origin</Label>
+                                    <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-dm-sans">State of Origin</Label>
                                     <Input className="h-8 text-xs font-bold border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus-visible:ring-1" value={newPatient.origin} onChange={e => setNewPatient({ ...newPatient, origin: e.target.value })} placeholder="e.g. Lagos" />
                                 </div>
                                 <div>
-                                    <Label className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-sans">Tribe</Label>
+                                    <Label className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-dm-sans">Tribe</Label>
                                     <Input className="h-8 text-xs font-bold border-dashed dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus-visible:ring-1" value={newPatient.tribe} onChange={e => setNewPatient({ ...newPatient, tribe: e.target.value })} placeholder="e.g. Yoruba" />
                                 </div>
                             </div>
@@ -435,7 +435,7 @@ export default function NewEncounterPage() {
                         <div className="md:col-span-8 pl-0 md:pl-4 space-y-8">
                             <div>
                                 <div className="flex justify-between items-center mb-4">
-                                    <p className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans">Allergies</p>
+                                    <p className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-dm-sans">Allergies</p>
                                     <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] font-bold border border-dashed text-primary hover:bg-primary/5" onClick={() => setNewAllergies([...newAllergies, { name: '', severity: '', reaction: '' }])}>+ Add Allergy</Button>
                                 </div>
                                 
@@ -467,7 +467,7 @@ export default function NewEncounterPage() {
 
                             <div>
                                 <div className="flex justify-between items-center mb-4">
-                                    <p className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-sans">Immunizations</p>
+                                    <p className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-dm-sans">Immunizations</p>
                                     <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] font-bold border border-dashed text-primary hover:bg-primary/5" onClick={() => setNewImmunizations([...newImmunizations, { name: '', due: '', type: '', value: '', instructions: '' }])}>+ Add Immunization</Button>
                                 </div>
 
@@ -475,7 +475,7 @@ export default function NewEncounterPage() {
                                     {newImmunizations.map((imm, idx) => (
                                         <div key={idx} className="border border-dashed border-gray-300 dark:border-zinc-700 p-4 rounded bg-gray-50/50 dark:bg-zinc-900/30 relative space-y-2">
                                             <div className="flex justify-between items-center">
-                                                <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-sans">Immunization #{idx + 1}</Label>
+                                                <Label className="text-xs font-bold text-zinc-950 dark:text-zinc-100 font-dm-sans">Immunization #{idx + 1}</Label>
                                                 <Button type="button" variant="ghost" className="h-6 w-6 text-destructive text-sm p-0" onClick={() => setNewImmunizations(newImmunizations.filter((_, i) => i !== idx))}>×</Button>
                                             </div>
                                             <div className="grid grid-cols-2 gap-2">
@@ -514,7 +514,7 @@ export default function NewEncounterPage() {
 
                             <div>
                                 <div className="flex justify-between items-center mb-4">
-                                    <p className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-sans">Plan of Care</p>
+                                    <p className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-dm-sans">Plan of Care</p>
                                     <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] font-bold border border-dashed text-primary hover:bg-primary/5" onClick={() => setNewPlanOfCare([...newPlanOfCare, { name: '', date: '', instructions: '' }])}>+ Add Plan</Button>
                                 </div>
 
@@ -554,7 +554,7 @@ export default function NewEncounterPage() {
                                 <p className="text-[11px] text-gray-550 dark:text-zinc-400 italic mt-0.5">Doctor's handwritten or recorded general patient history notes.</p>
                             </div>
                         </div>
-                        <Textarea className="w-full min-h-[100px] border border-zinc-200 dark:border-zinc-800 p-4 rounded bg-white dark:bg-zinc-900 text-xs font-sans text-black dark:text-white" placeholder="Enter general historical notes..." value={newPatient.notes} onChange={e => setNewPatient({ ...newPatient, notes: e.target.value })} />
+                        <Textarea className="w-full min-h-[100px] border border-zinc-200 dark:border-zinc-800 p-4 rounded bg-white dark:bg-zinc-900 text-xs font-dm-sans text-black dark:text-white" placeholder="Enter general historical notes..." value={newPatient.notes} onChange={e => setNewPatient({ ...newPatient, notes: e.target.value })} />
                     </div>
                 </div>
 
@@ -606,7 +606,7 @@ export default function NewEncounterPage() {
                                 Subjective History
                             </h4>
                         </div>
-                        <Textarea className="w-full min-h-[100px] border border-zinc-200 dark:border-zinc-800 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-sans" placeholder="Patient reports progressive symptoms including..." value={soap.subjective} onChange={e => setSoap({ ...soap, subjective: e.target.value })} />
+                        <Textarea className="w-full min-h-[100px] border border-zinc-200 dark:border-zinc-800 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-dm-sans" placeholder="Patient reports progressive symptoms including..." value={soap.subjective} onChange={e => setSoap({ ...soap, subjective: e.target.value })} />
                     </div>
 
                     {/* (O) Objective */}
@@ -617,7 +617,7 @@ export default function NewEncounterPage() {
                                 Objective Findings
                             </h4>
                         </div>
-                        <Textarea className="w-full min-h-[100px] border border-zinc-200 dark:border-zinc-800 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-sans" placeholder="Physical exam reveals significant findings in..." value={soap.objective} onChange={e => setSoap({ ...soap, objective: e.target.value })} />
+                        <Textarea className="w-full min-h-[100px] border border-zinc-200 dark:border-zinc-800 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-dm-sans" placeholder="Physical exam reveals significant findings in..." value={soap.objective} onChange={e => setSoap({ ...soap, objective: e.target.value })} />
                     </div>
 
                     {/* (A) Assessment */}
@@ -628,7 +628,7 @@ export default function NewEncounterPage() {
                                 Clinical Assessment
                             </h4>
                         </div>
-                        <Textarea className="w-full min-h-[100px] border border-zinc-200 dark:border-zinc-800 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-sans font-bold" placeholder="1. Diagnosis..." value={soap.assessment} onChange={e => setSoap({ ...soap, assessment: e.target.value })} />
+                        <Textarea className="w-full min-h-[100px] border border-zinc-200 dark:border-zinc-800 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-dm-sans font-bold" placeholder="1. Diagnosis..." value={soap.assessment} onChange={e => setSoap({ ...soap, assessment: e.target.value })} />
                     </div>
 
                     {/* (P) Plan */}
@@ -639,7 +639,7 @@ export default function NewEncounterPage() {
                                 Management Plan
                             </h4>
                         </div>
-                        <Textarea className="w-full min-h-[100px] border border-zinc-200 dark:border-zinc-800 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-sans" placeholder="Initiation of treatment protocol including..." value={soap.plan} onChange={e => setSoap({ ...soap, plan: e.target.value })} />
+                        <Textarea className="w-full min-h-[100px] border border-zinc-200 dark:border-zinc-800 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-dm-sans" placeholder="Initiation of treatment protocol including..." value={soap.plan} onChange={e => setSoap({ ...soap, plan: e.target.value })} />
                     </div>
 
                     {/* Prescription Section */}
@@ -773,7 +773,7 @@ export default function NewEncounterPage() {
                             <span className="text-[9px] text-muted-foreground italic ml-auto">Patient symptoms & chief complaints</span>
                         </div>
                         <Textarea
-                            className="w-full min-h-[120px] border border-dashed border-zinc-300 dark:border-zinc-700 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-sans"
+                            className="w-full min-h-[120px] border border-dashed border-zinc-300 dark:border-zinc-700 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-dm-sans"
                             placeholder="Patient reports progressive symptoms including..."
                             value={soap.subjective}
                             onChange={e => setSoap({ ...soap, subjective: e.target.value })}
@@ -790,7 +790,7 @@ export default function NewEncounterPage() {
                             <span className="text-[9px] text-muted-foreground italic ml-auto">Clinical physical examination & results</span>
                         </div>
                         <Textarea
-                            className="w-full min-h-[120px] border border-dashed border-zinc-300 dark:border-zinc-700 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-sans"
+                            className="w-full min-h-[120px] border border-dashed border-zinc-300 dark:border-zinc-700 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-dm-sans"
                             placeholder="Physical exam reveals significant findings in..."
                             value={soap.objective}
                             onChange={e => setSoap({ ...soap, objective: e.target.value })}
@@ -807,7 +807,7 @@ export default function NewEncounterPage() {
                             <span className="text-[9px] text-muted-foreground italic ml-auto">Diagnostic impressions (e.g. ICD-10)</span>
                         </div>
                         <Textarea
-                            className="w-full min-h-[100px] border border-dashed border-zinc-300 dark:border-zinc-700 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-sans font-bold"
+                            className="w-full min-h-[100px] border border-dashed border-zinc-300 dark:border-zinc-700 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-dm-sans font-bold"
                             placeholder="1. Primary diagnosis...
 2. Secondary findings..."
                             value={soap.assessment}
@@ -825,7 +825,7 @@ export default function NewEncounterPage() {
                             <span className="text-[9px] text-muted-foreground italic ml-auto">Treatment, meds, and follow-up</span>
                         </div>
                         <Textarea
-                            className="w-full min-h-[150px] border border-dashed border-zinc-300 dark:border-zinc-700 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-sans"
+                            className="w-full min-h-[150px] border border-dashed border-zinc-300 dark:border-zinc-700 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-dm-sans"
                             placeholder="Initiation of treatment protocol including..."
                             value={soap.plan}
                             onChange={e => setSoap({ ...soap, plan: e.target.value })}

@@ -591,55 +591,20 @@ export default function NewEncounterPage() {
                     </div>
                 </section>
 
-                {/* --- SOAP DATA --- */}
-                <section className="bg-white dark:bg-zinc-900 shadow-md rounded-lg p-8 space-y-10 min-h-[400px] relative">
+                {/* --- CLINICAL CONSULTATION NOTE --- */}
+                <section className="bg-white dark:bg-zinc-900 shadow-md rounded-lg p-8 space-y-6 min-h-[400px] relative">
                     <div className="flex items-center gap-2 mb-3 border-b border-dashed border-primary/20 pb-2">
                         <Stethoscope className="h-5 w-5 text-primary" />
-                        <h3 className="text-sm font-black uppercase tracking-widest text-primary">Consultation SOAP Note Details</h3>
+                        <h3 className="text-sm font-black uppercase tracking-widest text-primary font-dm-sans">Clinical Consultation Note</h3>
                     </div>
 
-                    {/* (S) Subjective */}
                     <div className="relative">
-                        <div className="flex items-center gap-2 mb-3 border-b border-dashed border-primary/20 pb-2">
-                            <h4 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                                <span className="bg-primary text-white w-5 h-5 flex items-center justify-center rounded-sm text-[10px]">S</span>
-                                Subjective History
-                            </h4>
-                        </div>
-                        <Textarea className="w-full min-h-[100px] border border-zinc-200 dark:border-zinc-800 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-dm-sans" placeholder="Patient reports progressive symptoms including..." value={soap.subjective} onChange={e => setSoap({ ...soap, subjective: e.target.value })} />
-                    </div>
-
-                    {/* (O) Objective */}
-                    <div className="relative">
-                        <div className="flex items-center gap-2 mb-3 border-b border-dashed border-blue-500/20 pb-2">
-                            <h4 className="text-xs font-black uppercase tracking-widest text-blue-400 flex items-center gap-2">
-                                <span className="bg-blue-500 text-white w-5 h-5 flex items-center justify-center rounded-sm text-[10px]">O</span>
-                                Objective Findings
-                            </h4>
-                        </div>
-                        <Textarea className="w-full min-h-[100px] border border-zinc-200 dark:border-zinc-800 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-dm-sans" placeholder="Physical exam reveals significant findings in..." value={soap.objective} onChange={e => setSoap({ ...soap, objective: e.target.value })} />
-                    </div>
-
-                    {/* (A) Assessment */}
-                    <div className="relative">
-                        <div className="flex items-center gap-2 mb-3 border-b border-dashed border-emerald-500/20 pb-2">
-                            <h4 className="text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-2">
-                                <span className="bg-emerald-500 text-white w-5 h-5 flex items-center justify-center rounded-sm text-[10px]">A</span>
-                                Clinical Assessment
-                            </h4>
-                        </div>
-                        <Textarea className="w-full min-h-[100px] border border-zinc-200 dark:border-zinc-800 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-dm-sans font-bold" placeholder="1. Diagnosis..." value={soap.assessment} onChange={e => setSoap({ ...soap, assessment: e.target.value })} />
-                    </div>
-
-                    {/* (P) Plan */}
-                    <div className="relative">
-                        <div className="flex items-center gap-2 mb-3 border-b border-dashed border-purple-500/20 pb-2">
-                            <h4 className="text-xs font-black uppercase tracking-widest text-purple-400 flex items-center gap-2">
-                                <span className="bg-purple-500 text-white w-5 h-5 flex items-center justify-center rounded-sm text-[10px]">P</span>
-                                Management Plan
-                            </h4>
-                        </div>
-                        <Textarea className="w-full min-h-[100px] border border-zinc-200 dark:border-zinc-800 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-dm-sans" placeholder="Initiation of treatment protocol including..." value={soap.plan} onChange={e => setSoap({ ...soap, plan: e.target.value })} />
+                        <Textarea 
+                            className="w-full min-h-[300px] border-0 focus-visible:ring-0 p-4 rounded bg-gray-50/50 dark:bg-zinc-900/30 text-sm leading-relaxed text-black dark:text-white font-dm-sans" 
+                            placeholder="Type your clinical findings, history, diagnosis, and management plan here as paragraphs..." 
+                            value={soap.subjective} 
+                            onChange={e => setSoap({ ...soap, subjective: e.target.value, objective: '', assessment: '', plan: '' })} 
+                        />
                     </div>
 
                     {/* Prescription Section */}
@@ -759,81 +724,23 @@ export default function NewEncounterPage() {
                     </div>
                 </section>
 
-                {/* --- SOAP DATA (The "Paper" Content) --- */}
-                <section className="bg-white dark:bg-zinc-900 shadow-md rounded-lg p-8 space-y-10 min-h-[800px] relative">
+                {/* --- CLINICAL CONSULTATION NOTE (The "Paper" Content) --- */}
+                <section className="bg-white dark:bg-zinc-900 shadow-md rounded-lg p-8 space-y-6 min-h-[600px] relative">
                     <div className="absolute inset-0 bg-grid-slate-100/[0.03] pointer-events-none" />
 
-                    {/* (S) Subjective */}
                     <div className="relative">
-                        <div className="flex items-center gap-2 mb-3 border-b border-dashed border-primary/20 pb-2">
-                            <h4 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                                <span className="bg-primary text-white w-5 h-5 flex items-center justify-center rounded-sm text-[10px]">S</span>
-                                Subjective History
+                        <div className="flex items-center gap-2 mb-4 border-b border-dashed border-primary/20 pb-2">
+                            <h4 className="text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2 font-dm-sans">
+                                Clinical Consultation Note
                             </h4>
-                            <span className="text-[9px] text-muted-foreground italic ml-auto">Patient symptoms & chief complaints</span>
+                            <span className="text-[10px] text-muted-foreground italic ml-auto font-dm-sans">Type paragraphs for findings, history, diagnosis, and plan</span>
                         </div>
                         <Textarea
-                            className="w-full min-h-[120px] border border-dashed border-zinc-300 dark:border-zinc-700 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-dm-sans"
-                            placeholder="Patient reports progressive symptoms including..."
+                            className="w-full min-h-[450px] border-0 focus-visible:ring-0 p-4 rounded bg-gray-50/30 dark:bg-zinc-900/30 text-sm leading-relaxed text-black dark:text-white font-dm-sans"
+                            placeholder="Type your clinical findings, history, assessment, and management plan here as continuous paragraphs..."
                             value={soap.subjective}
-                            onChange={e => setSoap({ ...soap, subjective: e.target.value })}
+                            onChange={e => setSoap({ ...soap, subjective: e.target.value, objective: '', assessment: '', plan: '' })}
                         />
-                    </div>
-
-                    {/* (O) Objective */}
-                    <div className="relative">
-                        <div className="flex items-center gap-2 mb-3 border-b border-dashed border-blue-500/20 pb-2">
-                            <h4 className="text-xs font-black uppercase tracking-widest text-blue-400 flex items-center gap-2">
-                                <span className="bg-blue-500 text-white w-5 h-5 flex items-center justify-center rounded-sm text-[10px]">O</span>
-                                Objective Findings
-                            </h4>
-                            <span className="text-[9px] text-muted-foreground italic ml-auto">Clinical physical examination & results</span>
-                        </div>
-                        <Textarea
-                            className="w-full min-h-[120px] border border-dashed border-zinc-300 dark:border-zinc-700 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-dm-sans"
-                            placeholder="Physical exam reveals significant findings in..."
-                            value={soap.objective}
-                            onChange={e => setSoap({ ...soap, objective: e.target.value })}
-                        />
-                    </div>
-
-                    {/* (A) Assessment */}
-                    <div className="relative">
-                        <div className="flex items-center gap-2 mb-3 border-b border-dashed border-emerald-500/20 pb-2">
-                            <h4 className="text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-2">
-                                <span className="bg-emerald-500 text-white w-5 h-5 flex items-center justify-center rounded-sm text-[10px]">A</span>
-                                clinical Assessment
-                            </h4>
-                            <span className="text-[9px] text-muted-foreground italic ml-auto">Diagnostic impressions (e.g. ICD-10)</span>
-                        </div>
-                        <Textarea
-                            className="w-full min-h-[100px] border border-dashed border-zinc-300 dark:border-zinc-700 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-dm-sans font-bold"
-                            placeholder="1. Primary diagnosis...
-2. Secondary findings..."
-                            value={soap.assessment}
-                            onChange={e => setSoap({ ...soap, assessment: e.target.value })}
-                        />
-                    </div>
-
-                    {/* (P) Plan */}
-                    <div className="relative">
-                        <div className="flex items-center gap-2 mb-3 border-b border-dashed border-purple-500/20 pb-2">
-                            <h4 className="text-xs font-black uppercase tracking-widest text-purple-400 flex items-center gap-2">
-                                <span className="bg-purple-500 text-white w-5 h-5 flex items-center justify-center rounded-sm text-[10px]">P</span>
-                                Management Plan
-                            </h4>
-                            <span className="text-[9px] text-muted-foreground italic ml-auto">Treatment, meds, and follow-up</span>
-                        </div>
-                        <Textarea
-                            className="w-full min-h-[150px] border border-dashed border-zinc-300 dark:border-zinc-700 p-4 rounded bg-white dark:bg-zinc-900 text-xs text-black dark:text-white focus-visible:ring-1 font-dm-sans"
-                            placeholder="Initiation of treatment protocol including..."
-                            value={soap.plan}
-                            onChange={e => setSoap({ ...soap, plan: e.target.value })}
-                        />
-                        <div className="absolute bottom-2 right-2 flex items-center gap-2 text-primary opacity-40 hover:opacity-100 cursor-pointer transition-opacity" title="AI Assistant Suggestions">
-                            <Sparkles className="w-4 h-4 animate-pulse" />
-                            <span className="text-[9px] font-bold uppercase tracking-widest">AI Suggest</span>
-                        </div>
                     </div>
 
                     {/* Prescription Section Integrated into Paper */}

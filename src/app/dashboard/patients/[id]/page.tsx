@@ -623,22 +623,28 @@ export default function PatientDetailPage() {
                                 </div>
 
                                 <div className="space-y-6">
-                                    <div>
-                                        <h4 className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-dm-sans mb-2 border-b border-dashed pb-1">Subjective Findings</h4>
-                                        <p className="text-sm text-gray-800 dark:text-zinc-300 leading-relaxed font-dm-sans">{enc.soap.subjective || 'N/A'}</p>
-                                    </div>
-                                    <div>
-                                        <h4 className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-dm-sans mb-2 border-b border-dashed pb-1">Objective Findings</h4>
-                                        <p className="text-sm text-gray-800 dark:text-zinc-300 leading-relaxed font-dm-sans">{enc.soap.objective || 'N/A'}</p>
-                                    </div>
-                                    <div>
-                                        <h4 className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-dm-sans mb-2 border-b border-dashed pb-1">Clinical Assessment</h4>
-                                        <p className="text-sm text-gray-800 dark:text-zinc-300 leading-relaxed font-dm-sans font-bold">{enc.soap.assessment || 'N/A'}</p>
-                                    </div>
-                                    <div>
-                                        <h4 className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-dm-sans mb-2 border-b border-dashed pb-1">Management Plan</h4>
-                                        <p className="text-sm text-gray-800 dark:text-zinc-300 leading-relaxed font-dm-sans">{enc.soap.plan || 'N/A'}</p>
-                                    </div>
+                                     <div>
+                                         <h4 className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-dm-sans mb-2 border-b border-dashed pb-1">Clinical Consultation Note</h4>
+                                         <p className="text-sm text-gray-800 dark:text-zinc-300 leading-relaxed font-dm-sans whitespace-pre-wrap">{enc.soap.subjective || 'N/A'}</p>
+                                     </div>
+                                     {enc.soap.objective && (
+                                         <div>
+                                             <h4 className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-dm-sans mb-2 border-b border-dashed pb-1">Objective Findings</h4>
+                                             <p className="text-sm text-gray-800 dark:text-zinc-300 leading-relaxed font-dm-sans whitespace-pre-wrap">{enc.soap.objective}</p>
+                                         </div>
+                                     )}
+                                     {enc.soap.assessment && (
+                                         <div>
+                                             <h4 className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-dm-sans mb-2 border-b border-dashed pb-1">Clinical Assessment</h4>
+                                             <p className="text-sm text-gray-800 dark:text-zinc-300 leading-relaxed font-dm-sans whitespace-pre-wrap font-bold">{enc.soap.assessment}</p>
+                                         </div>
+                                     )}
+                                     {enc.soap.plan && (
+                                         <div>
+                                             <h4 className="text-xs font-bold text-zinc-955 dark:text-zinc-100 font-dm-sans mb-2 border-b border-dashed pb-1">Management Plan</h4>
+                                             <p className="text-sm text-gray-800 dark:text-zinc-300 leading-relaxed font-dm-sans whitespace-pre-wrap">{enc.soap.plan}</p>
+                                         </div>
+                                     )}
                                 </div>
 
                                 {enc.prescriptions && enc.prescriptions.length > 0 && (

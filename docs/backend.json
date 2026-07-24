@@ -1,0 +1,396 @@
+{
+  "entities": {
+    "Clinic": {
+      "title": "Clinic",
+      "description": "Represents a hospital or clinic using the Trelis system.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The official name of the clinic."
+        },
+        "address": {
+          "type": "string",
+          "description": "The physical address of the clinic."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The contact phone number for the clinic."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The contact email address for the clinic."
+        },
+        "staffCount": {
+          "type": "number",
+          "description": "The number of staff members at the clinic."
+        },
+        "specialties": {
+          "type": "array",
+          "description": "A list of medical specialties offered by the clinic.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "subscription": {
+          "type": "object",
+          "properties": {
+            "plan": {
+              "type": "string",
+              "enum": [
+                "price_annual",
+                "trial"
+              ]
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "active",
+                "trialing",
+                "expired"
+              ]
+            },
+            "customerId": {
+              "type": "string"
+            },
+            "expiryDate": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      },
+      "required": [
+        "name",
+        "address",
+        "phone",
+        "email"
+      ]
+    },
+    "Patient": {
+      "title": "Patient",
+      "description": "Represents a patient record within a clinic.",
+      "type": "object",
+      "properties": {
+        "clinicId": {
+          "type": "string",
+          "description": "The ID of the clinic this patient belongs to."
+        },
+        "surname": {
+          "type": "string",
+          "description": "The patient's surname."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The patient's first name."
+        },
+        "sex": {
+          "type": "string",
+          "enum": [
+            "Male",
+            "Female",
+            "Other"
+          ],
+          "description": "The patient's gender."
+        },
+        "maritalStatus": {
+          "type": "string",
+          "enum": [
+            "Single",
+            "Married",
+            "Divorced",
+            "Widowed"
+          ],
+          "description": "The patient's marital status."
+        },
+        "address": {
+          "type": "string",
+          "description": "The patient's home address."
+        },
+        "dob": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The patient's date of birth."
+        },
+        "origin": {
+          "type": "string",
+          "description": "The patient's state of origin."
+        },
+        "tribe": {
+          "type": "string",
+          "description": "The patient's tribe."
+        },
+        "occupation": {
+          "type": "string",
+          "description": "The patient's occupation."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The patient's phone number in +234 format."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The patient's email address."
+        },
+        "nextOfKin": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "relation": {
+              "type": "string"
+            },
+            "address": {
+              "type": "string"
+            },
+            "phone": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "relation",
+            "phone"
+          ]
+        },
+        "registrationDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date the patient was registered."
+        },
+        "religion": {
+          "type": "string",
+          "description": "The patient's religion."
+        }
+      },
+      "required": [
+        "clinicId",
+        "surname",
+        "firstName",
+        "dob",
+        "phone"
+      ]
+    },
+    "User": {
+      "title": "User",
+      "description": "Represents a user of the Trelis system, including staff and patients.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The Firebase Authentication user ID."
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "name": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "admin",
+            "doctor",
+            "receptionist",
+            "patient"
+          ]
+        },
+        "clinicId": {
+          "type": "string",
+          "description": "The ID of the clinic the user belongs to (for staff)."
+        },
+        "patientId": {
+          "type": "string",
+          "description": "The ID of the patient record this user is linked to (for patients)."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "active"
+          ],
+          "description": "The user's account status."
+        }
+      },
+      "required": [
+        "uid",
+        "email",
+        "role",
+        "status"
+      ]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "Represents a scheduled appointment for a patient.",
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "scheduled",
+            "completed",
+            "cancelled",
+            "no-show"
+          ]
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "date",
+        "status"
+      ]
+    },
+    "Prescription": {
+      "title": "Prescription",
+      "description": "Represents a prescription given to a patient.",
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "instructions": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "date",
+        "details"
+      ]
+    },
+    "Consent": {
+      "title": "Consent",
+      "description": "Represents a signed consent form from a patient.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "signature": {
+          "type": "string",
+          "description": "Base64 encoded signature image."
+        },
+        "details": {
+          "type": "object",
+          "properties": {
+            "discretionToSurgeon": {
+              "type": "boolean"
+            }
+          }
+        },
+        "witness": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "relation": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": [
+        "type",
+        "date",
+        "signature"
+      ]
+    },
+    "AuditLog": {
+      "title": "Audit Log",
+      "description": "Logs significant actions performed in the system for auditing purposes.",
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "patientId": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "action",
+        "userId",
+        "timestamp"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "emailLink",
+      "google.com"
+    ]
+  },
+  "firestore": {
+    "/clinics/{clinicId}": {
+      "schema": {
+        "$ref": "#/entities/Clinic"
+      },
+      "description": "Stores information about each clinic."
+    },
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "Stores user accounts for both staff and patients."
+    },
+    "/patients/{patientId}": {
+      "schema": {
+        "$ref": "#/entities/Patient"
+      },
+      "description": "Stores patient records."
+    },
+    "/patients/{patientId}/appointments/{appointmentId}": {
+      "schema": {
+        "$ref": "#/entities/Appointment"
+      },
+      "description": "Sub-collection for a patient's appointments."
+    },
+    "/patients/{patientId}/prescriptions/{prescriptionId}": {
+      "schema": {
+        "$ref": "#/entities/Prescription"
+      },
+      "description": "Sub-collection for a patient's prescriptions."
+    },
+    "/patients/{patientId}/consents/{consentId}": {
+      "schema": {
+        "$ref": "#/entities/Consent"
+      },
+      "description": "Sub-collection for a patient's signed consent forms."
+    },
+    "/auditLogs/{logId}": {
+      "schema": {
+        "$ref": "#/entities/AuditLog"
+      },
+      "description": "Collection for system-wide audit logs."
+    }
+  }
+}

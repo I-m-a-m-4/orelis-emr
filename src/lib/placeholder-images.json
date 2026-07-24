@@ -1,0 +1,76 @@
+{
+  "placeholderImages": [
+    {
+      "id": "pulse-logo",
+      "description": "Pulse logo",
+      "imageUrl": "https://cdn.midjourney.com/cb5b11d7-075b-41ad-8245-7abae741cd52/0_2.png?w=800&q=80",
+      "imageHint": "abstract logo"
+    },
+    {
+      "id": "customer-portrait",
+      "description": "Portrait of a customer",
+      "imageUrl": "https://images.unsplash.com/photo-1573497491208-6b1acb260507?q=80&w=1080&auto=format&fit=crop",
+      "imageHint": "woman portrait"
+    },
+    {
+      "id": "michael-chen-avatar",
+      "description": "Avatar of Michael Chen",
+      "imageUrl": "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?q=80&w=320&auto=format&fit=crop",
+      "imageHint": "man portrait"
+    },
+    {
+      "id": "emily-roberts-avatar",
+      "description": "Avatar of Emily Roberts",
+      "imageUrl": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=320&auto=format&fit=crop",
+      "imageHint": "woman avatar"
+    },
+    {
+      "id": "david-park-avatar",
+      "description": "Avatar of David Park",
+      "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=320&auto=format&fit=crop",
+      "imageHint": "man avatar"
+    },
+    {
+      "id": "unenthusiastic-woman-avatar",
+      "description": "Avatar of an unenthusiastic woman",
+      "imageUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=320&auto=format&fit=crop",
+      "imageHint": "woman portrait"
+    },
+    {
+      "id": "avatar-1",
+      "imageUrl": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHx3b21hbiUyMHBvcnRyYWl0fGVufDB8fHx8MTc2MTE0NzUzOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "description": "User avatar",
+      "imageHint": "woman portrait"
+    },
+    {
+      "id": "avatar-2",
+      "imageUrl": "https://images.unsplash.com/photo-1560250097-0b93528c311a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxtYW4lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjExNDUzMDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "description": "User avatar",
+      "imageHint": "man portrait"
+    },
+    {
+      "id": "avatar-3",
+      "imageUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjEyMjc5NjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "description": "User avatar",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "avatar-4",
+      "imageUrl": "https://images.unsplash.com/photo-1550831107-1553da8c8464?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxkb2N0b3IlMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjExODg0NjZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "description": "User avatar",
+      "imageHint": "doctor portrait"
+    },
+    {
+      "id": "doctor-using-tablet",
+      "imageUrl": "https://images.unsplash.com/photo-1584515933487-779824d29309?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=Mnw3NDE5ODJ8MHwxfHNlYXJjaHwxfHxkb2N0b3IlMjB0YWJsZXR8ZW58MHx8fHwxNjYxNDY0MjYx&ixlib=rb-1.2.1&q=80&w=1080",
+      "description": "A doctor using a tablet computer.",
+      "imageHint": "doctor tablet"
+    },
+    {
+      "id": "medical-team",
+      "imageUrl": "https://images.unsplash.com/photo-1576091160550-2173dba999ef?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=Mnw3NDE5ODJ8MHwxfHNlYXJjaHwxfHxtZWRpY2FsJTIwdGVhbXxlbnwwfHx8fDE2NjE0NjQyODI&ixlib=rb-1.2.1&q=80&w=1080",
+      "description": "A medical team collaborating.",
+      "imageHint": "medical team"
+    }
+  ]
+}

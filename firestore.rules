@@ -1,0 +1,180 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // =================================================================
+    // Helper Functions
+    // =================================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.superAdmin == true || 
+        getUserDoc().role == 'super-admin' ||
+        request.auth.token.email == 'bimex4@gmail.com'
+      );
+    }
+
+    function isUserMemberOf(clinicId) {
+      return isAuthenticated() && getUserDoc().clinicId == clinicId;
+    }
+
+    // RBAC: Role Hierarchy Helpers
+    function isRequestingUserAdmin() {
+      return isAuthenticated() && getUserDoc().role == 'admin';
+    }
+
+    function isRequestingUserDoctor() {
+      return isAuthenticated() && (getUserDoc().role == 'admin' || getUserDoc().role == 'doctor');
+    }
+
+    function isRequestingUserStaff() {
+      return isAuthenticated() && (getUserDoc().role == 'admin' || getUserDoc().role == 'doctor' || getUserDoc().role == 'receptionist');
+    }
+
+    // =================================================================
+    // Core Collections & Rules
+    // =================================================================
+
+    match /users/{userId} {
+      allow get: if isAuthenticated() && (
+        request.auth.uid == userId || 
+        (isRequestingUserAdmin() && getUserDoc().clinicId == resource.data.clinicId) ||
+        isSuperAdmin()
+      );
+      allow list: if isSuperAdmin() || (isRequestingUserStaff() && getUserDoc().clinicId != null);
+      allow create: if true; 
+      allow update: if isAuthenticated() && (
+        request.auth.uid == userId || 
+        (isRequestingUserAdmin() && getUserDoc().clinicId == resource.data.clinicId) ||
+        isSuperAdmin()
+      );
+      allow delete: if isSuperAdmin();
+
+      match /notifications/{notificationId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
+    }
+
+    match /clinics/{clinicId} {
+      allow read: if isAuthenticated(); 
+      allow write: if isSuperAdmin() || (isRequestingUserStaff() && isUserMemberOf(clinicId));
+    }
+    
+    match /invitations/{invitationId} {
+      allow get: if true;
+      allow list: if isSuperAdmin() || isRequestingUserAdmin();
+      allow create: if isRequestingUserAdmin();
+      allow update: if isAuthenticated() || isSuperAdmin(); 
+      allow delete: if isRequestingUserAdmin() || isSuperAdmin();
+    }
+    
+    match /patients/{patientId} {
+        allow list: if isSuperAdmin() || (isRequestingUserStaff() && getUserDoc().clinicId != null);
+        allow get: if isSuperAdmin() || (isAuthenticated() && resource.data.clinicId == getUserDoc().clinicId);
+        allow create: if isRequestingUserStaff() && request.resource.data.clinicId == getUserDoc().clinicId;
+        allow update: if isRequestingUserStaff() && resource.data.clinicId == getUserDoc().clinicId && request.resource.data.clinicId == getUserDoc().clinicId;
+        allow delete: if isSuperAdmin() || isRequestingUserAdmin();
+    }
+    
+    match /appointments/{appointmentId} {
+        allow list: if isSuperAdmin() || (isRequestingUserStaff() && getUserDoc().clinicId != null) || isAuthenticated();
+        allow get: if isSuperAdmin() || 
+            (isRequestingUserStaff() && resource.data.clinicId == getUserDoc().clinicId) ||
+            (isAuthenticated() && resource.data.patientId == request.auth.uid);
+
+        allow create: if isSuperAdmin() || 
+            (isRequestingUserStaff() && request.resource.data.clinicId == getUserDoc().clinicId);
+        
+        allow update: if isSuperAdmin() || 
+            (isRequestingUserStaff() && resource.data.clinicId == getUserDoc().clinicId && request.resource.data.clinicId == getUserDoc().clinicId) ||
+            (isAuthenticated() && resource.data.patientId == request.auth.uid && request.resource.data.patientId == request.auth.uid);
+
+        allow delete: if isRequestingUserAdmin() || isSuperAdmin();
+    }
+
+    match /inventory/{itemId} {
+        allow read: if isRequestingUserStaff() && getUserDoc().clinicId != null;
+        allow create: if isRequestingUserStaff() && request.resource.data.clinicId == getUserDoc().clinicId;
+        allow update: if isRequestingUserStaff() && resource.data.clinicId == getUserDoc().clinicId && request.resource.data.clinicId == getUserDoc().clinicId;
+        allow delete: if isRequestingUserAdmin() || isSuperAdmin();
+    }
+
+    match /invoices/{invoiceId} {
+        allow list: if isRequestingUserStaff() && getUserDoc().clinicId != null;
+        allow get: if isRequestingUserStaff() && resource.data.clinicId == getUserDoc().clinicId;
+        allow create: if isRequestingUserStaff() && request.resource.data.clinicId == getUserDoc().clinicId;
+        allow update: if isRequestingUserStaff() && resource.data.clinicId == getUserDoc().clinicId && request.resource.data.clinicId == getUserDoc().clinicId;
+        allow delete: if isRequestingUserAdmin() || isSuperAdmin();
+    }
+
+    match /encounters/{encounterId} {
+        allow list, get: if isRequestingUserStaff() && getUserDoc().clinicId != null;
+        allow create: if isRequestingUserDoctor() && request.resource.data.clinicId == getUserDoc().clinicId;
+        allow update: if isRequestingUserStaff() && resource.data.clinicId == getUserDoc().clinicId && request.resource.data.clinicId == getUserDoc().clinicId;
+        allow delete: if isRequestingUserAdmin() || isSuperAdmin();
+    }
+
+    match /prescriptions/{rxId} {
+        allow read: if isRequestingUserStaff() && getUserDoc().clinicId != null;
+        allow create: if isRequestingUserDoctor() && request.resource.data.clinicId == getUserDoc().clinicId;
+        allow update: if isRequestingUserStaff() && resource.data.clinicId == getUserDoc().clinicId;
+        allow delete: if isRequestingUserAdmin() || isSuperAdmin();
+    }
+
+    match /medications/{medId} {
+        allow read: if isRequestingUserStaff() && getUserDoc().clinicId != null;
+        allow create, update: if isRequestingUserStaff() && (resource == null || resource.data.clinicId == getUserDoc().clinicId) && request.resource.data.clinicId == getUserDoc().clinicId;
+        allow delete: if isRequestingUserAdmin() || isSuperAdmin();
+    }
+
+    match /wards/{wardId} {
+        allow read: if isRequestingUserStaff() && getUserDoc().clinicId != null;
+        allow create, update: if isRequestingUserStaff() && (resource == null || resource.data.clinicId == getUserDoc().clinicId) && request.resource.data.clinicId == getUserDoc().clinicId;
+        allow delete: if isRequestingUserAdmin() || isSuperAdmin();
+    }
+
+    match /admissions/{admId} {
+        allow read: if isRequestingUserStaff() && getUserDoc().clinicId != null;
+        allow create, update: if isRequestingUserStaff() && (resource == null || resource.data.clinicId == getUserDoc().clinicId) && request.resource.data.clinicId == getUserDoc().clinicId;
+        allow delete: if isRequestingUserAdmin() || isSuperAdmin();
+    }
+
+    match /lab_orders/{orderId} {
+        allow read: if isRequestingUserStaff() && getUserDoc().clinicId != null;
+        allow create, update: if isRequestingUserStaff() && (resource == null || resource.data.clinicId == getUserDoc().clinicId) && request.resource.data.clinicId == getUserDoc().clinicId;
+        allow delete: if isRequestingUserAdmin() || isSuperAdmin();
+    }
+
+    match /waitlist/{entryId} {
+        allow list, get, create, update, delete: if isRequestingUserStaff() || isSuperAdmin();
+    }
+
+    match /mail/{mailId} {
+      allow create: if isRequestingUserStaff();
+    }
+
+    match /api_keys/{keyId} {
+        allow get: if isAuthenticated() && (isSuperAdmin() || resource.data.clinicId == getUserDoc().clinicId);
+        allow list: if isAuthenticated() && (isSuperAdmin() || (isRequestingUserStaff() && getUserDoc().clinicId != null));
+        allow create: if isAuthenticated() && (isSuperAdmin() || (isRequestingUserStaff() && request.resource.data.clinicId == getUserDoc().clinicId));
+        allow delete: if isSuperAdmin() || (isRequestingUserAdmin() && resource.data.clinicId == getUserDoc().clinicId);
+    }
+
+    match /audit_logs/{logId} {
+        allow list, get: if isRequestingUserStaff() && (resource == null || resource.data.clinicId == getUserDoc().clinicId);
+        allow create: if isRequestingUserStaff() && request.resource.data.clinicId == getUserDoc().clinicId;
+    }
+
+    // Catch-All for Super Admins
+    match /{document=**} {
+      allow read, write: if isSuperAdmin();
+    }
+  }
+}

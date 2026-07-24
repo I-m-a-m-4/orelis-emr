@@ -1,0 +1,23 @@
+{
+  "name": "Orelis",
+  "short_name": "Orelis",
+  "description": "The ultimate platform for patient management, intelligent scheduling, and AI-powered insights.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#f97316",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

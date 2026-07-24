@@ -1,0 +1,516 @@
+
+{
+  "entities": {
+    "Clinic": {
+      "title": "Clinic",
+      "description": "Represents a hospital or clinic using the Orelis system.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The official name of the clinic."
+        },
+        "address": {
+          "type": "string",
+          "description": "The physical address of the clinic."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The contact phone number for the clinic."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The contact email address for the clinic."
+        },
+        "website": {
+            "type": "string",
+            "format": "uri",
+            "description": "The clinic's official website."
+        },
+        "country": {
+          "type": "string",
+          "description": "The country where the clinic is located."
+        },
+        "staffCount": {
+          "type": "number",
+          "description": "The number of staff members at the clinic."
+        },
+        "specialties": {
+          "type": "array",
+          "description": "A list of medical specialties offered by the clinic.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "subscription": {
+          "type": "object",
+          "properties": {
+            "plan": {
+              "type": "string",
+              "enum": [
+                "price_annual",
+                "trial",
+                "infinite"
+              ]
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "active",
+                "trialing",
+                "expired"
+              ]
+            },
+            "customerId": {
+              "type": "string"
+            },
+            "expiryDate": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      },
+      "required": [
+        "name",
+        "address",
+        "phone",
+        "email"
+      ]
+    },
+    "Patient": {
+      "title": "Patient",
+      "description": "Represents a patient record within a clinic.",
+      "type": "object",
+      "properties": {
+        "clinicId": {
+          "type": "string",
+          "description": "The ID of the clinic this patient belongs to."
+        },
+        "patientCode": {
+          "type": "string",
+          "description": "A unique, secure, and unguessable code for patient account linking."
+        },
+        "surname": {
+          "type": "string",
+          "description": "The patient's surname."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The patient's first name."
+        },
+        "sex": {
+          "type": "string",
+          "enum": [
+            "Male",
+            "Female",
+            "Other"
+          ],
+          "description": "The patient's gender."
+        },
+        "maritalStatus": {
+          "type": "string",
+          "enum": [
+            "Single",
+            "Married",
+            "Divorced",
+            "Widowed"
+          ],
+          "description": "The patient's marital status."
+        },
+        "address": {
+          "type": "string",
+          "description": "The patient's home address."
+        },
+        "dob": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The patient's date of birth."
+        },
+        "origin": {
+          "type": "string",
+          "description": "The patient's state of origin."
+        },
+        "tribe": {
+          "type": "string",
+          "description": "The patient's tribe."
+        },
+        "occupation": {
+          "type": "string",
+          "description": "The patient's occupation."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The patient's phone number in +234 format."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The patient's email address."
+        },
+        "country": {
+          "type": "string",
+          "description": "The patient's country of residence."
+        },
+        "nextOfKin": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "relation": {
+              "type": "string"
+            },
+            "address": {
+              "type": "string"
+            },
+            "phone": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "relation",
+            "phone"
+          ]
+        },
+        "registrationDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date the patient was registered."
+        },
+        "religion": {
+          "type": "string",
+          "description": "The patient's religion."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Active", "Inactive"]
+        }
+      },
+      "required": [
+        "clinicId",
+        "patientCode",
+        "surname",
+        "firstName",
+        "dob",
+        "phone",
+        "status"
+      ]
+    },
+    "User": {
+      "title": "User",
+      "description": "Represents a user of the Orelis system, including staff and patients.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The Firebase Authentication user ID."
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "name": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "admin",
+            "doctor",
+            "receptionist",
+            "patient"
+          ]
+        },
+        "clinicId": {
+          "type": "string",
+          "description": "The ID of the clinic the user belongs to (for staff)."
+        },
+        "patientId": {
+          "type": "string",
+          "description": "The ID of the patient record this user is linked to (for patients)."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "active"
+          ],
+          "description": "The user's account status."
+        }
+      },
+      "required": [
+        "uid",
+        "email",
+        "role",
+        "status"
+      ]
+    },
+    "Waitlist": {
+      "title": "Waitlist Entry",
+      "description": "An email collected from the waitlist page.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["email", "timestamp"]
+    },
+    "Mail": {
+      "title": "Mail",
+      "description": "Represents an email to be sent by the Trigger Email extension.",
+      "type": "object",
+      "properties": {
+        "to": {
+          "type": "array",
+          "items": { "type": "string", "format": "email" }
+        },
+        "message": {
+          "type": "object",
+          "properties": {
+            "subject": { "type": "string" },
+            "html": { "type": "string" }
+          },
+          "required": ["subject", "html"]
+        }
+      },
+      "required": ["to", "message"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "Represents a notification sent to a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "clinicId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["subscription", "announcement", "info", "welcome", "warning"] },
+        "read": { "type": "boolean" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "link": { "type": "string" }
+      },
+      "required": ["userId", "title", "message", "type", "read", "timestamp"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "Represents a scheduled appointment for a patient.",
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "scheduled",
+            "completed",
+            "cancelled",
+            "no-show"
+          ]
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "date",
+        "status"
+      ]
+    },
+    "BlogPost": {
+      "title": "Blog Post",
+      "description": "Represents a blog article.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "slug": { "type": "string" },
+        "content": { "type": "string", "description": "Markdown content for the blog post." },
+        "featuredImage": { "type": "string", "format": "uri" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "clinicId": { "type": "string", "description": "Optional ID of the clinic featured in the post." },
+        "publishedAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["draft", "published"] },
+        "metaDescription": { "type": "string" }
+      },
+      "required": ["title", "slug", "content", "authorId", "authorName", "status", "updatedAt"]
+    },
+    "Prescription": {
+      "title": "Prescription",
+      "description": "Represents a prescription given to a patient.",
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "instructions": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "date",
+        "details"
+      ]
+    },
+    "Consent": {
+      "title": "Consent",
+      "description": "Represents a signed consent form from a patient.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "signature": {
+          "type": "string",
+          "description": "Base64 encoded signature image."
+        },
+        "details": {
+          "type": "object",
+          "properties": {
+            "discretionToSurgeon": {
+              "type": "boolean"
+            }
+          }
+        },
+        "witness": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "relation": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": [
+        "type",
+        "date",
+        "signature"
+      ]
+    },
+    "AuditLog": {
+      "title": "Audit Log",
+      "description": "Logs significant actions performed in the system for auditing purposes.",
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "patientId": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "action",
+        "userId",
+        "timestamp"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "emailLink",
+      "google.com"
+    ]
+  },
+  "firestore": {
+    "/clinics/{clinicId}": {
+      "schema": {
+        "$ref": "#/entities/Clinic"
+      },
+      "description": "Stores information about each clinic."
+    },
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "Stores user accounts for both staff and patients."
+    },
+    "/users/{userId}/notifications/{notificationId}": {
+      "schema": {
+        "$ref": "#/entities/Notification"
+      },
+      "description": "Sub-collection for a user's notifications."
+    },
+    "/patients/{patientId}": {
+      "schema": {
+        "$ref": "#/entities/Patient"
+      },
+      "description": "Stores patient records."
+    },
+    "/appointments/{appointmentId}": {
+      "schema": {
+        "$ref": "#/entities/Appointment"
+      },
+      "description": "Stores all appointments."
+    },
+    "/blogPosts/{postId}": {
+      "schema": {
+        "$ref": "#/entities/BlogPost"
+      },
+      "description": "Stores blog posts."
+    },
+    "/waitlist/{entryId}": {
+      "schema": {
+        "$ref": "#/entities/Waitlist"
+      },
+      "description": "Stores email submissions from the waitlist page."
+    },
+    "/patients/{patientId}/prescriptions/{prescriptionId}": {
+      "schema": {
+        "$ref": "#/entities/Prescription"
+      },
+      "description": "Sub-collection for a patient's prescriptions."
+    },
+    "/patients/{patientId}/consents/{consentId}": {
+      "schema": {
+        "$ref": "#/entities/Consent"
+      },
+      "description": "Sub-collection for a patient's signed consent forms."
+    },
+    "/auditLogs/{logId}": {
+      "schema": {
+        "$ref": "#/entities/AuditLog"
+      },
+      "description": "Collection for system-wide audit logs."
+    },
+    "/mail/{mailId}": {
+        "schema": {
+            "$ref": "#/entities/Mail"
+        },
+        "description": "Collection for the Trigger Email extension. Documents added here will be sent as emails."
+    }
+  }
+}

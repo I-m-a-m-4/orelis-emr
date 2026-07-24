@@ -344,7 +344,7 @@ export default function NewEncounterPage() {
 
                 {/* Blank Medical Health Record Sheet */}
                 <div className={cn(
-                    "bg-white dark:bg-zinc-950 text-black dark:text-zinc-50 font-dm-sans w-full p-8 sm:p-12 shadow-md rounded-lg relative select-none"
+                    "bg-white dark:bg-zinc-950 text-black dark:text-zinc-50 font-dm-sans w-full p-8 sm:p-12 shadow-sm rounded-lg relative select-none"
                 )}>
                     {/* Hospital Letterhead */}
                     <MedicalLetterhead clinicName={clinic?.name} clinicAddress={clinic?.address} clinicPhone={clinic?.phone} clinicEmail={clinic?.email} className="border-b border-zinc-200 dark:border-zinc-800 pb-4 mb-6" />
@@ -559,7 +559,7 @@ export default function NewEncounterPage() {
                 </div>
 
                 {/* --- VITALS SECTION --- */}
-                <section className="bg-white dark:bg-zinc-900 shadow-md rounded-lg p-8 relative">
+                <section className="bg-white dark:bg-zinc-900 shadow-sm rounded-lg p-8 relative">
                     <div className="absolute top-0 right-0 p-4 opacity-5 rotate-12">
                         <Activity className="w-16 h-16" />
                     </div>
@@ -592,7 +592,7 @@ export default function NewEncounterPage() {
                 </section>
 
                 {/* --- CLINICAL CONSULTATION NOTE --- */}
-                <section className="bg-white dark:bg-zinc-900 shadow-md rounded-lg p-8 space-y-6 min-h-[400px] relative">
+                <section className="bg-white dark:bg-zinc-900 shadow-sm rounded-lg p-8 space-y-6 min-h-[400px] relative">
                     <div className="flex items-center gap-2 mb-3 border-b border-dashed border-primary/20 pb-2">
                         <Stethoscope className="h-5 w-5 text-primary" />
                         <h3 className="text-sm font-black uppercase tracking-widest text-primary font-dm-sans">Clinical Consultation Note</h3>
@@ -658,12 +658,12 @@ export default function NewEncounterPage() {
         <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-full px-4 md:px-8 py-6">
 
             {/* Hospital Letterhead */}
-            <div className="bg-white dark:bg-zinc-950 p-6 shadow-md rounded-lg">
+            <div className="bg-white dark:bg-zinc-950 p-6 shadow-sm rounded-lg">
                 <MedicalLetterhead clinicName={clinic?.name} clinicAddress={clinic?.address} clinicPhone={clinic?.phone} clinicEmail={clinic?.email} className="mb-0 pb-0 border-b-0" />
             </div>
 
             {/* Patient Info Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-card shadow-md rounded-lg gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-card shadow-sm rounded-lg gap-4">
                 <div className="flex items-center gap-4">
                     <Avatar className="h-14 w-14 border-2 border-primary/20">
                         <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">
@@ -692,7 +692,7 @@ export default function NewEncounterPage() {
 
             <div className="flex flex-col gap-8">
                 {/* --- VITALS SECTION (Paper Segment) --- */}
-                <section className="bg-white dark:bg-zinc-900 shadow-md rounded-lg p-8 relative">
+                <section className="bg-white dark:bg-zinc-900 shadow-sm rounded-lg p-8 relative">
                     <div className="absolute top-0 right-0 p-4 opacity-5 rotate-12">
                         <Activity className="w-16 h-16" />
                     </div>
@@ -725,7 +725,7 @@ export default function NewEncounterPage() {
                 </section>
 
                 {/* --- CLINICAL CONSULTATION NOTE (The "Paper" Content) --- */}
-                <section className="bg-white dark:bg-zinc-900 shadow-md rounded-lg p-8 space-y-6 min-h-[600px] relative">
+                <section className="bg-white dark:bg-zinc-900 shadow-sm rounded-lg p-8 space-y-6 min-h-[600px] relative">
                     <div className="absolute inset-0 bg-grid-slate-100/[0.03] pointer-events-none" />
 
                     <div className="relative">

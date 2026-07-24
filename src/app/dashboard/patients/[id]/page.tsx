@@ -62,7 +62,7 @@ function PatientHealthRecordSheet({ patient, clinic, encounters, isPdfMode = fal
 
     return (
         <div className={cn(
-            "bg-white dark:bg-zinc-950 text-black dark:text-zinc-50 font-dm-sans w-full p-8 sm:p-12 shadow-md rounded-lg relative select-none",
+            "bg-white dark:bg-zinc-950 text-black dark:text-zinc-50 font-dm-sans w-full p-8 sm:p-12 shadow-sm rounded-lg relative select-none",
             isPdfMode ? "w-[210mm] min-h-[297mm] p-[20mm] bg-white text-black" : "max-w-none"
         )}>
             {/* Hospital Letterhead */}
@@ -584,7 +584,7 @@ export default function PatientDetailPage() {
                         const enc = encounters?.[currentPage - 2];
                         if (!enc) return null;
                         return (
-                            <div className="bg-white dark:bg-zinc-950 text-black dark:text-zinc-50 font-dm-sans w-full p-8 sm:p-12 shadow-md rounded-lg relative select-none">
+                            <div className="bg-white dark:bg-zinc-950 text-black dark:text-zinc-50 font-dm-sans w-full p-8 sm:p-12 shadow-sm rounded-lg relative select-none">
                                 <MedicalLetterhead clinicName={clinic?.name} clinicAddress={clinic?.address} clinicPhone={clinic?.phone} clinicEmail={clinic?.email} className="border-b border-zinc-200 dark:border-zinc-800 pb-4 mb-6" />
                                 
                                 <div className="flex justify-between items-end border-b-2 border-black dark:border-zinc-800 pb-4 mb-6">

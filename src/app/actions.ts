@@ -748,6 +748,8 @@ const encounterSchema = z.object({
     assessment: z.string().optional(),
     plan: z.string().optional(),
     status: z.enum(['Draft', 'Finalized']).default('Finalized'),
+    vitalsJson: z.string().optional(),
+    prescriptionsJson: z.string().optional(),
 });
 
 export type EncounterActionState = {
@@ -772,7 +774,17 @@ export async function saveEncounterAction(prevState: EncounterActionState, formD
         };
     }
 
-    const { id, subjective, objective, assessment, plan, ...data } = validatedFields.data;
+    const { id, subjective, objective, assessment, plan, vitalsJson, prescriptionsJson, ...data } = validatedFields.data;
+
+    let vitals = [];
+    if (vitalsJson) {
+        try { vitals = JSON.parse(vitalsJson); } catch (e) {}
+    }
+
+    let prescriptions = [];
+    if (prescriptionsJson) {
+        try { prescriptions = JSON.parse(prescriptionsJson); } catch (e) {}
+    }
 
     const encounterData = {
         ...data,
@@ -782,6 +794,8 @@ export async function saveEncounterAction(prevState: EncounterActionState, formD
             assessment: assessment || '',
             plan: plan || '',
         },
+        vitals,
+        prescriptions,
         updatedAt: new Date().toISOString(),
     };
 

@@ -121,11 +121,6 @@ const DoctorDashboard = ({ userProfile, appointments, encounters }: { userProfil
                 <Button asChild size="lg" variant="secondary"><Link href="/dashboard/patients/new"><Users className="mr-2 h-5 w-5" /> New Patient Registration</Link></Button>
                 <Button asChild variant="outline" className="h-11 border-primary/30 hover:bg-primary/5 transition-all"><Link href="/dashboard/appointments/new"><Calendar className="mr-2 h-4 w-4" /> Book Appointment</Link></Button>
             </div>
-
-            <div className="grid gap-6 lg:grid-cols-2 mt-6">
-                <TwinVisualizer />
-                <DrugSafetyChecker />
-            </div>
         </div>
     );
 }

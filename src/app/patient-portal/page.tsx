@@ -10,6 +10,13 @@ import { Label } from "@/components/ui/label";
 import { useToast } from '@/hooks/use-toast';
 import { OrelisLogo } from '@/components/layout/orelis-logo';
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
     Calendar,
     ClipboardList,
     FileText,
@@ -25,6 +32,23 @@ import { LoadingAnimation } from '@/components/layout/loading-animation';
 import { Badge } from '@/components/ui/badge';
 import type { Patient } from '@/lib/types';
 
+const safeFormat = (dateVal: any, formatStr: string): string => {
+    if (!dateVal) return 'N/A';
+    try {
+        if (typeof dateVal.toDate === 'function') {
+            return format(dateVal.toDate(), formatStr);
+        }
+        if (typeof dateVal === 'object' && 'seconds' in dateVal) {
+            return format(new Date(dateVal.seconds * 1000), formatStr);
+        }
+        const d = new Date(dateVal);
+        if (isNaN(d.getTime())) return 'N/A';
+        return format(d, formatStr);
+    } catch (e) {
+        return 'N/A';
+    }
+};
+
 export default function PatientPortal() {
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -36,6 +60,7 @@ export default function PatientPortal() {
     const [encounters, setEncounters] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [selectedEncounter, setSelectedEncounter] = useState<any | null>(null);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -202,7 +227,7 @@ export default function PatientPortal() {
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-muted-foreground">Registered</span>
-                                        <span>{format(new Date(patient.registrationDate), 'PP')}</span>
+                                        <span>{safeFormat(patient.registrationDate, 'PP')}</span>
                                     </div>
                                 </div>
                             </div>
@@ -225,13 +250,13 @@ export default function PatientPortal() {
                                             <div key={appt.id} className="flex items-center justify-between p-4 rounded-xl bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors">
                                                 <div className="flex items-center gap-4">
                                                     <div className="text-center px-3 py-1 bg-primary/20 rounded-lg">
-                                                        <p className="text-xs font-bold">{format(new Date(appt.date), 'MMM')}</p>
-                                                        <p className="text-xl font-bold">{format(new Date(appt.date), 'dd')}</p>
+                                                        <p className="text-xs font-bold">{safeFormat(appt.appointmentDate, 'MMM')}</p>
+                                                        <p className="text-xl font-bold">{safeFormat(appt.appointmentDate, 'dd')}</p>
                                                     </div>
                                                     <div>
                                                         <p className="font-semibold">{appt.type}</p>
                                                         <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                                            <Clock className="h-3 w-3" /> {format(new Date(appt.date), 'p')}
+                                                            <Clock className="h-3 w-3" /> {safeFormat(appt.appointmentDate, 'p')}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -263,7 +288,7 @@ export default function PatientPortal() {
                                             <div key={enc.id} className="p-4 rounded-xl bg-card/40 border border-primary/10 hover:border-primary/30 transition-all group">
                                                 <div className="flex justify-between items-start mb-2">
                                                     <div>
-                                                        <p className="text-xs font-bold text-primary uppercase mb-1">{format(new Date(enc.date), 'PPPP')}</p>
+                                                        <p className="text-xs font-bold text-primary uppercase mb-1">{safeFormat(enc.date, 'PPPP')}</p>
                                                         <h4 className="font-semibold">Clinical Encounter: {enc.type}</h4>
                                                     </div>
                                                     <Badge className="bg-primary/20 text-primary border-none">{enc.status}</Badge>
@@ -278,9 +303,9 @@ export default function PatientPortal() {
                                                         <p className="text-xs line-clamp-2 mt-1">{enc.prescriptions?.join(', ') || 'None prescribed'}</p>
                                                     </div>
                                                 </div>
-                                                <div className="mt-4 pt-4 border-t border-dashed border-primary/10 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="mt-4 pt-4 border-t border-dashed border-primary/10 flex justify-between items-center transition-opacity">
                                                     <p className="text-[10px] text-muted-foreground italic">Digitally signed by {enc.doctorName}</p>
-                                                    <Button variant="link" size="sm" className="h-auto p-0 text-primary text-xs">View Full Details</Button>
+                                                    <Button variant="link" size="sm" onClick={() => setSelectedEncounter(enc)} className="h-auto p-0 text-primary text-xs">View Full Details</Button>
                                                 </div>
                                             </div>
                                         ))}
@@ -289,7 +314,8 @@ export default function PatientPortal() {
                                     <div className="py-8 text-center bg-muted/5 rounded-xl border border-dashed">
                                         <p className="text-sm text-muted-foreground">No medical encounters recorded yet.</p>
                                     </div>
-                                )}
+                                )
+                                }
                             </CardContent>
                         </Card>
                     </div>
@@ -301,6 +327,99 @@ export default function PatientPortal() {
                     &copy; 2026 Orelis Health. All patient data is encrypted and secure.
                 </p>
             </footer>
+
+            <Dialog open={!!selectedEncounter} onOpenChange={(open) => !open && setSelectedEncounter(null)}>
+                <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-primary" /> {selectedEncounter?.type || 'Encounter Details'}
+                        </DialogTitle>
+                        <DialogDescription>
+                            Date: {selectedEncounter ? safeFormat(selectedEncounter.date, 'PPPP p') : ''} | Provider: {selectedEncounter?.doctorName || 'N/A'}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {selectedEncounter && (
+                        <div className="space-y-6 py-4">
+                            {/* SOAP Notes */}
+                            <div className="space-y-4">
+                                <h3 className="font-semibold text-sm text-primary uppercase tracking-wider border-b border-primary/15 pb-1">Clinical SOAP Note</h3>
+                                
+                                {selectedEncounter.soap?.subjective && (
+                                    <div className="space-y-1">
+                                        <h4 className="text-xs font-bold text-muted-foreground uppercase">Subjective (History & Complaints)</h4>
+                                        <p className="text-sm bg-primary/5 p-3 rounded-lg border border-primary/10 whitespace-pre-wrap">{selectedEncounter.soap.subjective}</p>
+                                    </div>
+                                )}
+
+                                {selectedEncounter.soap?.objective && (
+                                    <div className="space-y-1">
+                                        <h4 className="text-xs font-bold text-muted-foreground uppercase">Objective (Physical Examination & Vitals Summary)</h4>
+                                        <p className="text-sm bg-primary/5 p-3 rounded-lg border border-primary/10 whitespace-pre-wrap">{selectedEncounter.soap.objective}</p>
+                                    </div>
+                                )}
+
+                                {selectedEncounter.soap?.assessment && (
+                                    <div className="space-y-1">
+                                        <h4 className="text-xs font-bold text-muted-foreground uppercase">Assessment (Diagnosis & Clinical Impressions)</h4>
+                                        <p className="text-sm bg-primary/5 p-3 rounded-lg border border-primary/10 whitespace-pre-wrap">{selectedEncounter.soap.assessment}</p>
+                                    </div>
+                                )}
+
+                                {selectedEncounter.soap?.plan && (
+                                    <div className="space-y-1">
+                                        <h4 className="text-xs font-bold text-muted-foreground uppercase">Plan & Treatment</h4>
+                                        <p className="text-sm bg-primary/5 p-3 rounded-lg border border-primary/10 whitespace-pre-wrap">{selectedEncounter.soap.plan}</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Vitals / Observations */}
+                            {selectedEncounter.vitals && selectedEncounter.vitals.length > 0 && (
+                                <div className="space-y-3">
+                                    <h3 className="font-semibold text-sm text-primary uppercase tracking-wider border-b border-primary/15 pb-1">Vitals & Observations</h3>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                        {selectedEncounter.vitals.map((v: any, index: number) => (
+                                            <div key={v.id || index} className="p-3 rounded-xl bg-card border border-primary/10 flex flex-col justify-center">
+                                                <span className="text-[10px] text-muted-foreground uppercase font-bold">{v.type?.replace('_', ' ')}</span>
+                                                <span className="text-lg font-bold text-foreground mt-1">{v.value} <span className="text-xs font-normal text-muted-foreground">{v.unit}</span></span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Prescriptions */}
+                            {selectedEncounter.prescriptions && selectedEncounter.prescriptions.length > 0 && (
+                                <div className="space-y-2">
+                                    <h3 className="font-semibold text-sm text-primary uppercase tracking-wider border-b border-primary/15 pb-1">Prescriptions</h3>
+                                    <ul className="list-disc pl-5 space-y-1 text-sm text-foreground">
+                                        {selectedEncounter.prescriptions.map((med: string, index: number) => (
+                                            <li key={index} className="font-medium text-primary">{med}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {/* Lab Orders */}
+                            {selectedEncounter.labOrders && selectedEncounter.labOrders.length > 0 && (
+                                <div className="space-y-2">
+                                    <h3 className="font-semibold text-sm text-primary uppercase tracking-wider border-b border-primary/15 pb-1">Lab Orders</h3>
+                                    <ul className="list-disc pl-5 space-y-1 text-sm text-foreground">
+                                        {selectedEncounter.labOrders.map((lab: string, index: number) => (
+                                            <li key={index} className="font-medium text-primary">{lab}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            <div className="text-right text-[10px] text-muted-foreground italic pt-4 border-t border-dashed border-primary/10">
+                                Electronic Health Record • Digitally signed by Dr. {selectedEncounter.doctorName}
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

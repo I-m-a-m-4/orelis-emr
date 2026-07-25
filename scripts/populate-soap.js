@@ -154,7 +154,7 @@ async function populate() {
       encounterDate.setDate(encounterDate.getDate() - (15 - i * 8));
       
       // Combine SOAP fields into a single long subjective text since we are moving away from rigid SOAP boxes
-      const unifiedNoteText = `${mockEnc.soap.subjective}\n\n[OBJECTIVE FINDINGS]\n${mockEnc.soap.objective}\n\n[ASSESSMENT]\n${mockEnc.soap.assessment}\n\n[PLAN & TREATMENT]\n${mockEnc.soap.plan}`;
+      const unifiedNoteText = `${mockEnc.soap.subjective}\n\n${mockEnc.soap.objective}\n\n${mockEnc.soap.assessment}\n\n${mockEnc.soap.plan}`;
       
       const encData = {
         clinicId: clinicId,

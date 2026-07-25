@@ -24,6 +24,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TwinVisualizer } from '@/components/dashboard/TwinVisualizer';
 import { WhatIfCoach } from '@/components/dashboard/WhatIfCoach';
+import { DrugSafetyChecker } from '@/components/dashboard/DrugSafetyChecker';
+import { LabReportExplainer } from '@/components/dashboard/LabReportExplainer';
 
 
 
@@ -722,6 +724,12 @@ export default function PatientDetailPage() {
 
                 <div className="lg:col-span-2 flex flex-col gap-6">
                     <WhatIfCoach />
+
+                    {/* HOLON Clinical Safety and Translation Utilities */}
+                    <div className="grid grid-cols-1 gap-6">
+                        <DrugSafetyChecker />
+                        <LabReportExplainer />
+                    </div>
 
                     {/* Interactive Encounter Log for Doctors */}
                     <Card className="border-border bg-card shadow-sm">

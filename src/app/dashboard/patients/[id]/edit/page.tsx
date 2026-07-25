@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Loader2, Copy } from "lucide-react";
+import { CalendarIcon, Loader2, Copy, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from '@/components/ui/textarea';
@@ -40,6 +40,26 @@ function EditPatientForm({ patient }: { patient: Patient }) {
     const [dob, setDob] = useState<Date | undefined>(patient.dob ? new Date(patient.dob) : undefined);
     const [currentCode, setCurrentCode] = useState(patient.patientCode || '');
 
+    const [allergies, setAllergies] = useState<any[]>(patient.allergies || [
+        { name: 'Bee Stings', severity: 'Severe', reaction: 'Anaphylactic Shock' },
+        { name: 'Dogs/pets', severity: 'Severe', reaction: 'Anaphylactic Shock' },
+        { name: 'Peanuts', severity: 'Severe', reaction: 'Anaphylactic Shock' },
+        { name: 'Penicillin', severity: 'Moderate to severe', reaction: 'Shortness of breath' },
+        { name: 'Codeine', severity: 'Moderate', reaction: 'Hives' },
+        { name: 'Latex', severity: 'Moderate', reaction: 'Hives' },
+        { name: 'Shellfish', severity: 'Moderate', reaction: 'Hives' },
+        { name: 'Soy', severity: 'Moderate', reaction: 'Hives' }
+    ]);
+    const [immunizations, setImmunizations] = useState<any[]>(patient.immunizations || [
+        { name: 'Influenza Virus Vaccine', due: 'Dec 2026', type: 'Intramuscular injection', value: '50 / mcg', instructions: 'Possible flu-like symptoms for 3 days' },
+        { name: 'Tetanus and Diphtheria Toxoids', due: 'Jan 2027', type: 'Intramuscular injection', value: '50 / mcg', instructions: 'Mild pain or soreness in the local area' }
+    ]);
+    const [planOfCare, setPlanOfCare] = useState<any[]>(patient.planOfCare || [
+        { name: 'Office consultation', date: '1 DEC 2026', instructions: 'General follow-up evaluation' },
+        { name: 'Chest X-ray', date: '15 DEC 2026', instructions: 'Standard screening' },
+        { name: 'Sputum Culture', date: '8 JAN 2027', instructions: 'Lab work check' }
+    ]);
+
     const generateCode = () => {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         let result = '';
@@ -58,6 +78,48 @@ function EditPatientForm({ patient }: { patient: Patient }) {
         });
     }
 
+    const handleAllergyChange = (index: number, key: string, val: string) => {
+        const updated = [...allergies];
+        updated[index][key] = val;
+        setAllergies(updated);
+    };
+
+    const addAllergy = () => {
+        setAllergies([...allergies, { name: '', severity: '', reaction: '' }]);
+    };
+
+    const removeAllergy = (index: number) => {
+        setAllergies(allergies.filter((_, i) => i !== index));
+    };
+
+    const handleImmunizationChange = (index: number, key: string, val: string) => {
+        const updated = [...immunizations];
+        updated[index][key] = val;
+        setImmunizations(updated);
+    };
+
+    const addImmunization = () => {
+        setImmunizations([...immunizations, { name: '', due: '', type: '', value: '', instructions: '' }]);
+    };
+
+    const removeImmunization = (index: number) => {
+        setImmunizations(immunizations.filter((_, i) => i !== index));
+    };
+
+    const handlePlanChange = (index: number, key: string, val: string) => {
+        const updated = [...planOfCare];
+        updated[index][key] = val;
+        setPlanOfCare(updated);
+    };
+
+    const addPlan = () => {
+        setPlanOfCare([...planOfCare, { name: '', date: '', instructions: '' }]);
+    };
+
+    const removePlan = (index: number) => {
+        setPlanOfCare(planOfCare.filter((_, i) => i !== index));
+    };
+
     useEffect(() => {
         if (state.message) {
             toast({
@@ -75,6 +137,10 @@ function EditPatientForm({ patient }: { patient: Patient }) {
         <form action={formAction}>
             <input type="hidden" name="patientId" value={patient.id} />
             <input type="hidden" name="clinicId" value={patient.clinicId} />
+            <input type="hidden" name="allergiesJson" value={JSON.stringify(allergies)} />
+            <input type="hidden" name="immunizationsJson" value={JSON.stringify(immunizations)} />
+            <input type="hidden" name="planOfCareJson" value={JSON.stringify(planOfCare)} />
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card className="md:col-span-2 border-dashed border-primary/20 bg-primary/5">
                     <CardHeader className="pb-2">
@@ -152,6 +218,131 @@ function EditPatientForm({ patient }: { patient: Patient }) {
                         <div className="space-y-2"><Label htmlFor="phone">Phone Number</Label><Input id="phone" name="phone" defaultValue={patient.phone} /></div>
                         <div className="space-y-2"><Label htmlFor="email">Email Address</Label><Input id="email" name="email" type="email" defaultValue={patient.email} /></div>
                         <div className="space-y-2 md:col-span-2"><Label htmlFor="address">Address</Label><Input id="address" name="address" defaultValue={patient.address} /></div>
+                    </CardContent>
+                </Card>
+
+                {/* Allergies Card Section */}
+                <Card className="md:col-span-2 border-dashed">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle>Allergies</CardTitle>
+                        <Button type="button" variant="outline" size="sm" onClick={addAllergy} className="gap-1">
+                            <Plus className="h-4 w-4" /> Add Allergy
+                        </Button>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {allergies.length === 0 ? (
+                            <p className="text-xs text-muted-foreground italic">No allergies recorded.</p>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-3">
+                                {allergies.map((allergy, idx) => (
+                                    <div key={idx} className="flex gap-2 items-end border border-muted p-3 rounded-lg relative">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 flex-1">
+                                            <div className="space-y-1">
+                                                <Label className="text-[10px]">Allergen Name</Label>
+                                                <Input value={allergy.name || ''} onChange={e => handleAllergyChange(idx, 'name', e.target.value)} placeholder="e.g. Penicillin" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-[10px]">Severity</Label>
+                                                <Input value={allergy.severity || ''} onChange={e => handleAllergyChange(idx, 'severity', e.target.value)} placeholder="e.g. Severe" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-[10px]">Reaction</Label>
+                                                <Input value={allergy.reaction || ''} onChange={e => handleAllergyChange(idx, 'reaction', e.target.value)} placeholder="e.g. Hives" />
+                                            </div>
+                                        </div>
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => removeAllergy(idx)} className="text-destructive hover:bg-destructive/10">
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Immunizations Card Section */}
+                <Card className="md:col-span-2 border-dashed">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle>Immunizations</CardTitle>
+                        <Button type="button" variant="outline" size="sm" onClick={addImmunization} className="gap-1">
+                            <Plus className="h-4 w-4" /> Add Immunization
+                        </Button>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {immunizations.length === 0 ? (
+                            <p className="text-xs text-muted-foreground italic">No upcoming or recorded immunizations.</p>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-3">
+                                {immunizations.map((imm, idx) => (
+                                    <div key={idx} className="flex gap-2 items-end border border-muted p-3 rounded-lg">
+                                        <div className="grid grid-cols-1 md:grid-cols-5 gap-2 flex-1">
+                                            <div className="space-y-1">
+                                                <Label className="text-[10px]">Vaccine Name</Label>
+                                                <Input value={imm.name || ''} onChange={e => handleImmunizationChange(idx, 'name', e.target.value)} placeholder="e.g. Influenza" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-[10px]">Due Date/Interval</Label>
+                                                <Input value={imm.due || ''} onChange={e => handleImmunizationChange(idx, 'due', e.target.value)} placeholder="e.g. Dec 2026" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-[10px]">Route/Type</Label>
+                                                <Input value={imm.type || ''} onChange={e => handleImmunizationChange(idx, 'type', e.target.value)} placeholder="e.g. Intramuscular" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-[10px]">Value/Unit</Label>
+                                                <Input value={imm.value || ''} onChange={e => handleImmunizationChange(idx, 'value', e.target.value)} placeholder="e.g. 50 mcg" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-[10px]">Instructions</Label>
+                                                <Input value={imm.instructions || ''} onChange={e => handleImmunizationChange(idx, 'instructions', e.target.value)} placeholder="e.g. Watch for fever" />
+                                            </div>
+                                        </div>
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => removeImmunization(idx)} className="text-destructive hover:bg-destructive/10">
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Plan of Care Card Section */}
+                <Card className="md:col-span-2 border-dashed">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle>Plan of Care</CardTitle>
+                        <Button type="button" variant="outline" size="sm" onClick={addPlan} className="gap-1">
+                            <Plus className="h-4 w-4" /> Add Care Plan
+                        </Button>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {planOfCare.length === 0 ? (
+                            <p className="text-xs text-muted-foreground italic">No plan of care records.</p>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-3">
+                                {planOfCare.map((plan, idx) => (
+                                    <div key={idx} className="flex gap-2 items-end border border-muted p-3 rounded-lg">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 flex-1">
+                                            <div className="space-y-1">
+                                                <Label className="text-[10px]">Task/Assessment Name</Label>
+                                                <Input value={plan.name || ''} onChange={e => handlePlanChange(idx, 'name', e.target.value)} placeholder="e.g. Office consultation" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-[10px]">Planned Date</Label>
+                                                <Input value={plan.date || ''} onChange={e => handlePlanChange(idx, 'date', e.target.value)} placeholder="e.g. 15 DEC 2026" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-[10px]">Instructions</Label>
+                                                <Input value={plan.instructions || ''} onChange={e => handlePlanChange(idx, 'instructions', e.target.value)} placeholder="e.g. General checkup" />
+                                            </div>
+                                        </div>
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => removePlan(idx)} className="text-destructive hover:bg-destructive/10">
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 

@@ -603,6 +603,9 @@ const updatePatientSchema = z.object({
     nextOfKinPhone: z.string().optional(),
     nextOfKinAddress: z.string().optional(),
     patientCode: z.string().optional(),
+    allergiesJson: z.string().optional(),
+    immunizationsJson: z.string().optional(),
+    planOfCareJson: z.string().optional(),
 });
 
 export type UpdatePatientActionState = {
@@ -629,6 +632,19 @@ export async function updatePatientAction(prevState: UpdatePatientActionState, f
 
     const { patientId, clinicId, ...patientData } = validatedFields.data;
 
+    let allergies = [];
+    if (patientData.allergiesJson) {
+        try { allergies = JSON.parse(patientData.allergiesJson); } catch (e) {}
+    }
+    let immunizations = [];
+    if (patientData.immunizationsJson) {
+        try { immunizations = JSON.parse(patientData.immunizationsJson); } catch (e) {}
+    }
+    let planOfCare = [];
+    if (patientData.planOfCareJson) {
+        try { planOfCare = JSON.parse(patientData.planOfCareJson); } catch (e) {}
+    }
+
     const dataToUpdate = {
         firstName: patientData.firstName,
         surname: patientData.surname,
@@ -650,6 +666,9 @@ export async function updatePatientAction(prevState: UpdatePatientActionState, f
             address: patientData.nextOfKinAddress,
         },
         patientCode: patientData.patientCode,
+        allergies,
+        immunizations,
+        planOfCare,
     };
 
     try {

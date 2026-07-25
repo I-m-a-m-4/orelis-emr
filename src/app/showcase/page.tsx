@@ -47,7 +47,7 @@ export default function ShowcasePage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 5000); // Set loading time to 5 seconds
+    }, 400); // Set loading time to 400ms
 
     return () => clearTimeout(timer);
   }, []);

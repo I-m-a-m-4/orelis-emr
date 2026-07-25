@@ -34,7 +34,8 @@ import {
     BrainCircuit,
     Wand2,
     Loader2,
-    Download
+    Download,
+    ShieldAlert
 } from 'lucide-react';
 import type { Patient, UserProfile, Encounter, Observation } from '@/lib/types';
 import { LoadingAnimation } from '@/components/layout/loading-animation';
@@ -46,6 +47,7 @@ import { MedicalLetterhead } from '@/components/medical/letterhead';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Clinic } from '@/lib/types';
+import { MOCK_DRUG_INTERACTIONS } from '@/lib/ontomorph';
 
 export default function NewEncounterPage() {
     const searchParams = useSearchParams();
@@ -128,6 +130,29 @@ export default function NewEncounterPage() {
     const removePrescription = (idx: number) => {
         setPrescriptions(prescriptions.filter((_, i) => i !== idx));
     };
+
+    const activeInteractions = useMemo(() => {
+        const found: any[] = [];
+        const knownDrugs = ["Aspirin", "Warfarin", "Ibuprofen", "Lisinopril", "Simvastatin", "Amlodipine", "Metformin"];
+        
+        const presentDrugs = knownDrugs.filter(known => 
+            prescriptions.some(rx => rx.toLowerCase().includes(known.toLowerCase()))
+        );
+
+        for (let i = 0; i < presentDrugs.length; i++) {
+            for (let j = i + 1; j < presentDrugs.length; j++) {
+                const pair1 = `${presentDrugs[i]} + ${presentDrugs[j]}`;
+                const pair2 = `${presentDrugs[j]} + ${presentDrugs[i]}`;
+                
+                if (MOCK_DRUG_INTERACTIONS[pair1]) {
+                    found.push({ drugs: pair1, details: MOCK_DRUG_INTERACTIONS[pair1][0] });
+                } else if (MOCK_DRUG_INTERACTIONS[pair2]) {
+                    found.push({ drugs: pair2, details: MOCK_DRUG_INTERACTIONS[pair2][0] });
+                }
+            }
+        }
+        return found;
+    }, [prescriptions]);
 
     const clinicRef = useMemo(() => {
         if (!userProfile?.clinicId || !firestore) return null;
@@ -626,6 +651,43 @@ export default function NewEncounterPage() {
                                 </div>
                             ))}
                         </div>
+
+                        {/* Drug Safety Assessment Alert Box */}
+                        {prescriptions.length > 0 && (
+                            <div className="mt-6 pt-6 border-t border-dashed border-zinc-300 dark:border-zinc-800">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-1.5">
+                                    <Pill className="h-3 w-3 text-emerald-400" /> HOLON Drug Safety Checker
+                                </div>
+                                {activeInteractions.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {activeInteractions.map((inter, idx) => (
+                                            <div key={idx} className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl space-y-1">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs font-bold text-red-400 flex items-center gap-1.5">
+                                                        <ShieldAlert className="h-4 w-4 text-red-400" />
+                                                        Critical Interaction: {inter.drugs}
+                                                    </span>
+                                                    <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/30 text-[9px] font-bold">
+                                                        {inter.details.severity} Risk
+                                                    </Badge>
+                                                </div>
+                                                <p className="text-[10px] text-zinc-300 leading-normal pl-5">
+                                                    {inter.details.description}
+                                                </p>
+                                                <div className="text-[8px] text-muted-foreground text-right font-mono mt-1">
+                                                    Source: {inter.details.source}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-2">
+                                        <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                                        <p className="text-xs text-emerald-400 font-medium">No interactions found — The selected prescriptions are safe for concurrent administration.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </section>
 

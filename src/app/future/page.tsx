@@ -15,7 +15,7 @@ export default function FuturePage() {
    useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 2500); // Simulate a loading time
+    }, 400); // Simulate a loading time
 
     return () => clearTimeout(timer);
   }, []);

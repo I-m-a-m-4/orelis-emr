@@ -116,7 +116,10 @@ export function DrugSafetyChecker() {
 
             {/* Suggestions Dropdown overlay */}
             {showDropdown && (
-              <div className="absolute z-[99] w-full mt-1 bg-white dark:bg-zinc-950 border border-border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              <div 
+                className="absolute z-[99] w-full mt-1 bg-white dark:bg-zinc-950 border border-border rounded-lg shadow-lg"
+                style={{ maxHeight: '200px', overflowY: 'auto' }}
+              >
                 {filteredDrugs.length > 0 ? (
                   filteredDrugs.map(drug => (
                     <button

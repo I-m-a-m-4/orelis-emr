@@ -32,7 +32,7 @@ export default function DemoVideoPage() {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
             <div className="relative rounded-xl overflow-hidden aspect-video bg-black shadow-inner">
               <video
-                src="/orelis%20demo%20video.mp4"
+                src="/orelis-demo-video.mp4"
                 controls
                 playsInline
                 className="w-full h-full object-cover"

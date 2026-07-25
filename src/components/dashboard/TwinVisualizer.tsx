@@ -5,7 +5,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Activity, ShieldAlert, Heart, Zap, RefreshCw, Layers } from 'lucide-react';
-import { MOCK_TWIN_SYSTEMS, getDTP } from '@/lib/ontomorph';
+import { MOCK_TWIN_SYSTEMS } from '@/lib/ontomorph';
+import { runOntomorphSimulationAction } from '@/app/actions/ontomorph';
 
 export function TwinVisualizer({ patientId }: { patientId?: string }) {
   const [selectedSystem, setSelectedSystem] = useState<'cardiovascular' | 'metabolic' | 'respiratory'>('cardiovascular');
@@ -54,23 +55,16 @@ export function TwinVisualizer({ patientId }: { patientId?: string }) {
 
   const handleRunTrajectorySimulation = async () => {
     setIsSimulating(true);
-    setLogs(l => ["[Ontomorph API] Initializing DTP client connection...", ...l.slice(0, 4)]);
+    setLogs(l => ["[Ontomorph API] Initializing trajectory simulation...", ...l.slice(0, 4)]);
     
     try {
-      const dtp = getDTP();
-      if (dtp) {
-        setLogs(l => ["[Ontomorph API] Resolving digital twin authorization grant...", ...l.slice(0, 4)]);
-        // Connect to twin using a synthetic grant token for the patient
-        const twin = await dtp.twins.connect(`grant-token-for-${patientId || 'patient-demo'}`);
-        
-        setLogs(l => ["[Ontomorph API] Executing LDL trajectory simulation...", ...l.slice(0, 4)]);
-        const result = await twin.simulate("ldl_trajectory", {});
-        
-        setLogs(l => ["[Ontomorph API] Simulation succeeded. Retrieving ASCVD scalar projections...", ...l.slice(0, 4)]);
+      const result = await runOntomorphSimulationAction(patientId || 'patient-demo', 'ldl_trajectory');
+      if (result.success) {
+        setLogs(l => ["[Ontomorph API] Simulation succeeded. Retrieving projections...", ...l.slice(0, 4)]);
         setSimResult({
-          scalarOutputs: result.scalarOutputs || { "10YearRiskChange": "-2.4%", optimalLdlThreshold: "70 mg/dL" },
-          disclaimer: result.disclaimer || "Calculated using standard ASCVD risk factors.",
-          narration: result.narration || "Trajectory simulation complete. Risk shows downward curve if LDL is lowered."
+          scalarOutputs: result.scalarOutputs,
+          disclaimer: result.disclaimer,
+          narration: result.narration
         });
       } else {
         // Fallback sandbox simulation with delay

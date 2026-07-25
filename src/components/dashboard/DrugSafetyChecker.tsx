@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShieldAlert, Trash2, CheckCircle2, Pill, Search } from 'lucide-react';
 import { MOCK_DRUG_INTERACTIONS } from '@/lib/ontomorph';
+import { searchDrugsAction, checkDrugInteractionsAction } from '@/app/actions/ontomorph';
 
 // Expanded list of 50+ real-world clinical drugs
 const CLINICAL_DRUGS = [
@@ -20,10 +21,46 @@ const CLINICAL_DRUGS = [
 ].sort();
 
 export function DrugSafetyChecker() {
-  const [selectedDrugs, setSelectedDrugs] = useState<string[]>(["Aspirin"]);
+  const [selectedDrugs, setSelectedDrugs] = useState<string[]>(["Aspirin", "Warfarin"]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [interactions, setInteractions] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<string[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+
+  // Debounced live drug search from HOLON
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      const res = await searchDrugsAction(searchTerm);
+      if (res.success && res.hits) {
+        const names = res.hits
+          .map((h: any) => h.conceptName)
+          .filter((name: string) => !selectedDrugs.includes(name));
+        setSearchResults(names);
+      } else {
+        const fallback = CLINICAL_DRUGS.filter(d => 
+          d.toLowerCase().includes(searchTerm.toLowerCase()) &&
+          !selectedDrugs.includes(d)
+        );
+        setSearchResults(fallback);
+      }
+      setIsSearching(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, selectedDrugs]);
+
+  // Initial check on mount
+  useEffect(() => {
+    checkInteractions(selectedDrugs);
+  }, []);
 
   const handleAddDrug = (name: string) => {
     if (!name || selectedDrugs.includes(name)) return;
@@ -40,31 +77,42 @@ export function DrugSafetyChecker() {
     checkInteractions(newList);
   };
 
-  const checkInteractions = (drugs: string[]) => {
-    const found: any[] = [];
-    
-    // Check combinations
-    for (let i = 0; i < drugs.length; i++) {
-      for (let j = i + 1; j < drugs.length; j++) {
-        const pair1 = `${drugs[i]} + ${drugs[j]}`;
-        const pair2 = `${drugs[j]} + ${drugs[i]}`;
-        
-        if (MOCK_DRUG_INTERACTIONS[pair1]) {
-          found.push({ drugs: pair1, details: MOCK_DRUG_INTERACTIONS[pair1][0] });
-        } else if (MOCK_DRUG_INTERACTIONS[pair2]) {
-          found.push({ drugs: pair2, details: MOCK_DRUG_INTERACTIONS[pair2][0] });
+  const checkInteractions = async (drugs: string[]) => {
+    setIsChecking(true);
+    try {
+      const res = await checkDrugInteractionsAction(drugs);
+      if (res.success && res.interactions) {
+        setInteractions(res.interactions.map((item: any) => ({
+          drugs: item.drugs,
+          details: {
+            severity: item.severity,
+            description: item.description,
+            source: item.source
+          }
+        })));
+      } else {
+        // Fallback to local check
+        const found: any[] = [];
+        for (let i = 0; i < drugs.length; i++) {
+          for (let j = i + 1; j < drugs.length; j++) {
+            const pair1 = `${drugs[i]} + ${drugs[j]}`;
+            const pair2 = `${drugs[j]} + ${drugs[i]}`;
+            
+            if (MOCK_DRUG_INTERACTIONS[pair1]) {
+              found.push({ drugs: pair1, details: MOCK_DRUG_INTERACTIONS[pair1][0] });
+            } else if (MOCK_DRUG_INTERACTIONS[pair2]) {
+              found.push({ drugs: pair2, details: MOCK_DRUG_INTERACTIONS[pair2][0] });
+            }
+          }
         }
+        setInteractions(found);
       }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsChecking(false);
     }
-    
-    setInteractions(found);
   };
-
-  // Filter clinical drugs based on the search query
-  const filteredDrugs = CLINICAL_DRUGS.filter(d => 
-    d.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    !selectedDrugs.includes(d)
-  );
 
   return (
     <Card className="border border-dashed bg-card backdrop-blur-sm relative overflow-visible shadow-sm">
@@ -93,7 +141,7 @@ export function DrugSafetyChecker() {
               <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Type to search drugs (e.g. Nitroglycerin, Sildenafil)..."
+                placeholder={isSearching ? "Searching HOLON..." : "Type to search drugs (e.g. Nitroglycerin, Sildenafil)..."}
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -120,8 +168,8 @@ export function DrugSafetyChecker() {
                 className="absolute z-[99] w-full mt-1 bg-white dark:bg-zinc-950 border border-border rounded-lg shadow-lg"
                 style={{ maxHeight: '200px', overflowY: 'auto' }}
               >
-                {filteredDrugs.length > 0 ? (
-                  filteredDrugs.map(drug => (
+                {searchResults.length > 0 ? (
+                  searchResults.map(drug => (
                     <button
                       key={drug}
                       type="button"
@@ -137,7 +185,7 @@ export function DrugSafetyChecker() {
                   ))
                 ) : (
                   <div className="px-4 py-3 text-xs text-muted-foreground italic text-center">
-                    No matching drugs found
+                    {isSearching ? "Searching HOLON DB..." : "No matching drugs found"}
                   </div>
                 )}
               </div>

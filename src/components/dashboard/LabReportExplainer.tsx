@@ -1,19 +1,60 @@
-'use client';
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { HelpCircle, FileText, Search, BookOpen } from 'lucide-react';
+import { HelpCircle, FileText, Search, BookOpen, RefreshCw } from 'lucide-react';
 import { MOCK_LOINC_CONCEPTS } from '@/lib/ontomorph';
+import { explainLabConceptAction } from '@/app/actions/ontomorph';
 
 export function LabReportExplainer() {
   const [selectedLoinc, setSelectedLoinc] = useState("2339-0");
+  const [customLoinc, setCustomLoinc] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentConcept, setCurrentConcept] = useState<any>({
+    name: "Glucose [Mass/volume] in Blood",
+    range: "70 - 99 mg/dL",
+    explanation: "Measures the sugar levels in your blood. Your level of 105 mg/dL is slightly elevated, indicating a pre-diabetic metabolic profile.",
+    status: "Mildly Elevated"
+  });
 
-  const currentConcept = MOCK_LOINC_CONCEPTS[selectedLoinc] || {
-    name: "Unknown lab concept",
-    range: "N/A",
-    explanation: "No explanation details found.",
-    status: "Unknown"
+  useEffect(() => {
+    const fetchExplanation = async () => {
+      setIsLoading(true);
+      const res = await explainLabConceptAction(selectedLoinc);
+      if (res.success) {
+        let status = "Normal";
+        if (selectedLoinc === "2339-0") status = "Mildly Elevated";
+        else if (selectedLoinc === "18262-6") status = "Borderline High";
+        
+        setCurrentConcept({
+          name: res.conceptName,
+          range: res.range,
+          explanation: res.explanation,
+          status
+        });
+      } else {
+        const mock = MOCK_LOINC_CONCEPTS[selectedLoinc];
+        if (mock) {
+          setCurrentConcept(mock);
+        } else {
+          setCurrentConcept({
+            name: `LOINC ${selectedLoinc} Concept`,
+            range: "Unknown Range",
+            explanation: "No explanation details found.",
+            status: "Unknown"
+          });
+        }
+      }
+      setIsLoading(false);
+    };
+
+    fetchExplanation();
+  }, [selectedLoinc]);
+
+  const handleCustomSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (customLoinc.trim()) {
+      setSelectedLoinc(customLoinc.trim());
+    }
   };
 
   const getStatusBadgeColor = (status: string) => {
@@ -45,6 +86,24 @@ export function LabReportExplainer() {
           <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Select Lab Metric
           </div>
+          
+          {/* Custom LOINC Lookup Form */}
+          <form onSubmit={handleCustomSearch} className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Enter LOINC code (e.g. 4544-3)..."
+              value={customLoinc}
+              onChange={(e) => setCustomLoinc(e.target.value)}
+              className="flex-1 px-3 py-1.5 bg-muted/40 border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 font-mono"
+            />
+            <button
+              type="submit"
+              className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:bg-primary/95 transition"
+            >
+              Lookup
+            </button>
+          </form>
+
           <div className="space-y-2">
             {Object.entries(MOCK_LOINC_CONCEPTS).map(([code, concept]) => (
               <button
@@ -67,7 +126,13 @@ export function LabReportExplainer() {
         </div>
 
         {/* Translation Explanation Box */}
-        <div className="md:col-span-7 flex flex-col justify-between p-5 bg-muted/20 border border-border rounded-2xl">
+        <div className="md:col-span-7 flex flex-col justify-between p-5 bg-muted/20 border border-border rounded-2xl relative min-h-[220px]">
+          {isLoading && (
+            <div className="absolute inset-0 bg-background/50 backdrop-blur-xs flex items-center justify-center rounded-2xl z-10">
+              <RefreshCw className="h-6 w-6 text-primary animate-spin" />
+            </div>
+          )}
+          
           <div>
             <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
               <div>

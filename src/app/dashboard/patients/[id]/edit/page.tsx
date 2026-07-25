@@ -2,9 +2,9 @@
 
 import { useActionState, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useDoc, useFirestore, useUser } from '@/firebase';
-import type { Patient, UserProfile, Clinic } from '@/lib/types';
-import { doc } from 'firebase/firestore';
+import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
+import type { Patient, UserProfile, Clinic, Encounter } from '@/lib/types';
+import { doc, collection, query, where, orderBy } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useFormStatus } from 'react-dom';
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Loader2, Copy, Plus, Trash2, ArrowLeft, Shield, User as UserIcon, Pill, Stethoscope } from "lucide-react";
+import { CalendarIcon, Loader2, Copy, Plus, Trash2, ArrowLeft, Shield, User as UserIcon, Pill, Stethoscope, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from '@/components/ui/textarea';
@@ -26,6 +26,8 @@ import { TwinVisualizer } from '@/components/dashboard/TwinVisualizer';
 import { WhatIfCoach } from '@/components/dashboard/WhatIfCoach';
 import { DrugSafetyChecker } from '@/components/dashboard/DrugSafetyChecker';
 import { LabReportExplainer } from '@/components/dashboard/LabReportExplainer';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 function SubmitButton() {
     const { pending } = useFormStatus();
@@ -153,7 +155,7 @@ function EditPatientForm({ patient, clinic }: EditPatientFormProps) {
             <input type="hidden" name="planOfCareJson" value={JSON.stringify(planOfCare)} />
 
             {/* Editable Health Record Sheet container designed to match detail page */}
-            <div className="bg-white dark:bg-zinc-955 text-black dark:text-zinc-50 font-dm-sans w-full p-8 sm:p-12 shadow-sm rounded-lg relative border border-zinc-200 dark:border-zinc-800">
+            <div className="bg-white dark:bg-zinc-950 text-black dark:text-zinc-50 font-dm-sans w-full p-8 sm:p-12 shadow-sm rounded-lg relative border border-zinc-200 dark:border-zinc-800">
                 
                 {/* Hospital Letterhead */}
                 <MedicalLetterhead clinicName={clinic?.name} clinicAddress={clinic?.address} clinicPhone={clinic?.phone} clinicEmail={clinic?.email} className="border-b border-zinc-200 dark:border-zinc-800 pb-4 mb-6" />
@@ -162,7 +164,7 @@ function EditPatientForm({ patient, clinic }: EditPatientFormProps) {
                 <div className="flex justify-between items-end border-b border-zinc-200 dark:border-zinc-800 pb-4 mb-6">
                     <div>
                         <h1 className="text-3xl font-extrabold tracking-tight text-black dark:text-zinc-50 font-headline uppercase font-dm-sans">Edit Medical Health Record</h1>
-                        <p className="text-[10px] text-gray-550 dark:text-zinc-400 font-mono tracking-wider font-dm-sans">ORELIS CLINICAL EDITOR MODE</p>
+                        <p className="text-[10px] text-gray-555 dark:text-zinc-400 font-mono tracking-wider font-dm-sans">ORELIS CLINICAL EDITOR MODE</p>
                     </div>
                     <div className="text-right">
                         <p className="text-[10px] font-bold text-gray-400 dark:text-zinc-550 uppercase tracking-widest leading-none font-dm-sans">Issued Date</p>
@@ -215,7 +217,7 @@ function EditPatientForm({ patient, clinic }: EditPatientFormProps) {
                             </div>
 
                             <div>
-                                <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">GENDER</Label>
+                                <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-550 tracking-widest">GENDER</Label>
                                 <Select name="sex" defaultValue={patient.sex}>
                                     <SelectTrigger className="h-9 text-xs mt-1 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
                                         <SelectValue />
@@ -229,7 +231,7 @@ function EditPatientForm({ patient, clinic }: EditPatientFormProps) {
                             </div>
 
                             <div>
-                                <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">MARITAL STATUS</Label>
+                                <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-550 tracking-widest">MARITAL STATUS</Label>
                                 <Select name="maritalStatus" defaultValue={patient.maritalStatus}>
                                     <SelectTrigger className="h-9 text-xs mt-1 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
                                         <SelectValue />
@@ -244,37 +246,37 @@ function EditPatientForm({ patient, clinic }: EditPatientFormProps) {
                             </div>
 
                             <div>
-                                <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">PHONE</Label>
+                                <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-550 tracking-widest">PHONE</Label>
                                 <Input name="phone" defaultValue={patient.phone} className="h-9 mt-1 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800" />
                             </div>
 
                             <div>
-                                <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">EMAIL ADDRESS</Label>
+                                <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-555 tracking-widest">EMAIL ADDRESS</Label>
                                 <Input name="email" type="email" defaultValue={patient.email} className="h-9 mt-1 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800" />
                             </div>
 
                             <div>
-                                <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">ADDRESS</Label>
+                                <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-555 tracking-widest">ADDRESS</Label>
                                 <Textarea name="address" defaultValue={patient.address} className="min-h-[60px] mt-1 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-xs" />
                             </div>
 
                             <div>
-                                <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">ETHNICITY</Label>
+                                <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-555 tracking-widest">ETHNICITY</Label>
                                 <Input name="origin" defaultValue={patient.origin} className="h-9 mt-1 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800" placeholder="State of Origin" />
                             </div>
 
                             <div>
-                                <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">LANGUAGE SPOKEN / TRIBE</Label>
+                                <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-555 tracking-widest">LANGUAGE SPOKEN / TRIBE</Label>
                                 <Input name="tribe" defaultValue={patient.tribe} className="h-9 mt-1 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800" placeholder="Language / Tribe" />
                             </div>
 
                             <div>
-                                <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">RELIGION</Label>
+                                <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-555 tracking-widest">RELIGION</Label>
                                 <Input name="religion" defaultValue={patient.religion} className="h-9 mt-1 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800" placeholder="Religion" />
                             </div>
 
                             <div>
-                                <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-500 tracking-widest">OCCUPATION</Label>
+                                <Label className="text-[9px] font-bold uppercase text-gray-400 dark:text-zinc-555 tracking-widest">OCCUPATION</Label>
                                 <Input name="occupation" defaultValue={patient.occupation} className="h-9 mt-1 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800" placeholder="Occupation" />
                             </div>
                         </div>
@@ -482,11 +484,29 @@ export default function EditPatientPage() {
 
     const { data: patient, loading: patientLoading } = useDoc<Patient>(patientDocRef);
 
+    const { user } = useUser();
+    const userProfileRef = useMemo(() => {
+        if (!user || !firestore) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [user, firestore]);
+    const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+
     const clinicRef = useMemo(() => {
         if (!patient?.clinicId || !firestore) return null;
         return doc(firestore, 'clinics', patient.clinicId);
     }, [patient, firestore]);
     const { data: clinic } = useDoc<Clinic>(clinicRef);
+
+    const encountersQuery = useMemo(() => {
+        if (!firestore || !patientId || !userProfile?.clinicId) return null;
+        return query(
+            collection(firestore, 'encounters'),
+            where('clinicId', '==', userProfile.clinicId),
+            where('patientId', '==', patientId),
+            orderBy('date', 'desc')
+        );
+    }, [firestore, patientId, userProfile?.clinicId]);
+    const { data: encounters } = useCollection<Encounter>(encountersQuery);
 
     if (patientLoading) {
         return (
@@ -538,6 +558,118 @@ export default function EditPatientPage() {
                         <DrugSafetyChecker />
                         <LabReportExplainer />
                     </div>
+
+                    {/* Interactive Encounter Log for Doctors (Past consultation notes) */}
+                    <Card className="border-border bg-card shadow-sm">
+                        <CardHeader className="pb-3 border-b border-dashed">
+                            <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground flex items-center justify-between">
+                                <span>Clinical Encounter History</span>
+                                <Badge variant="outline">{encounters?.length || 0} Encounters</Badge>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-4 space-y-4">
+                            {encounters && encounters.length > 0 ? encounters.map((enc) => (
+                                <div key={enc.id} className="p-2.5 rounded-xl border border-dashed border-border hover:border-primary/45 transition-colors group text-black dark:text-white">
+                                    <div className="flex justify-between items-start mb-1">
+                                        <div>
+                                            <div className="font-bold text-sm uppercase flex items-center gap-2">
+                                                {enc.type} Encounter
+                                                <Badge variant={enc.status === 'Finalized' ? 'outline' : 'secondary'} className="text-[9px] py-0 px-1">
+                                                    {enc.status}
+                                                </Badge>
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground">{format(new Date(enc.date), 'PPP')}</p>
+                                        </div>
+                                        <Dialog>
+                                            <DialogTrigger asChild>
+                                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-bold gap-1 text-primary hover:bg-primary/5">
+                                                    <FileText className="h-3 w-3" /> View Details
+                                                </Button>
+                                            </DialogTrigger>
+                                            <DialogContent className="max-w-2xl max-h-[90vh] p-0 overflow-hidden border-dashed bg-white dark:bg-zinc-950 text-black dark:text-white">
+                                                <DialogHeader className="p-6 bg-primary/5 border-b border-dashed">
+                                                    <DialogTitle className="flex items-center gap-2 text-black dark:text-white">
+                                                        <Stethoscope className="h-5 w-5 text-primary" />
+                                                        Clinical Encounter Detail
+                                                    </DialogTitle>
+                                                    <DialogDescription className="font-mono text-[10px] uppercase text-muted-foreground">
+                                                        Ref: {enc.id} • {format(new Date(enc.date), 'PPP p')}
+                                                    </DialogDescription>
+                                                </DialogHeader>
+                                                <ScrollArea className="p-6 max-h-[60vh]">
+                                                    <div className="space-y-8 pb-4">
+                                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                                            {enc.vitals?.map(v => (
+                                                                <div key={v.id} className="p-3 rounded-lg border border-dashed bg-muted/30">
+                                                                    <p className="text-[9px] font-black uppercase text-muted-foreground mb-1">{v.type.replace('_', ' ')}</p>
+                                                                    <p className="text-sm font-bold text-black dark:text-white">{v.value} <span className="text-[10px] opacity-60">{v.unit}</span></p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+
+                                                        <div className="space-y-6">
+                                                            <section>
+                                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 border-b border-dashed pb-1">(S) Subjective</h4>
+                                                                <p className="text-sm italic leading-relaxed text-muted-foreground whitespace-pre-wrap">{enc.soap.subjective || 'N/A'}</p>
+                                                            </section>
+                                                            <section>
+                                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-2 border-b border-dashed pb-1">(O) Objective</h4>
+                                                                <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{enc.soap.objective || 'N/A'}</p>
+                                                            </section>
+                                                            <section>
+                                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-2 border-b border-dashed pb-1">(A) Assessment</h4>
+                                                                <p className="text-sm font-bold leading-relaxed text-black dark:text-white whitespace-pre-wrap">{enc.soap.assessment || 'N/A'}</p>
+                                                            </section>
+                                                            <section>
+                                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-purple-400 mb-2 border-b border-dashed pb-1">(P) Plan</h4>
+                                                                <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{enc.soap.plan || 'N/A'}</p>
+                                                            </section>
+                                                        </div>
+
+                                                        {enc.prescriptions && enc.prescriptions.length > 0 && (
+                                                            <section className="p-4 rounded-xl border-2 border-dashed border-primary/20 bg-primary/5">
+                                                                <h4 className="text-[10px] font-black uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                                    <Pill className="h-3 w-3 text-primary" /> Authorized Meds
+                                                                </h4>
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                                    {enc.prescriptions.map((p, i) => (
+                                                                        <div key={i} className="text-xs font-bold p-2 bg-background rounded border border-dashed flex items-center gap-2 text-black dark:text-white">
+                                                                            <div className="w-1 h-1 rounded-full bg-primary" />
+                                                                            {p}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </section>
+                                                        )}
+                                                    </div>
+                                                </ScrollArea>
+                                                <div className="p-4 bg-muted/20 border-t border-dashed flex justify-between items-center text-[10px] font-mono text-muted-foreground uppercase">
+                                                    <span>Physician: {enc.doctorName}</span>
+                                                    <span>Status: {enc.status}</span>
+                                                </div>
+                                            </DialogContent>
+                                        </Dialog>
+                                    </div>
+                                    <div className="grid grid-cols-4 gap-1.5 py-1">
+                                        {enc.vitals?.slice(0, 4).map(v => (
+                                            <div key={v.id} className="text-center p-0.5 bg-muted/40 rounded">
+                                                <p className="text-[7.5px] uppercase text-muted-foreground">{v.type.split('_')[0]}</p>
+                                                <p className="text-[9.5px] font-bold">{v.value}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="text-[11px] text-muted-foreground line-clamp-1 italic mt-1 border-l-2 border-border pl-2">
+                                        {enc.soap.assessment}
+                                    </p>
+                                </div>
+                            )) : (
+                                <div className="py-10 text-center text-muted-foreground border-2 border-dashed rounded-xl">
+                                    <Stethoscope className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                                    <p className="text-xs">No clinical encounters recorded yet.</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
         </div>

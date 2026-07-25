@@ -92,6 +92,62 @@ export const MOCK_DRUG_INTERACTIONS: Record<string, Array<{ severity: "High" | "
       description: "Amlodipine may increase the plasma concentration of simvastatin, elevating the risk of myopathy and rhabdomyolysis.",
       source: "HOLON Drug-Interaction DB (v5.3)"
     }
+  ],
+  "Sildenafil + Nitroglycerin": [
+    {
+      severity: "High",
+      description: "Critical hypotension risk. Nitrates like nitroglycerin dilate blood vessels, and sildenafil amplifies this effect, potentially causing a dangerous drop in blood pressure.",
+      source: "HOLON Drug-Interaction DB (v5.3)"
+    }
+  ],
+  "Warfarin + Ibuprofen": [
+    {
+      severity: "High",
+      description: "NSAIDs like ibuprofen increase gastrointestinal bleeding risk and interfere with platelet aggregation, significantly raising bleeding risk when combined with warfarin.",
+      source: "HOLON Drug-Interaction DB (v5.3)"
+    }
+  ],
+  "Metoprolol + Albuterol": [
+    {
+      severity: "Moderate",
+      description: "Metoprolol is a beta-blocker that can antagonize the bronchodilating effects of beta-agonists like albuterol, potentially causing bronchospasm in susceptible patients.",
+      source: "HOLON Drug-Interaction DB (v5.3)"
+    }
+  ],
+  "Sertraline + Tramadol": [
+    {
+      severity: "High",
+      description: "Co-administration increases the risk of Serotonin Syndrome, a potentially life-threatening condition characterized by mental status changes, neuromuscular hyperactivity, and autonomic instability.",
+      source: "HOLON Drug-Interaction DB (v5.3)"
+    }
+  ],
+  "Clopidogrel + Omeprazole": [
+    {
+      severity: "Moderate",
+      description: "Omeprazole is a CYP2C19 inhibitor that can reduce the bioactivation and antiplatelet efficacy of clopidogrel, potentially increasing cardiovascular events.",
+      source: "HOLON Drug-Interaction DB (v5.3)"
+    }
+  ],
+  "Lisinopril + Spironolactone": [
+    {
+      severity: "Moderate",
+      description: "Combining an ACE inhibitor with a potassium-sparing diuretic increases the risk of hyperkalemia. Close monitoring of serum potassium and renal function is advised.",
+      source: "HOLON Drug-Interaction DB (v5.3)"
+    }
+  ],
+  "Warfarin + Azithromycin": [
+    {
+      severity: "Moderate",
+      description: "Macrolide antibiotics like azithromycin can alter intestinal flora and inhibit warfarin metabolism, potentially prolonging the prothrombin time (INR).",
+      source: "HOLON Drug-Interaction DB (v5.3)"
+    }
+  ],
+  "Atorvastatin + Clarithromycin": [
+    {
+      severity: "High",
+      description: "Clarithromycin is a strong CYP3A4 inhibitor that can significantly increase atorvastatin exposure, leading to an elevated risk of myopathy or rhabdomyolysis.",
+      source: "HOLON Drug-Interaction DB (v5.3)"
+    }
   ]
 };
 

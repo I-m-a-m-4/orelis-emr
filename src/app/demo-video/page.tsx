@@ -23,7 +23,7 @@ export default function DemoVideoPage() {
               Orelis EMR Platform Demo
             </h1>
             <p className="mt-4 text-sm sm:text-base text-muted-foreground leading-relaxed">
-              Watch how Orelis integrates with the **Ontomorph Digital Twin Platform** and **HOLON Clinical Knowledge Graph** to power real-time diagnostics, drug safety screening, and predictive simulations.
+              Watch how Orelis integrates with the <strong className="font-semibold text-foreground">Ontomorph Digital Twin Platform</strong> and <strong className="font-semibold text-foreground">HOLON Clinical Knowledge Graph</strong> to power real-time diagnostics, drug safety screening, and predictive simulations.
             </p>
           </div>
 

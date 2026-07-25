@@ -736,12 +736,12 @@ export default function PatientDetailPage() {
                                 <div key={enc.id} className="p-2.5 rounded-xl border border-dashed border-border hover:border-primary/45 transition-colors group">
                                     <div className="flex justify-between items-start mb-1">
                                         <div>
-                                            <p className="font-bold text-sm uppercase flex items-center gap-2">
+                                            <div className="font-bold text-sm uppercase flex items-center gap-2">
                                                 {enc.type} Encounter
                                                 <Badge variant={enc.status === 'Finalized' ? 'outline' : 'secondary'} className="text-[9px] py-0 px-1">
                                                     {enc.status}
                                                 </Badge>
-                                            </p>
+                                            </div>
                                             <p className="text-[10px] text-muted-foreground">{format(new Date(enc.date), 'PPP')}</p>
                                         </div>
                                         <Dialog>

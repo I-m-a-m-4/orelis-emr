@@ -22,7 +22,7 @@ jobs:
         include:
           - platform: 'macos-latest'
             args: '--target universal-apple-darwin'
-            rust-target: 'universal-apple-darwin'
+            rust-target: 'aarch64-apple-darwin,x86_64-apple-darwin'
           - platform: 'ubuntu-22.04'
             args: ''
             rust-target: ''

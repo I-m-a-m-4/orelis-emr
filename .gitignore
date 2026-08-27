@@ -46,3 +46,37 @@ firestore-debug.log
 branch_structure.json
 temp_auto_push.bat
 temp_interactive_push.bat
+
+# native (Tauri) build
+# Rust build artefacts — hundreds of MB.
+/src-tauri/target/
+# Generated app icons; regenerate with `npm run tauri icon`.
+/src-tauri/gen/
+# Bookkeeping for the paths the native build moves aside, and the moved paths
+# themselves. Both are transient; committing either would ship a half-excluded
+# src/app. See scripts/native-build.mjs.
+.native-build-state.json
+.native-stash/
+# Captured output of `next build` during a native build. Written by
+# scripts/build-native.mjs because `tauri build` discards the child's output and
+# reports only the exit code — see the comment on runNextBuild().
+.native-build.log
+
+# Signing material. A leaked updater private key lets anyone push an update to
+# every installed copy of the app.
+*.keystore
+/src-tauri/*.key
+tauri-signing-key*
+
+# MSIX packaging. `.msix-pack/` is a scratch staging dir rebuilt on every pack;
+# `dist-msix/` holds the built packages (a ~100MB binary per version).
+.msix-pack/
+dist-msix/
+# Store identity (Identity Name + the CN=<guid> Publisher assigned by Partner
+# Center). Not secret, but it is per-account: committing it means a fork builds
+# packages carrying our publisher identity, which Partner Center rejects
+# confusingly. Set via env in CI. See scripts/package-msix.mjs.
+/src-tauri/msix.config.json
+
+# transient typecheck output
+tsc.log

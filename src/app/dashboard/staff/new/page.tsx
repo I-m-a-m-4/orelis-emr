@@ -1,9 +1,7 @@
 
 'use client';
-import { useActionState } from 'react';
-import { useEffect, useRef, useMemo } from 'react';
-import { useFormStatus } from 'react-dom';
-import { addStaffAction, type AddStaffFormState } from '@/app/actions';
+import { useState, useMemo } from 'react';
+import { apiFetch } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,27 +13,24 @@ import { useUser, useFirestore, useDoc } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 
-const initialState: AddStaffFormState = {
-  message: '',
-  isSuccess: false,
-};
+type FieldErrors = Record<string, string | undefined>;
 
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending}>
-      {pending ? 'Creating...' : 'Create Staff Member'}
-    </Button>
-  );
-}
-
+/**
+ * Creating a staff account needs the Admin SDK (an Auth user plus a custom
+ * claim), so unlike the clinical forms this one genuinely cannot work offline —
+ * it posts to `/api/admin/staff`. `apiFetch` queues it if the network drops
+ * mid-request and the replay is idempotent, so a lost connection delays the
+ * account rather than creating two.
+ */
 export default function AddStaffPage() {
   const router = useRouter();
   const { user } = useUser();
   const firestore = useFirestore();
-  const [state, formAction] = useActionState(addStaffAction, initialState);
   const { toast } = useToast();
-  const formRef = useRef<HTMLFormElement>(null);
+
+  const [pending, setPending] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const [role, setRole] = useState<string>('');
 
   const userProfileRef = useMemo(() => {
     if (!user || !firestore) return null;
@@ -43,27 +38,83 @@ export default function AddStaffPage() {
   }, [user, firestore]);
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
-  useEffect(() => {
-    if (state.message) {
-      toast({
-        title: state.isSuccess ? 'Success!' : 'Error!',
-        description: state.message,
-        variant: state.isSuccess ? 'default' : 'destructive',
-      });
-      if (state.isSuccess) {
-        formRef.current?.reset();
-        router.push('/dashboard/staff');
-      }
+  const validate = (values: Record<string, string>): FieldErrors => {
+    const next: FieldErrors = {};
+    if (!values.name || values.name.trim().length < 2) next.name = 'Name is required.';
+    if (!values.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
+      next.email = 'A valid email address is required.';
     }
-  }, [state, toast, router]);
+    if (!values.password || values.password.length < 6) {
+      next.password = 'Password must be at least 6 characters.';
+    }
+    if (!['admin', 'doctor', 'receptionist'].includes(values.role)) {
+      next.role = 'Please select a role.';
+    }
+    if (!values.clinicId) next.clinicId = 'Your clinic could not be determined.';
+    return next;
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const data = new FormData(form);
+
+    const values = {
+      name: String(data.get('name') ?? ''),
+      email: String(data.get('email') ?? ''),
+      password: String(data.get('password') ?? ''),
+      role,
+      clinicId: userProfile?.clinicId ?? '',
+    };
+
+    const found = validate(values);
+    setErrors(found);
+    if (Object.keys(found).length) return;
+
+    setPending(true);
+    const result = await apiFetch<{ success: boolean; message: string }>(
+      '/api/admin/staff',
+      {
+        method: 'POST',
+        body: values,
+        description: `Create staff account for ${values.email}`,
+      }
+    );
+    setPending(false);
+
+    if (result.queued) {
+      toast({
+        title: 'Queued',
+        description: 'No connection — the account will be created when you are back online.',
+      });
+      router.push('/dashboard/staff');
+      return;
+    }
+
+    if (!result.ok) {
+      toast({
+        title: 'Error!',
+        description: result.error ?? 'Failed to add staff.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    toast({
+      title: 'Success!',
+      description: result.data?.message ?? 'Staff member created.',
+    });
+    form.reset();
+    setRole('');
+    router.push('/dashboard/staff');
+  };
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center">
         <h1 className="font-semibold text-lg md:text-2xl">Add New Staff Member</h1>
       </div>
-      <form ref={formRef} action={formAction}>
-        {userProfile?.clinicId && <input type="hidden" name="clinicId" value={userProfile.clinicId} />}
+      <form onSubmit={handleSubmit}>
         <Card className="border-dashed max-w-2xl mx-auto">
           <CardHeader>
             <CardTitle>Create Staff Account</CardTitle>
@@ -73,25 +124,25 @@ export default function AddStaffPage() {
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
               <Input id="name" name="name" placeholder="Dr. John Doe" />
-              {state.errors?.name && <p className="text-sm font-medium text-destructive">{state.errors.name}</p>}
+              {errors.name && <p className="text-sm font-medium text-destructive">{errors.name}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
               <Input id="email" name="email" type="email" placeholder="staff@example.com" />
-              {state.errors?.email && <p className="text-sm font-medium text-destructive">{state.errors.email}</p>}
+              {errors.email && <p className="text-sm font-medium text-destructive">{errors.email}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input id="password" name="password" type="password" placeholder="••••••••" />
-              {state.errors?.password && <p className="text-sm font-medium text-destructive">{state.errors.password}</p>}
+              {errors.password && <p className="text-sm font-medium text-destructive">{errors.password}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <Select name="role">
-                <SelectTrigger>
+              <Select name="role" value={role} onValueChange={setRole}>
+                <SelectTrigger id="role">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -100,12 +151,16 @@ export default function AddStaffPage() {
                   <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
               </Select>
-              {state.errors?.role && <p className="text-sm font-medium text-destructive">{state.errors.role}</p>}
+              {errors.role && <p className="text-sm font-medium text-destructive">{errors.role}</p>}
             </div>
+
+            {errors.clinicId && <p className="text-sm font-medium text-destructive">{errors.clinicId}</p>}
 
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" type="button" onClick={() => router.back()}>Cancel</Button>
-              <SubmitButton />
+              <Button type="submit" disabled={pending}>
+                {pending ? 'Creating...' : 'Create Staff Member'}
+              </Button>
             </div>
           </CardContent>
         </Card>

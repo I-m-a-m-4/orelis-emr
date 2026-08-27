@@ -1,7 +1,21 @@
 import { ImageResponse } from 'next/og';
 
-// Route segment config
-export const runtime = 'edge';
+/**
+ * Generate the favicon once at build time rather than per request.
+ *
+ * `ImageResponse` is a route handler, and a static export refuses to emit one
+ * without being told it never varies: the native build fails with "export const
+ * dynamic = force-static not configured on route /icon". The icon is a constant,
+ * so baking it is also what we want on the web — one less edge invocation per
+ * cold cache.
+ *
+ * There is deliberately no `runtime = 'edge'` here. Pinning the edge runtime
+ * contradicts `force-static` — Next warns that the two are incompatible and then
+ * lists `/icon` as `ƒ (Dynamic)`, meaning static generation was silently switched
+ * off for it. `next/og` runs on the Node runtime, so dropping the pin is what
+ * actually makes this route static in both builds.
+ */
+export const dynamic = 'force-static';
 
 // Image metadata
 export const size = {

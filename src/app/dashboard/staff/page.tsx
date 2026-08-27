@@ -18,7 +18,7 @@ import type { UserProfile, UserRole } from "@/lib/types";
 import Link from "next/link";
 import { useState, useMemo } from "react";
 import { useDoc } from "@/firebase";
-import { changeStaffRoleAction } from "@/app/actions";
+import { apiFetch } from "@/lib/api-client";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingAnimation } from "@/components/layout/loading-animation";
 
@@ -106,17 +106,26 @@ function ChangeRoleSubMenu({ userId, clinicId }: { userId: string, clinicId: str
 
     const handleRoleChange = async (newRole: UserRole) => {
         setIsSubmitting(true);
-        const formData = new FormData();
-        formData.append('userId', userId);
-        formData.append('newRole', newRole);
-        formData.append('clinicId', clinicId);
 
-        const result = await changeStaffRoleAction(formData);
+        const result = await apiFetch<{ success: boolean; message: string }>(
+            '/api/admin/staff',
+            {
+                method: 'PATCH',
+                body: { userId, newRole, clinicId },
+                description: `Change staff role to ${newRole}`,
+            }
+        );
 
         toast({
-            title: result.success ? "Success" : "Error",
-            description: result.message,
-            variant: result.success ? "default" : "destructive",
+            title: result.queued
+                ? "Queued"
+                : result.ok ? "Success" : "Error",
+            description: result.queued
+                ? "No connection — the role change will apply when you are back online."
+                : result.ok
+                    ? (result.data?.message ?? "Staff role updated.")
+                    : (result.error ?? "Failed to update role."),
+            variant: result.ok || result.queued ? "default" : "destructive",
         });
         setIsSubmitting(false);
     };

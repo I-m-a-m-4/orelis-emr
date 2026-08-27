@@ -14,7 +14,7 @@ import { useState, useEffect, type FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { doc, getDoc } from "firebase/firestore";
-import { useFirestore } from "@/firebase/provider";
+import { useFirestore, useAuth } from "@/firebase/provider";
 import type { UserProfile } from "@/lib/types";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 
@@ -87,6 +87,7 @@ function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
   const firestore = useFirestore();
+  const auth = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -98,16 +99,30 @@ function LoginForm() {
 
     if (userDoc.exists()) {
       const userProfile = userDoc.data() as UserProfile;
-      // Check for super admin claim
-      // This is a simplified check, a more robust way is to check the ID token claims
-      if (userProfile.email === 'bimex4@gmail.com') {
-          const idTokenResult = await userDoc.ref.parent.parent?.app.auth().currentUser?.getIdTokenResult(true);
-          if (idTokenResult?.claims.superAdmin) {
-              router.push('/super-admin');
-              return;
-          }
+
+      /**
+       * Route super admins to their own console.
+       *
+       * This previously read the claim via
+       * `userDoc.ref.parent.parent?.app.auth().currentUser`, which cannot work:
+       * `ref.parent` is the `users` collection and a root collection's `.parent`
+       * is `null`, so the optional chain short-circuited to `undefined` on every
+       * login and the redirect never fired — a super admin always landed on the
+       * clinical dashboard. The claim lives on the ID token, so it is read from
+       * the signed-in user.
+       *
+       * Not force-refreshed: the token was just minted by this sign-in, so it
+       * already carries current claims, and a forced refresh would add a network
+       * round trip to every login. Gating on the claim rather than a hardcoded
+       * email also means a second super admin is routed correctly; anyone without
+       * it falls through to exactly the same branches as before.
+       */
+      const idTokenResult = await auth?.currentUser?.getIdTokenResult();
+      if (idTokenResult?.claims.superAdmin) {
+        router.push('/super-admin');
+        return;
       }
-      
+
       if (userProfile.role === 'patient' && !userProfile.patientId) {
         router.push('/dashboard/my-records');
       } else {

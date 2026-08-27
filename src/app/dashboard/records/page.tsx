@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,24 +13,21 @@ import { ClipboardList, Plus, Search, Filter, FilterX, Download, AlertCircle, Us
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { saveEncounterAction, type EncounterActionState } from '@/app/actions';
+import { saveEncounter } from '@/lib/data/encounters';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LoadingAnimation } from '@/components/layout/loading-animation';
 import type { Patient, Encounter, UserProfile } from '@/lib/types';
 import Link from 'next/link';
 
-const initialEncounterState: EncounterActionState = {
-    message: '',
-    isSuccess: false,
-};
-
-function RecordNewDetailModal({ clinicId, patients, currentUserId, currentUserName }: { clinicId: string, patients: Patient[], currentUserId: string, currentUserName: string }) {
+function RecordNewDetailModal({ clinicId, patients, actor }: { clinicId: string, patients: Patient[], actor: UserProfile }) {
     const { toast } = useToast();
-    const [state, formAction] = useActionState(saveEncounterAction, initialEncounterState);
+    const firestore = useFirestore();
+    const [saving, setSaving] = useState(false);
     const [open, setOpen] = useState(false);
     const [selectedPatientId, setSelectedPatientId] = useState<string>('');
     const [patientSearch, setPatientSearch] = useState('');
+    const [encounterType, setEncounterType] = useState<Encounter['type']>('Consultation');
 
     const filteredPatientsForSelect = useMemo(() => {
         return patients.filter(p =>
@@ -41,16 +38,56 @@ function RecordNewDetailModal({ clinicId, patients, currentUserId, currentUserNa
 
     const selectedPatient = useMemo(() => patients.find(p => p.id === selectedPatientId), [patients, selectedPatientId]);
 
-    useEffect(() => {
-        if (state.message) {
-            toast({
-                title: state.isSuccess ? 'Success' : 'Error',
-                description: state.message,
-                variant: state.isSuccess ? 'default' : 'destructive',
-            });
-            if (state.isSuccess) setOpen(false);
+    /**
+     * Saves straight to Firestore from the client so a consultation can be
+     * recorded with no connection — see `src/lib/data/base.ts` for why the write
+     * is not awaited on the server round-trip.
+     */
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!firestore) return;
+
+        const form = e.currentTarget;
+        const data = new FormData(form);
+
+        if (!selectedPatientId || !selectedPatient) {
+            toast({ title: 'Error', description: 'Please select a patient.', variant: 'destructive' });
+            return;
         }
-    }, [state, toast]);
+
+        setSaving(true);
+        const result = await saveEncounter(firestore, actor, {
+            clinicId,
+            patientId: selectedPatientId,
+            patientName: `${selectedPatient.firstName} ${selectedPatient.surname}`,
+            doctorId: actor.uid,
+            doctorName: actor.name,
+            date: new Date().toISOString(),
+            type: encounterType,
+            diagnosis: String(data.get('diagnosis') ?? ''),
+            soap: {
+                subjective: String(data.get('subjective') ?? ''),
+                objective: String(data.get('objective') ?? ''),
+                assessment: String(data.get('diagnosis') ?? ''),
+                plan: String(data.get('plan') ?? ''),
+            },
+            status: 'Finalized',
+        });
+        setSaving(false);
+
+        toast({
+            title: result.success ? 'Success' : 'Error',
+            description: result.message,
+            variant: result.success ? 'default' : 'destructive',
+        });
+
+        if (result.success) {
+            form.reset();
+            setSelectedPatientId('');
+            setEncounterType('Consultation');
+            setOpen(false);
+        }
+    };
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -64,12 +101,7 @@ function RecordNewDetailModal({ clinicId, patients, currentUserId, currentUserNa
                     <DialogTitle>Add Clinical Record</DialogTitle>
                     <DialogDescription>Quickly log new patient details, diagnosis, and treatment plans.</DialogDescription>
                 </DialogHeader>
-                <form action={formAction} className="space-y-4 py-4">
-                    <input type="hidden" name="clinicId" value={clinicId} />
-                    <input type="hidden" name="doctorId" value={currentUserId} />
-                    <input type="hidden" name="doctorName" value={currentUserName} />
-                    <input type="hidden" name="date" value={new Date().toISOString()} />
-                    <input type="hidden" name="patientName" value={selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.surname}` : ''} />
+                <form onSubmit={handleSubmit} className="space-y-4 py-4">
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -104,7 +136,11 @@ function RecordNewDetailModal({ clinicId, patients, currentUserId, currentUserNa
                         </div>
                         <div className="space-y-2">
                             <Label>Encounter Type</Label>
-                            <Select name="type" defaultValue="Consultation">
+                            <Select
+                                name="type"
+                                value={encounterType}
+                                onValueChange={(v) => setEncounterType(v as Encounter['type'])}
+                            >
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
@@ -139,7 +175,9 @@ function RecordNewDetailModal({ clinicId, patients, currentUserId, currentUserNa
                         <Textarea name="plan" placeholder="Prescribe drugs or tests..." />
                     </div>
 
-                    <Button type="submit" className="w-full button-glow">Save Record</Button>
+                    <Button type="submit" disabled={saving} className="w-full button-glow">
+                        {saving ? 'Saving...' : 'Save Record'}
+                    </Button>
                 </form>
             </DialogContent>
         </Dialog>
@@ -224,8 +262,7 @@ export default function ComprehensiveRecordsPage() {
                     <RecordNewDetailModal
                         clinicId={userProfile.clinicId}
                         patients={patients}
-                        currentUserId={userProfile.uid}
-                        currentUserName={userProfile.name}
+                        actor={userProfile}
                     />
                 )}
             </div>
@@ -358,7 +395,7 @@ export default function ComprehensiveRecordsPage() {
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <Link
-                                                    href={`/dashboard/patients/${record.patientId}`}
+                                                    href={`/dashboard/patients/detail?id=${record.patientId}`}
                                                     className={buttonVariants({
                                                         variant: "outline",
                                                         size: "sm",

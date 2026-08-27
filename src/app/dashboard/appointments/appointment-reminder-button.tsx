@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { sendReminderAction } from '@/app/actions';
+import { generateAppointmentReminder } from '@/lib/ai-client';
 import { Send } from 'lucide-react';
 
 interface AppointmentReminderButtonProps {
@@ -20,16 +20,30 @@ export function AppointmentReminderButton({ appointment }: AppointmentReminderBu
 
     const handleClick = async () => {
         setIsLoading(true);
-        const result = await sendReminderAction(appointment);
-        if (result.success) {
+        const result = await generateAppointmentReminder({
+            patientName: appointment.patientName,
+            // The prompt asks for a human-readable time, not an ISO string, and
+            // is instructed to omit the time zone — so the formatting happens
+            // here rather than in the flow.
+            appointmentTime: new Date(appointment.appointmentTime).toLocaleString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+            }),
+            doctorName: appointment.doctorName,
+        });
+
+        if (result.ok) {
             toast({
                 title: "Reminder Generated",
-                description: result.message,
+                description: `Reminder preview: "${result.data?.reminderMessage ?? ''}"`,
             });
         } else {
             toast({
-                title: "Error",
-                description: result.message,
+                title: result.offline ? "No connection" : "Error",
+                description: result.error,
                 variant: "destructive",
             });
         }

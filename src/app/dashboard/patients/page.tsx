@@ -18,7 +18,7 @@ import type { UserProfile } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { deletePatientAction } from "@/app/actions";
+import { apiFetch } from "@/lib/api-client";
 import { useToast } from "@/hooks/use-toast";
 import { AlertTriangle, Trash2 } from "lucide-react";
 import { DashLoader } from "@/components/ui/dash-loader";
@@ -32,16 +32,30 @@ function DeletePatientDialog({ patient, clinicId, onDelete }: { patient: Patient
     const handleDelete = async () => {
         setLoading(true);
         try {
-            const formData = new FormData();
-            formData.append('patientId', patient.id);
-            formData.append('clinicId', clinicId);
-            const result = await deletePatientAction(formData);
-            if (result.success) {
-                toast({ title: "Deleted", description: result.message });
+            // A patient delete cascades across appointments, encounters,
+            // invoices, prescriptions, labs and an Auth account, so it runs on
+            // the server rather than the client — a cascade abandoned halfway
+            // because a tab closed leaves orphaned billing records.
+            const result = await apiFetch<{ success: boolean; message: string }>(
+                '/api/admin/cascade-delete',
+                {
+                    method: 'POST',
+                    body: { target: 'patient', patientId: patient.id, clinicId },
+                    description: `Delete patient ${patient.firstName} ${patient.surname}`,
+                }
+            );
+            if (result.queued) {
+                toast({
+                    title: "Queued",
+                    description: "No connection — this patient will be deleted when you are back online.",
+                });
+                setOpen(false);
+            } else if (result.ok) {
+                toast({ title: "Deleted", description: result.data?.message ?? "Patient deleted." });
                 setOpen(false);
                 onDelete();
             } else {
-                toast({ title: "Error", description: result.message, variant: "destructive" });
+                toast({ title: "Error", description: result.error, variant: "destructive" });
             }
         } catch (e: any) {
             toast({ title: "Error", description: e.message, variant: "destructive" });
@@ -237,7 +251,7 @@ export default function PatientsPage() {
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                 <DropdownMenuItem asChild className="cursor-pointer">
-                                                    <Link href={`/dashboard/patients/${patient.id}`}>View Details</Link>
+                                                    <Link href={`/dashboard/patients/detail?id=${patient.id}`}>View Details</Link>
                                                 </DropdownMenuItem>
                                                 {userProfile?.role !== 'receptionist' && (
                                                     <DropdownMenuItem asChild className="cursor-pointer">
@@ -245,7 +259,7 @@ export default function PatientsPage() {
                                                     </DropdownMenuItem>
                                                 )}
                                                 <DropdownMenuItem asChild className="cursor-pointer">
-                                                    <Link href={`/dashboard/patients/${patient.id}/edit`}>Edit</Link>
+                                                    <Link href={`/dashboard/patients/edit?id=${patient.id}`}>Edit</Link>
                                                 </DropdownMenuItem>
 
                                                 {userProfile?.clinicId && (

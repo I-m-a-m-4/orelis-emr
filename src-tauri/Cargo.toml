@@ -1,0 +1,78 @@
+[package]
+name = "orelis"
+version = "0.1.0"
+description = "Orelis — clinical records for hospitals, offline-first"
+authors = ["Orelis"]
+edition = "2021"
+# Tauri v2's MSRV. Pinned so a contributor on an older toolchain gets a clear
+# message from cargo instead of a wall of trait errors from deep in the tree.
+rust-version = "1.77.2"
+
+[lib]
+# `orelis_lib` rather than `orelis` because the binary is already called `orelis`
+# and cargo refuses a lib and bin with the same name in one package.
+name = "orelis_lib"
+# staticlib/cdylib are what the iOS and Android harnesses link against; rlib is
+# for the desktop binary. All three are required for one codebase to target all
+# five platforms.
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# `protocol-asset` is required by `assetProtocol.enable: true` in
+# tauri.conf.json — the build script cross-checks the two and fails the build if
+# they disagree, which is how this was caught. It backs the `asset:` /
+# `http://asset.localhost` entries in the CSP: a voice recording captured while
+# offline, or a wound photo cached on disk, is played and displayed straight from
+# the app data directory rather than being round-tripped through the network.
+tauri = { version = "2", features = ["tray-icon", "image-png", "protocol-asset"] }
+
+# ---------------------------------------------------------------------------
+# The offline mirror.
+#
+# `features = ["sqlite"]` is the single most important line in this file. The
+# plugin compiles fine without it and every JS call into it returns an error at
+# runtime, so the app builds, installs, launches, and silently has no local
+# database — which in the reference codebase this pattern comes from meant months
+# of shipped builds where offline mode did not work at all. There is no
+# compile-time signal; the only symptom is `Database.load` rejecting on a user's
+# machine. Do not remove it.
+# ---------------------------------------------------------------------------
+tauri-plugin-sql = { version = "2", features = ["sqlite"] }
+
+tauri-plugin-fs = "2"
+tauri-plugin-shell = "2"
+tauri-plugin-http = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-log = "2"
+tauri-plugin-os = "2"
+# Needed directly for `log::LevelFilter` when configuring the log plugin.
+log = "0.4"
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Desktop-only plugins. The updater has nothing to do on Android or iOS (the
+# stores handle it), `process` needs a process to relaunch, and single-instance
+# is meaningless where the OS already enforces it. Listing them unconditionally
+# fails the mobile build.
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
+tauri-plugin-single-instance = "2"
+
+[features]
+# Used by `tauri dev`; do not remove.
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+# A clinical app ships to machines that are often modest. Optimising for size
+# also shortens the Store's download and the first-launch unpack.
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

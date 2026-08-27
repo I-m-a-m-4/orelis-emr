@@ -23,5 +23,13 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    // Where scripts/native-build.mjs parks the routes a static export cannot
+    // contain (Server Actions, API routes, unenumerable dynamic segments). It
+    // only exists mid-build, and its contents are compiled by the *web* build
+    // from their real location — type-checking them here would fail the native
+    // build over code it is deliberately not shipping.
+    ".native-stash"
+  ]
 }

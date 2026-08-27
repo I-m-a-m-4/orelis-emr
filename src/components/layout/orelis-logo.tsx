@@ -1,12 +1,33 @@
 'use client';
+import type { CSSProperties } from 'react';
 import { Stethoscope } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-export function OrelisLogo() {
+/**
+ * `className` and `style` are forwarded because two callers already pass them and
+ * were silently having them dropped: the showcase page sizes the wordmark with
+ * `fontSize: 'clamp(48px, 12vw, 120px)'` and the developers footer fades it with
+ * `opacity-30 grayscale`. Neither took effect — the showcase hero rendered at the
+ * hardcoded 20px.
+ *
+ * The caller's `style` is spread *after* the defaults so it can override them,
+ * which is the whole point at the showcase call site.
+ */
+export function OrelisLogo({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: CSSProperties;
+}) {
   return (
     <>
       <button
-        className="relative px-0 py-0 bg-transparent border-none outline-none cursor-pointer font-headline uppercase tracking-[0.1em] flex items-center gap-2"
-        style={{ fontSize: '20px', letterSpacing: '1px' }}
+        className={cn(
+          'relative px-0 py-0 bg-transparent border-none outline-none cursor-pointer font-headline uppercase tracking-[0.1em] flex items-center gap-2',
+          className
+        )}
+        style={{ fontSize: '20px', letterSpacing: '1px', ...style }}
       >
         <Stethoscope className="h-8 w-8 text-primary" />
         <span className="relative">

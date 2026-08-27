@@ -47,7 +47,22 @@ import { MedicalLetterhead } from '@/components/medical/letterhead';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Clinic } from '@/lib/types';
-import { MOCK_DRUG_INTERACTIONS } from '@/lib/ontomorph';
+
+// Local mock for drug interactions
+const MOCK_DRUG_INTERACTIONS: Record<string, Array<{ severity: "High" | "Moderate" | "Minor"; description: string; source: string }>> = {
+  "Aspirin + Warfarin": [{ severity: "High", description: "Increases risk of bleeding.", source: "DB" }],
+  "Ibuprofen + Lisinopril": [{ severity: "Moderate", description: "May decrease antihypertensive effect.", source: "DB" }],
+  "Simvastatin + Amlodipine": [{ severity: "Moderate", description: "Increases risk of myopathy.", source: "DB" }],
+  "Sildenafil + Nitroglycerin": [{ severity: "High", description: "Critical hypotension risk.", source: "DB" }],
+  "Warfarin + Ibuprofen": [{ severity: "High", description: "Increases bleeding risk.", source: "DB" }],
+  "Metoprolol + Albuterol": [{ severity: "Moderate", description: "May cause bronchospasm.", source: "DB" }],
+  "Sertraline + Tramadol": [{ severity: "High", description: "Risk of Serotonin Syndrome.", source: "DB" }],
+  "Clopidogrel + Omeprazole": [{ severity: "Moderate", description: "Reduces efficacy of clopidogrel.", source: "DB" }],
+  "Lisinopril + Spironolactone": [{ severity: "Moderate", description: "Risk of hyperkalemia.", source: "DB" }],
+  "Warfarin + Azithromycin": [{ severity: "Moderate", description: "May prolong prothrombin time.", source: "DB" }],
+  "Atorvastatin + Clarithromycin": [{ severity: "High", description: "Increases risk of myopathy.", source: "DB" }]
+};
+
 
 export default function NewEncounterPage() {
     const searchParams = useSearchParams();
@@ -238,7 +253,7 @@ export default function NewEncounterPage() {
                 description: `Successfully ${status === 'Finalized' ? 'completed' : 'saved'} consultation for ${patient.firstName}.`,
             });
 
-            router.push(`/dashboard/patients/${patient.id}`);
+            router.push(`/dashboard/patients/detail?id=${patient.id}`);
         } catch (error: any) {
             console.error("Error saving encounter:", error);
             toast({
@@ -324,7 +339,7 @@ export default function NewEncounterPage() {
                 description: `Registered ${newPatient.firstName} and saved consultation. Linking Code: ${pCode}`,
             });
 
-            router.push(`/dashboard/patients/${patDocRef.id}`);
+            router.push(`/dashboard/patients/detail?id=${patDocRef.id}`);
         } catch (error: any) {
             console.error("Error creating direct patient encounter:", error);
             toast({
@@ -656,7 +671,7 @@ export default function NewEncounterPage() {
                         {prescriptions.length > 0 && (
                             <div className="mt-6 pt-6 border-t border-dashed border-zinc-300 dark:border-zinc-800">
                                 <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-1.5">
-                                    <Pill className="h-3 w-3 text-emerald-400" /> HOLON Drug Safety Checker
+                                    <Pill className="h-3 w-3 text-emerald-400" /> Drug Safety Checker
                                 </div>
                                 {activeInteractions.length > 0 ? (
                                     <div className="space-y-2">

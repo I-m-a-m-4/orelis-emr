@@ -1,0 +1,46 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Permissions the Orelis webview needs on every platform.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-set-focus",
+    "core:window:allow-minimize",
+    "core:window:allow-unminimize",
+    "core:window:allow-start-dragging",
+    "core:window:allow-is-maximized",
+    "core:window:allow-maximize",
+    "core:window:allow-unmaximize",
+    "core:window:allow-close",
+
+    "core:app:allow-version",
+    "core:app:allow-name",
+
+    "core:event:default",
+    "core:path:default",
+
+    "sql:default",
+
+    "os:default",
+    "log:default",
+    "dialog:default",
+    "notification:default",
+
+    "shell:allow-open",
+
+    "fs:default",
+
+    {
+      "identifier": "http:default",
+      "description": "Privileged operations (staff Auth users, custom claims, cascade deletes, AI flows) run on the hosted deployment. Routing those through the Rust HTTP client rather than webview fetch avoids a cross-origin request from tauri://localhost and the CORS preflight it would need — the app origin is not a web origin the server can whitelist meaningfully.",
+      "allow": [
+        { "url": "https://orelis.app/*" },
+        { "url": "https://*.orelis.app/*" }
+      ]
+    }
+  ]
+}

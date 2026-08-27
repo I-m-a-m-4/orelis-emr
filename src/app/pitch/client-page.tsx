@@ -63,7 +63,11 @@ const slides = [
 
 export function PitchClientPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
+  // `HTMLElement`, not `HTMLDivElement`: these refs are attached to `<section>`
+  // elements. The refs below also use block bodies — a concise arrow returns the
+  // assigned element, and React reads a ref callback's return value as a cleanup
+  // function, so returning a DOM node makes React try to call it on unmount.
+  const slideRefs = useRef<(HTMLElement | null)[]>([]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -106,7 +110,7 @@ export function PitchClientPage() {
 
         {/* Title Slide */}
         <section
-          ref={(el) => (slideRefs.current[0] = el)}
+          ref={(el) => { slideRefs.current[0] = el; }}
           data-index={0}
           className="h-screen flex flex-col justify-center items-center text-center p-8 noisy-bg relative"
         >
@@ -128,7 +132,7 @@ export function PitchClientPage() {
         {slides.map((slide, index) => (
           <section
             key={index}
-            ref={(el) => (slideRefs.current[index + 1] = el)}
+            ref={(el) => { slideRefs.current[index + 1] = el; }}
             data-index={index + 1}
             className="h-screen flex items-center justify-center p-8 noisy-bg"
           >
@@ -153,7 +157,7 @@ export function PitchClientPage() {
         ))}
 
          {/* Contact Slide */}
-         <section ref={el => slideRefs.current[slides.length + 1] = el} data-index={slides.length + 1} className="h-screen flex flex-col justify-center items-center text-center p-8 noisy-bg relative">
+         <section ref={(el) => { slideRefs.current[slides.length + 1] = el; }} data-index={slides.length + 1} className="h-screen flex flex-col justify-center items-center text-center p-8 noisy-bg relative">
             <div className="absolute inset-0 bg-[radial-gradient(1200px_400px_at_50%_120%,rgba(16,185,129,0.2),transparent)] opacity-70 [mask-image:radial-gradient(65%_65%_at_50%_50%,black,transparent)] card-glow"/>
             <div className="z-10">
                 <h2 className="text-4xl md:text-5xl font-light tracking-tight text-foreground font-headline mb-6">Let's Build the Future of African Healthcare.</h2>

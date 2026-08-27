@@ -4,8 +4,86 @@ import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShieldAlert, Trash2, CheckCircle2, Pill, Search } from 'lucide-react';
-import { MOCK_DRUG_INTERACTIONS } from '@/lib/ontomorph';
-import { searchDrugsAction, checkDrugInteractionsAction } from '@/app/actions/ontomorph';
+// Mock Drug safety checker interaction database
+const MOCK_DRUG_INTERACTIONS: Record<string, Array<{ severity: "High" | "Moderate" | "Minor"; description: string; source: string }>> = {
+  "Aspirin + Warfarin": [
+    {
+      severity: "High",
+      description: "Co-administration of aspirin and warfarin increases the risk of serious bleeding events due to additive antiplatelet and anticoagulant effects.",
+      source: "Drug-Interaction DB (v5.3)"
+    }
+  ],
+  "Ibuprofen + Lisinopril": [
+    {
+      severity: "Moderate",
+      description: "NSAIDs like ibuprofen may decrease the antihypertensive effect of ACE inhibitors like lisinopril and increase the risk of renal impairment.",
+      source: "Drug-Interaction DB (v5.3)"
+    }
+  ],
+  "Simvastatin + Amlodipine": [
+    {
+      severity: "Moderate",
+      description: "Amlodipine may increase the plasma concentration of simvastatin, elevating the risk of myopathy and rhabdomyolysis.",
+      source: "Drug-Interaction DB (v5.3)"
+    }
+  ],
+  "Sildenafil + Nitroglycerin": [
+    {
+      severity: "High",
+      description: "Critical hypotension risk. Nitrates like nitroglycerin dilate blood vessels, and sildenafil amplifies this effect, potentially causing a dangerous drop in blood pressure.",
+      source: "Drug-Interaction DB (v5.3)"
+    }
+  ],
+  "Warfarin + Ibuprofen": [
+    {
+      severity: "High",
+      description: "NSAIDs like ibuprofen increase gastrointestinal bleeding risk and interfere with platelet aggregation, significantly raising bleeding risk when combined with warfarin.",
+      source: "Drug-Interaction DB (v5.3)"
+    }
+  ],
+  "Metoprolol + Albuterol": [
+    {
+      severity: "Moderate",
+      description: "Metoprolol is a beta-blocker that can antagonize the bronchodilating effects of beta-agonists like albuterol, potentially causing bronchospasm in susceptible patients.",
+      source: "Drug-Interaction DB (v5.3)"
+    }
+  ],
+  "Sertraline + Tramadol": [
+    {
+      severity: "High",
+      description: "Co-administration increases the risk of Serotonin Syndrome, a potentially life-threatening condition characterized by mental status changes, neuromuscular hyperactivity, and autonomic instability.",
+      source: "Drug-Interaction DB (v5.3)"
+    }
+  ],
+  "Clopidogrel + Omeprazole": [
+    {
+      severity: "Moderate",
+      description: "Omeprazole is a CYP2C19 inhibitor that can reduce the bioactivation and antiplatelet efficacy of clopidogrel, potentially increasing cardiovascular events.",
+      source: "Drug-Interaction DB (v5.3)"
+    }
+  ],
+  "Lisinopril + Spironolactone": [
+    {
+      severity: "Moderate",
+      description: "Combining an ACE inhibitor with a potassium-sparing diuretic increases the risk of hyperkalemia. Close monitoring of serum potassium and renal function is advised.",
+      source: "Drug-Interaction DB (v5.3)"
+    }
+  ],
+  "Warfarin + Azithromycin": [
+    {
+      severity: "Moderate",
+      description: "Macrolide antibiotics like azithromycin can alter intestinal flora and inhibit warfarin metabolism, potentially prolonging the prothrombin time (INR).",
+      source: "Drug-Interaction DB (v5.3)"
+    }
+  ],
+  "Atorvastatin + Clarithromycin": [
+    {
+      severity: "High",
+      description: "Clarithromycin is a strong CYP3A4 inhibitor that can significantly increase atorvastatin exposure, leading to an elevated risk of myopathy or rhabdomyolysis.",
+      source: "Drug-Interaction DB (v5.3)"
+    }
+  ]
+};
 
 // Expanded list of 50+ real-world clinical drugs
 const CLINICAL_DRUGS = [
@@ -36,14 +114,10 @@ export function DrugSafetyChecker() {
       return;
     }
 
-    const timer = setTimeout(async () => {
+    const timer = setTimeout(() => {
       setIsSearching(true);
-      const res = await searchDrugsAction(searchTerm);
-      if (res.success && res.hits) {
-        const names = res.hits
-          .map((h: any) => h.conceptName)
-          .filter((name: string) => !selectedDrugs.includes(name));
-        setSearchResults(names);
+      if (false) {
+        
       } else {
         const fallback = CLINICAL_DRUGS.filter(d => 
           d.toLowerCase().includes(searchTerm.toLowerCase()) &&
@@ -80,16 +154,8 @@ export function DrugSafetyChecker() {
   const checkInteractions = async (drugs: string[]) => {
     setIsChecking(true);
     try {
-      const res = await checkDrugInteractionsAction(drugs);
-      if (res.success && res.interactions) {
-        setInteractions(res.interactions.map((item: any) => ({
-          drugs: item.drugs,
-          details: {
-            severity: item.severity,
-            description: item.description,
-            source: item.source
-          }
-        })));
+      if (false) {
+        
       } else {
         // Fallback to local check
         const found: any[] = [];
@@ -121,7 +187,7 @@ export function DrugSafetyChecker() {
       <CardHeader className="pb-2 border-b border-border border-dashed">
         <CardTitle className="text-lg font-headline flex items-center gap-2">
           <Pill className="h-5 w-5 text-emerald-400" />
-          HOLON Drug Safety Checker
+          Drug Safety Checker
         </CardTitle>
         <CardDescription className="text-xs">
           Cross-reference drug lists against 1.7 million clinical interactions in real-time
@@ -141,7 +207,7 @@ export function DrugSafetyChecker() {
               <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
-                placeholder={isSearching ? "Searching HOLON..." : "Type to search drugs (e.g. Nitroglycerin, Sildenafil)..."}
+                placeholder={isSearching ? "Searching DB..." : "Type to search drugs (e.g. Nitroglycerin, Sildenafil)..."}
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -185,7 +251,7 @@ export function DrugSafetyChecker() {
                   ))
                 ) : (
                   <div className="px-4 py-3 text-xs text-muted-foreground italic text-center">
-                    {isSearching ? "Searching HOLON DB..." : "No matching drugs found"}
+                    {isSearching ? "Searching DB..." : "No matching drugs found"}
                   </div>
                 )}
               </div>

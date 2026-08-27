@@ -11,7 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { useMemo, useState } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
-import { deleteClinicAction, setExpiryDateAction, revokeAccessAction } from '../actions';
+import { setExpiryDateAction, revokeAccessAction } from '../actions';
+import { apiFetch } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -26,13 +27,24 @@ function DeleteClinicDialog({ clinicId, clinicName }: { clinicId: string, clinic
     const { toast } = useToast();
 
     const handleDelete = async () => {
-        const formData = new FormData();
-        formData.append('clinicId', clinicId);
-        const result = await deleteClinicAction(formData);
+        // Uses the shared `/api/admin/cascade-delete` route rather than a Server
+        // Action of its own, so there is one cascade implementation instead of
+        // two — this one commits in chunks and so survives a clinic whose data
+        // exceeds Firestore's 500-operation batch limit.
+        const result = await apiFetch<{ success: boolean; message: string }>(
+            '/api/admin/cascade-delete',
+            {
+                method: 'POST',
+                body: { target: 'clinic', clinicId },
+                description: `Delete clinic ${clinicName}`,
+            }
+        );
         toast({
-            title: result.success ? "Success" : "Error",
-            description: result.message,
-            variant: result.success ? "default" : "destructive",
+            title: result.ok ? "Success" : "Error",
+            description: result.ok
+                ? (result.data?.message ?? "Clinic deleted.")
+                : (result.error ?? "Failed to delete clinic."),
+            variant: result.ok ? "default" : "destructive",
         });
     };
 
@@ -103,7 +115,7 @@ function ClinicActions({ clinic }: { clinic: Clinic }) {
             <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuItem asChild>
-                    <Link href={`/super-admin/clinics/${clinic.id}`}>View Details</Link>
+                    <Link href={`/super-admin/clinics/detail?id=${clinic.id}`}>View Details</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuSub>
@@ -225,7 +237,7 @@ function SuperAdminDashboard({ clinics, patients, users, loading }: { clinics: C
                             ) : clinics?.map(clinic => (
                                 <TableRow key={clinic.id}>
                                     <TableCell className="font-medium">
-                                        <Link href={`/super-admin/clinics/${clinic.id}`} className="hover:underline text-primary">
+                                        <Link href={`/super-admin/clinics/detail?id=${clinic.id}`} className="hover:underline text-primary">
                                             {clinic.name}
                                         </Link>
                                     </TableCell>

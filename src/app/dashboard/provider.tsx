@@ -13,6 +13,7 @@ import { doc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { LoadingAnimation } from '@/components/layout/loading-animation';
 import { FloatingAiChat } from '@/components/layout/floating-ai-chat';
+import { OfflineSyncProvider } from '@/lib/offline/use-offline-sync';
 
 function AuthGuard({ children }: { children: ReactNode }) {
   const { user, loading } = useUser();
@@ -113,22 +114,32 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthGuard>
-      <SidebarProvider>
-        <div className="min-h-screen w-full bg-background text-foreground flex">
-          <Sidebar collapsible="icon">
-            <AppSidebar userProfile={userProfile} isLoading={isLoading} />
-          </Sidebar>
-          <div className="flex flex-col flex-1 min-w-0">
-            <AppHeader />
-            <main className="flex-1 p-4 pb-20 md:p-6 lg:p-8 overflow-auto">
-              {children}
-            </main>
-            <MobileNav userProfile={userProfile} isLoading={isLoading} />
+      {/*
+        Mounted inside the `!userProfile` guard above, so hydration always has a
+        clinicId to scope by — it is keyed on that, and starting it before the
+        profile resolves would either hydrate nothing or, worse, hydrate against
+        a stale clinic. It never blocks this render: the dashboard reads from the
+        mirror and from Firestore's own cache, both of which are useful before a
+        sync completes and after one fails.
+      */}
+      <OfflineSyncProvider profile={userProfile}>
+        <SidebarProvider>
+          <div className="min-h-screen w-full bg-background text-foreground flex">
+            <Sidebar collapsible="icon">
+              <AppSidebar userProfile={userProfile} isLoading={isLoading} />
+            </Sidebar>
+            <div className="flex flex-col flex-1 min-w-0">
+              <AppHeader />
+              <main className="flex-1 p-4 pb-20 md:p-6 lg:p-8 overflow-auto">
+                {children}
+              </main>
+              <MobileNav userProfile={userProfile} isLoading={isLoading} />
+            </div>
           </div>
-        </div>
-        <FirebaseErrorListener />
-        <FloatingAiChat />
-      </SidebarProvider>
+          <FirebaseErrorListener />
+          <FloatingAiChat />
+        </SidebarProvider>
+      </OfflineSyncProvider>
     </AuthGuard>
   );
 }

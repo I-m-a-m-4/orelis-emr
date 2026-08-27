@@ -118,7 +118,7 @@ export function CommandPalette() {
                   <CommandItem
                     key={patient.id}
                     value={`${patient.firstName} ${patient.surname} ${patient.patientCode}`}
-                    onSelect={() => runCommand(() => router.push(`/dashboard/patients/${patient.id}`))}
+                    onSelect={() => runCommand(() => router.push(`/dashboard/patients/detail?id=${patient.id}`))}
                     className="cursor-pointer"
                   >
                     <Users className="mr-2 h-4 w-4" />

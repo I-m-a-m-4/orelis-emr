@@ -15,15 +15,11 @@ export default function DemoVideoPage() {
           
           {/* Header Section */}
           <div className="text-center max-w-3xl mx-auto mb-12">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary ring-1 ring-primary/20 animate-pulse">
-              <Sparkles className="h-3 w-3" />
-              Ontomorph Hackathon Submission
-            </span>
             <h1 className="mt-4 font-headline text-3xl font-light tracking-tight sm:text-4xl md:text-5xl text-foreground">
               Orelis EMR Platform Demo
             </h1>
             <p className="mt-4 text-sm sm:text-base text-muted-foreground leading-relaxed">
-              Watch how Orelis integrates with the <strong className="font-semibold text-foreground">Ontomorph Digital Twin Platform</strong> and <strong className="font-semibold text-foreground">HOLON Clinical Knowledge Graph</strong> to power real-time diagnostics, drug safety screening, and predictive simulations.
+              Watch how Orelis integrates with advanced predictive features to power real-time diagnostics, drug safety screening, and predictive simulations.
             </p>
           </div>
 
@@ -60,7 +56,7 @@ export default function DemoVideoPage() {
               <div className="p-2.5 bg-emerald-500/10 rounded-xl w-fit text-emerald-500 dark:text-emerald-400 mb-4">
                 <ShieldCheck className="h-5 w-5" />
               </div>
-              <h3 className="text-base font-semibold text-foreground mb-2">HOLON Drug Safety</h3>
+              <h3 className="text-base font-semibold text-foreground mb-2">Drug Safety</h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Screens drug lists against 1.7 million clinical interactions in real-time to alert doctors of critical medication risks directly within the editor.
               </p>

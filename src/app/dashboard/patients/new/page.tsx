@@ -479,7 +479,7 @@ export default function AddPatientPage() {
                                 Schedule Appointment
                             </Button>
                         )}
-                        <Button variant="ghost" className="w-full text-xs" onClick={() => router.push(`/dashboard/patients/${successData?.id}`)}>
+                        <Button variant="ghost" className="w-full text-xs" onClick={() => router.push(`/dashboard/patients/detail?id=${successData?.id}`)}>
                             View Full Patient Profile
                         </Button>
                     </DialogFooter>

@@ -111,7 +111,7 @@ export function ClinicalRiskScorer({ patient, encounters }: ClinicalRiskScorerPr
       <CardHeader className="pb-3 border-b border-border border-dashed">
         <CardTitle className="text-lg font-headline flex items-center gap-2">
           <Activity className="h-5 w-5 text-blue-400" />
-          Ontomorph DTP Clinical Risk Scorer
+          Clinical Risk Scorer
         </CardTitle>
         <CardDescription className="text-xs">
           Live cardio-metabolic risk analysis and guideline recommendations based on twin telemetry
@@ -203,7 +203,7 @@ export function ClinicalRiskScorer({ patient, encounters }: ClinicalRiskScorerPr
         <div className="md:col-span-2 pt-3 border-t border-dashed border-border flex items-center justify-between text-muted-foreground text-[9px] font-mono">
           <div className="flex items-center gap-1.5">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-            Ontomorph DTP ACC/AHA Risk Estimation Engine (v1.4)
+            ACC/AHA Risk Estimation Engine (v1.4)
           </div>
           <span className="text-[8px] opacity-60">Computed dynamically from live telemetry</span>
         </div>

@@ -70,7 +70,7 @@ export function BlogDashboardClientPage({ posts }: { posts: BlogPost[] }) {
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                             <DropdownMenuItem asChild>
-                                                <Link href={`/super-admin/blog/${post.id}/edit`}>Edit</Link>
+                                                <Link href={`/super-admin/blog/edit?id=${post.id}`}>Edit</Link>
                                             </DropdownMenuItem>
                                             {post.status === 'published' && <DropdownMenuItem asChild><Link href={`/blog/${post.slug}`} target="_blank">View Live Post</Link></DropdownMenuItem>}
                                             <DropdownMenuSeparator />

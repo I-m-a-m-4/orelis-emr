@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { askSupportQuestion, type SupportChatInput } from "@/app/actions";
+import { askSupportQuestion } from "@/lib/ai-client";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from "@/lib/utils";
@@ -44,22 +44,23 @@ export function FloatingAiChat() {
         setIsLoading(true);
 
         try {
-            const chatInput: SupportChatInput = {
+            const result = await askSupportQuestion({
                 question: input,
                 history: messages,
-            };
-            const result = await askSupportQuestion(chatInput);
-            if (result.success) {
-                const aiMessage: Message = { role: 'ai', content: result.answer || '' };
+            });
+            if (result.ok) {
+                const aiMessage: Message = { role: 'ai', content: result.data?.answer || '' };
                 setMessages(prev => [...prev, aiMessage]);
             } else {
-                throw new Error(typeof result.answer === 'string' ? result.answer : 'Unknown error');
+                throw new Error(result.error || 'Unknown error');
             }
         } catch (error) {
             console.error("AI chat error:", error);
             toast({
                 title: "AI Assistant Error",
-                description: "Sorry, I couldn't process that request. Please try again.",
+                description: error instanceof Error
+                    ? error.message
+                    : "Sorry, I couldn't process that request. Please try again.",
                 variant: "destructive",
             });
         } finally {

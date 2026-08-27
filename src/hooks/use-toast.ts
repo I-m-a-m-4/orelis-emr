@@ -11,7 +11,17 @@ import type {
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 2000
 
-type ToasterToast = ToastProps & {
+/**
+ * `title` is omitted from `ToastProps` before being redeclared.
+ *
+ * `ToastProps` comes from a `div`-based Radix primitive, so it carries the HTML
+ * `title` attribute — `title?: string`. Intersecting that with `React.ReactNode`
+ * produced `string & ReactNode`, a type almost nothing satisfies: every caller
+ * passing an icon plus a label (see `FirebaseErrorListener`) was a type error,
+ * and a plain string only worked by accident. Omitting first lets the ReactNode
+ * declaration win outright.
+ */
+type ToasterToast = Omit<ToastProps, 'title'> & {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode

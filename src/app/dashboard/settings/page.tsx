@@ -1,16 +1,15 @@
 
 'use client';
-import { useActionState, useEffect, useRef, useMemo, useState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useMemo, useState } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
+import { useUser, useFirestore, useDoc, useCollection, useAuth } from "@/firebase";
 import { doc, updateDoc, collection, addDoc, query, where, orderBy, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { updateProfileAction, type UpdateProfileFormState } from '@/app/actions';
+import { updateOwnProfile } from '@/lib/data/profile';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile, Clinic } from '@/lib/types';
 import { Building, CreditCard, Loader2, Palette, ShieldCheck, FileClock, UserCog, Database, Link as LinkIcon, MessageSquare, Activity, FileJson, Lock, Smartphone, Download, Key, ExternalLink, Clock, Plus, Trash2, Check, AlertCircle } from 'lucide-react';
@@ -30,11 +29,6 @@ import { PaystackButton } from '@/components/paystack-button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { generatePatientCode } from '@/lib/utils';
-
-const initialState: UpdateProfileFormState = {
-  message: '',
-  isSuccess: false,
-};
 
 function ClinicSetupTool({ clinic }: { clinic: Clinic }) {
   const firestore = useFirestore();
@@ -235,7 +229,22 @@ function AuditLogTool({ clinicId }: { clinicId: string }) {
                   <TableRow key={i}>
                     <TableCell className="text-xs font-mono">{new Date(log.timestamp).toLocaleString()}</TableCell>
                     <TableCell><Badge variant="outline">{log.action}</Badge></TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{log.details}</TableCell>
+                    {/*
+                      `details` is a string on entries written by the older inline
+                      addDoc calls and a structured object on entries from
+                      logAuditEvent, which also writes a `summary` line. Rendering
+                      an object as a React child throws, taking the whole dialog
+                      down — so prefer summary, accept a legacy string, and
+                      stringify anything else rather than trusting the shape.
+                    */}
+                    <TableCell className="text-xs text-muted-foreground">
+                      {log.summary
+                        ?? (typeof log.details === 'string'
+                          ? log.details
+                          : log.details
+                            ? JSON.stringify(log.details)
+                            : '—')}
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -451,34 +460,45 @@ function NotificationPreferencesTool({ userProfile, firestore }: { userProfile: 
   );
 }
 
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending} className="button-glow cursor-pointer">
-      {pending ? <DashLoader size="sm" className="mr-2" /> : null}
-      {pending ? 'Saving...' : 'Save Changes'}
-    </Button>
-  );
-}
-
 function ProfileForm({ user }: { user: UserProfile }) {
-  const [state, formAction] = useActionState(updateProfileAction, initialState);
   const { toast } = useToast();
-  const formRef = useRef<HTMLFormElement>(null);
+  const firestore = useFirestore();
+  const auth = useAuth();
+  const [pending, setPending] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (state.message) {
-      toast({
-        title: state.isSuccess ? 'Success!' : 'Error!',
-        description: state.message,
-        variant: state.isSuccess ? 'default' : 'destructive',
-      });
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!firestore) return;
+
+    const data = new FormData(e.currentTarget);
+    const name = String(data.get('name') ?? '');
+
+    if (name.trim().length < 2) {
+      setNameError('Name must be at least 2 characters.');
+      return;
     }
-  }, [state, toast]);
+    setNameError(null);
+
+    setPending(true);
+    const result = await updateOwnProfile(firestore, auth, {
+      userId: user.uid,
+      name,
+      clinicId: user.clinicId,
+      role: user.role,
+      email: user.email,
+    });
+    setPending(false);
+
+    toast({
+      title: result.success ? 'Success!' : 'Error!',
+      description: result.message,
+      variant: result.success ? 'default' : 'destructive',
+    });
+  };
 
   return (
-    <form ref={formRef} action={formAction}>
-      <input type="hidden" name="userId" value={user.uid} />
+    <form onSubmit={handleSubmit}>
       <Card className="border-dashed">
         <CardHeader>
           <CardTitle>Personal Information</CardTitle>
@@ -488,7 +508,7 @@ function ProfileForm({ user }: { user: UserProfile }) {
           <div className="space-y-2">
             <Label htmlFor="name">Full Name</Label>
             <Input id="name" name="name" defaultValue={user.name} />
-            {state.errors?.name && <p className="text-sm font-medium text-destructive">{state.errors.name}</p>}
+            {nameError && <p className="text-sm font-medium text-destructive">{nameError}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -497,7 +517,10 @@ function ProfileForm({ user }: { user: UserProfile }) {
         </CardContent>
         <CardFooter>
           <div className="flex justify-end w-full">
-            <SubmitButton />
+            <Button type="submit" disabled={pending} className="button-glow cursor-pointer">
+              {pending ? <DashLoader size="sm" className="mr-2" /> : null}
+              {pending ? 'Saving...' : 'Save Changes'}
+            </Button>
           </div>
         </CardFooter>
       </Card>

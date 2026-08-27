@@ -158,7 +158,28 @@ export interface WaitlistEntry {
 }
 export interface Observation {
   id: string;
-  type: 'temperature' | 'blood_pressure' | 'heart_rate' | 'respiratory_rate' | 'weight' | 'height' | 'bmi' | 'oxygen_saturation';
+  /**
+   * `spo2` and `oxygen_saturation` are the same measurement under two names, and
+   * both exist in stored encounters — the encounter editor writes `spo2` while
+   * this union originally admitted only `oxygen_saturation`. Both are listed
+   * because a type that excludes a value the app actually persists turns every
+   * read of it into a "comparison appears unintentional" error, and the tempting
+   * fix — deleting the comparison — silently drops the vital instead.
+   *
+   * `oxygen_saturation` is the canonical spelling for anything new. Readers must
+   * accept both; see `src/app/dashboard/page.tsx` and the encounter editor.
+   */
+  type:
+    | 'temperature'
+    | 'blood_pressure'
+    | 'heart_rate'
+    | 'respiratory_rate'
+    | 'weight'
+    | 'height'
+    | 'bmi'
+    | 'oxygen_saturation'
+    | 'spo2'
+    | 'glucose';
   value: string;
   unit: string;
   timestamp: string;

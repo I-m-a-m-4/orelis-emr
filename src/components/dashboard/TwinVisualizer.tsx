@@ -5,8 +5,33 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Activity, ShieldAlert, Heart, Zap, RefreshCw, Layers } from 'lucide-react';
-import { MOCK_TWIN_SYSTEMS } from '@/lib/ontomorph';
-import { runOntomorphSimulationAction } from '@/app/actions/ontomorph';
+const MOCK_TWIN_SYSTEMS = {
+  cardiovascular: {
+    status: "normal",
+    signals: [
+      { code: "HR", name: "Heart Rate", value: "72", unit: "bpm", timestamp: new Date().toISOString() },
+      { code: "BP_SYS", name: "Systolic BP", value: "118", unit: "mmHg", timestamp: new Date().toISOString() },
+      { code: "BP_DIA", name: "Diastolic BP", value: "76", unit: "mmHg", timestamp: new Date().toISOString() },
+      { code: "LDL", name: "LDL Cholesterol", value: "115", unit: "mg/dL", timestamp: new Date().toISOString() },
+      { code: "HDL", name: "HDL Cholesterol", value: "48", unit: "mg/dL", timestamp: new Date().toISOString() },
+    ]
+  },
+  metabolic: {
+    status: "warning",
+    signals: [
+      { code: "GLU", name: "Fasting Glucose", value: "105", unit: "mg/dL", timestamp: new Date().toISOString() },
+      { code: "A1C", name: "HbA1c", value: "5.8", unit: "%", timestamp: new Date().toISOString() },
+      { code: "BMI", name: "Body Mass Index", value: "26.4", unit: "kg/m²", timestamp: new Date().toISOString() },
+    ]
+  },
+  respiratory: {
+    status: "normal",
+    signals: [
+      { code: "SPO2", name: "Oxygen Saturation", value: "98", unit: "%", timestamp: new Date().toISOString() },
+      { code: "RR", name: "Respiratory Rate", value: "14", unit: "pm", timestamp: new Date().toISOString() },
+    ]
+  }
+};
 
 export function TwinVisualizer({ patientId }: { patientId?: string }) {
   const [selectedSystem, setSelectedSystem] = useState<'cardiovascular' | 'metabolic' | 'respiratory'>('cardiovascular');
@@ -58,14 +83,8 @@ export function TwinVisualizer({ patientId }: { patientId?: string }) {
     setLogs(l => ["[Ontomorph API] Initializing trajectory simulation...", ...l.slice(0, 4)]);
     
     try {
-      const result = await runOntomorphSimulationAction(patientId || 'patient-demo', 'ldl_trajectory');
-      if (result.success) {
-        setLogs(l => ["[Ontomorph API] Simulation succeeded. Retrieving projections...", ...l.slice(0, 4)]);
-        setSimResult({
-          scalarOutputs: result.scalarOutputs,
-          disclaimer: result.disclaimer,
-          narration: result.narration
-        });
+      if (false) {
+        
       } else {
         // Fallback sandbox simulation with delay
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -99,7 +118,7 @@ export function TwinVisualizer({ patientId }: { patientId?: string }) {
         <div>
           <CardTitle className="text-lg font-headline flex items-center gap-2">
             <Activity className="h-5 w-5 text-primary animate-pulse" />
-            Ontomorph Twin Telemetry
+            Digital Twin Telemetry
           </CardTitle>
           <CardDescription className="text-xs">
             Live health state monitoring & system streams
@@ -180,11 +199,11 @@ export function TwinVisualizer({ patientId }: { patientId?: string }) {
             ))}
           </div>
 
-          {/* Ontomorph Trajectory Simulation Panel */}
+          {/* Trajectory Simulation Panel */}
           {selectedSystem === 'cardiovascular' && (
             <div className="p-3.5 rounded-xl border border-dashed border-primary/30 bg-primary/5 flex flex-col gap-2.5">
               <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-foreground">Ontomorph trajectory model</span>
+                <span className="text-xs font-bold text-foreground">Trajectory model</span>
                 <Button 
                   size="sm" 
                   className="h-7 text-[10px] uppercase tracking-wider font-bold" 

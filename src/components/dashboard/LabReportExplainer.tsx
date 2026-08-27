@@ -2,8 +2,27 @@ import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { HelpCircle, FileText, Search, BookOpen, RefreshCw } from 'lucide-react';
-import { MOCK_LOINC_CONCEPTS } from '@/lib/ontomorph';
-import { explainLabConceptAction } from '@/app/actions/ontomorph';
+// Mock LOINC codes for lab report explainer
+const MOCK_LOINC_CONCEPTS: Record<string, { name: string; range: string; explanation: string; status: string }> = {
+  "2339-0": {
+    name: "Glucose [Mass/volume] in Blood",
+    range: "70 - 99 mg/dL",
+    explanation: "Measures the sugar levels in your blood. Your level of 105 mg/dL is slightly elevated, indicating a pre-diabetic metabolic profile.",
+    status: "Mildly Elevated"
+  },
+  "18262-6": {
+    name: "Cholesterol in LDL [Mass/volume] in Serum or Plasma",
+    range: "< 100 mg/dL",
+    explanation: "Known as 'bad' cholesterol. Levels higher than 100 increase cardivascular risk. Your level is 115 mg/dL, which is within the borderline range.",
+    status: "Borderline High"
+  },
+  "4544-3": {
+    name: "Hemoglobin A1c/Hemoglobin.total in Blood",
+    range: "< 5.7 %",
+    explanation: "Indicates average blood sugar over past 3 months. Values between 5.7% and 6.4% signify pre-diabetes.",
+    status: "Mildly Elevated"
+  }
+};
 
 export function LabReportExplainer() {
   const [selectedLoinc, setSelectedLoinc] = useState("2339-0");
@@ -19,18 +38,8 @@ export function LabReportExplainer() {
   useEffect(() => {
     const fetchExplanation = async () => {
       setIsLoading(true);
-      const res = await explainLabConceptAction(selectedLoinc);
-      if (res.success) {
-        let status = "Normal";
-        if (selectedLoinc === "2339-0") status = "Mildly Elevated";
-        else if (selectedLoinc === "18262-6") status = "Borderline High";
+      if (false) {
         
-        setCurrentConcept({
-          name: res.conceptName,
-          range: res.range,
-          explanation: res.explanation,
-          status
-        });
       } else {
         const mock = MOCK_LOINC_CONCEPTS[selectedLoinc];
         if (mock) {
@@ -73,7 +82,7 @@ export function LabReportExplainer() {
       <CardHeader className="pb-2 border-b border-border border-dashed">
         <CardTitle className="text-lg font-headline flex items-center gap-2">
           <BookOpen className="h-5 w-5 text-blue-400" />
-          HOLON Lab Report Explainer
+          Lab Report Explainer
         </CardTitle>
         <CardDescription className="text-xs">
           Translate complex clinical metrics and LOINC codes into plain English explanations
@@ -159,7 +168,7 @@ export function LabReportExplainer() {
 
           <div className="mt-6 pt-3 border-t border-dashed border-border flex items-center gap-2 text-muted-foreground text-[9px] font-mono">
             <FileText className="h-3.5 w-3.5" />
-            Verified against Ontomorph HOLON Clinical Knowledge Graph
+            Verified against Clinical Knowledge Graph
           </div>
         </div>
       </CardContent>

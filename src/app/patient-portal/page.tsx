@@ -25,11 +25,20 @@ import {
     ArrowRight,
     Activity,
     Clock,
-    ArrowLeft
+    ArrowLeft,
+    FlaskConical,
+    ShieldAlert,
+    Pill,
+    Sparkles
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { LoadingAnimation } from '@/components/layout/loading-animation';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TwinVisualizer } from '@/components/dashboard/TwinVisualizer';
+import { WhatIfCoach } from '@/components/dashboard/WhatIfCoach';
+import { LabReportExplainer } from '@/components/dashboard/LabReportExplainer';
+import { DrugSafetyChecker } from '@/components/dashboard/DrugSafetyChecker';
 import type { Patient } from '@/lib/types';
 
 const safeFormat = (dateVal: any, formatStr: string): string => {
@@ -58,6 +67,7 @@ export default function PatientPortal() {
     const [patient, setPatient] = useState<Patient | null>(null);
     const [appointments, setAppointments] = useState<any[]>([]);
     const [encounters, setEncounters] = useState<any[]>([]);
+    const [labOrders, setLabOrders] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [selectedEncounter, setSelectedEncounter] = useState<any | null>(null);
@@ -116,6 +126,12 @@ export default function PatientPortal() {
             const encountersSnapshot = await getDocs(encountersQ);
             setEncounters(encountersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
+            // Fetch lab orders
+            const labOrdersRef = collection(firestore, 'lab_orders');
+            const labOrdersQ = query(labOrdersRef, where('patientId', '==', patientData.id), orderBy('requestedAt', 'desc'), limit(10));
+            const labOrdersSnapshot = await getDocs(labOrdersQ);
+            setLabOrders(labOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
             setIsLoggedIn(true);
             toast({
                 title: "Authentication Successful",
@@ -138,6 +154,9 @@ export default function PatientPortal() {
         setPatient(null);
         setPatientCode('');
         setSurname('');
+        setLabOrders([]);
+        setAppointments([]);
+        setEncounters([]);
     };
 
     if (!isLoggedIn || !patient) {
@@ -236,88 +255,186 @@ export default function PatientPortal() {
 
                     {/* Main Content */}
                     <div className="md:col-span-2 space-y-6">
-                        {/* Upcoming Appointments */}
-                        <Card className="border-dashed">
-                            <CardHeader>
-                                <CardTitle className="text-lg flex items-center gap-2">
-                                    <Calendar className="h-5 w-5 text-primary" /> Upcoming Appointments
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {appointments.length > 0 ? (
-                                    <div className="space-y-4">
-                                        {appointments.map((appt) => (
-                                            <div key={appt.id} className="flex items-center justify-between p-4 rounded-xl bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="text-center px-3 py-1 bg-primary/20 rounded-lg">
-                                                        <p className="text-xs font-bold">{safeFormat(appt.appointmentDate, 'MMM')}</p>
-                                                        <p className="text-xl font-bold">{safeFormat(appt.appointmentDate, 'dd')}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-semibold">{appt.type}</p>
-                                                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                                            <Clock className="h-3 w-3" /> {safeFormat(appt.appointmentDate, 'p')}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary uppercase text-[10px]">
-                                                    {appt.status || 'Scheduled'}
-                                                </Badge>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="py-8 text-center bg-muted/5 rounded-xl border border-dashed">
-                                        <p className="text-sm text-muted-foreground">No upcoming appointments found.</p>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                        <Tabs defaultValue="records" className="w-full">
+                            <TabsList className="grid w-full grid-cols-4 bg-muted/60 p-1 border border-border/50 rounded-xl">
+                                <TabsTrigger value="records" className="text-xs py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                                    <ClipboardList className="mr-2 h-4 w-4" /> Records
+                                </TabsTrigger>
+                                <TabsTrigger value="labs" className="text-xs py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                                    <FlaskConical className="mr-2 h-4 w-4" /> Lab Tests
+                                </TabsTrigger>
+                                <TabsTrigger value="appointments" className="text-xs py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                                    <Calendar className="mr-2 h-4 w-4" /> Appts
+                                </TabsTrigger>
+                                <TabsTrigger value="twin" className="text-xs py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                                    <Activity className="mr-2 h-4 w-4" /> Health Twin
+                                </TabsTrigger>
+                            </TabsList>
 
-                        {/* Recent Medical Records */}
-                        <Card className="border-dashed">
-                            <CardHeader>
-                                <CardTitle className="text-lg flex items-center gap-2">
-                                    <FileText className="h-5 w-5 text-primary" /> Medical Records & Documents
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {encounters.length > 0 ? (
-                                    <div className="space-y-4">
-                                        {encounters.map((enc) => (
-                                            <div key={enc.id} className="p-4 rounded-xl bg-card/40 border border-primary/10 hover:border-primary/30 transition-all group">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <div>
-                                                        <p className="text-xs font-bold text-primary uppercase mb-1">{safeFormat(enc.date, 'PPPP')}</p>
-                                                        <h4 className="font-semibold">Clinical Encounter: {enc.type}</h4>
+                            {/* Medical Records Tab */}
+                            <TabsContent value="records" className="mt-6 space-y-4">
+                                <Card className="border-dashed">
+                                    <CardHeader>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <FileText className="h-5 w-5 text-primary" /> Medical Records & Encounters
+                                        </CardTitle>
+                                        <CardDescription>
+                                            View clinical summary notes, assessments, and prescriptions signed by your physician.
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {encounters.length > 0 ? (
+                                            <div className="space-y-4">
+                                                {encounters.map((enc) => (
+                                                    <div key={enc.id} className="p-4 rounded-xl bg-card/40 border border-primary/10 hover:border-primary/30 transition-all group">
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <div>
+                                                                <p className="text-xs font-bold text-primary uppercase mb-1">{safeFormat(enc.date, 'PPPP')}</p>
+                                                                <h4 className="font-semibold">Clinical Encounter: {enc.type}</h4>
+                                                            </div>
+                                                            <Badge className="bg-primary/20 text-primary border-none">{enc.status}</Badge>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-4 mt-4">
+                                                            <div className="p-2 rounded bg-primary/5">
+                                                                <p className="text-[10px] text-muted-foreground uppercase font-bold">Assessment</p>
+                                                                <p className="text-xs line-clamp-2 mt-1">{enc.soap?.assessment || 'No details'}</p>
+                                                            </div>
+                                                            <div className="p-2 rounded bg-primary/5">
+                                                                <p className="text-[10px] text-muted-foreground uppercase font-bold">Medications</p>
+                                                                <p className="text-xs line-clamp-2 mt-1">{enc.prescriptions?.join(', ') || 'None prescribed'}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="mt-4 pt-4 border-t border-dashed border-primary/10 flex justify-between items-center transition-opacity">
+                                                            <p className="text-[10px] text-muted-foreground italic">Digitally signed by {enc.doctorName}</p>
+                                                            <Button variant="link" size="sm" onClick={() => setSelectedEncounter(enc)} className="h-auto p-0 text-primary text-xs">View Full Details</Button>
+                                                        </div>
                                                     </div>
-                                                    <Badge className="bg-primary/20 text-primary border-none">{enc.status}</Badge>
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-4 mt-4">
-                                                    <div className="p-2 rounded bg-primary/5">
-                                                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Assessment</p>
-                                                        <p className="text-xs line-clamp-2 mt-1">{enc.soap?.assessment || 'No details'}</p>
-                                                    </div>
-                                                    <div className="p-2 rounded bg-primary/5">
-                                                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Medications</p>
-                                                        <p className="text-xs line-clamp-2 mt-1">{enc.prescriptions?.join(', ') || 'None prescribed'}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="mt-4 pt-4 border-t border-dashed border-primary/10 flex justify-between items-center transition-opacity">
-                                                    <p className="text-[10px] text-muted-foreground italic">Digitally signed by {enc.doctorName}</p>
-                                                    <Button variant="link" size="sm" onClick={() => setSelectedEncounter(enc)} className="h-auto p-0 text-primary text-xs">View Full Details</Button>
-                                                </div>
+                                                ))}
                                             </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="py-8 text-center bg-muted/5 rounded-xl border border-dashed">
-                                        <p className="text-sm text-muted-foreground">No medical encounters recorded yet.</p>
-                                    </div>
-                                )
-                                }
-                            </CardContent>
-                        </Card>
+                                        ) : (
+                                            <div className="py-8 text-center bg-muted/5 rounded-xl border border-dashed">
+                                                <p className="text-sm text-muted-foreground">No medical encounters recorded yet.</p>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
+                            {/* Lab Tests Tab */}
+                            <TabsContent value="labs" className="mt-6 space-y-6">
+                                <Card className="border-dashed">
+                                    <CardHeader>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <FlaskConical className="h-5 w-5 text-primary" /> Laboratory Tests
+                                        </CardTitle>
+                                        <CardDescription>
+                                            Track and view results for lab diagnostics requested by your doctor.
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {labOrders.length > 0 ? (
+                                            <div className="space-y-4">
+                                                {labOrders.map((order) => (
+                                                    <div key={order.id} className="p-4 rounded-xl bg-card/40 border border-primary/10 hover:border-primary/30 transition-all">
+                                                        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-3">
+                                                            <div>
+                                                                <h4 className="font-semibold text-base">{order.testType}</h4>
+                                                                <p className="text-xs text-muted-foreground">Requested on {safeFormat(order.requestedAt, 'PPp')} by {order.requestedBy}</p>
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                <Badge variant="outline" className={`text-[10px] uppercase ${
+                                                                    order.priority === 'Emergency' ? 'border-red-500/30 bg-red-500/10 text-red-400' :
+                                                                    order.priority === 'Urgent' ? 'border-amber-500/30 bg-amber-500/10 text-amber-400' :
+                                                                    'border-primary/20 bg-primary/5 text-primary'
+                                                                }`}>
+                                                                    {order.priority}
+                                                                </Badge>
+                                                                <Badge className={`border-none ${
+                                                                    order.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-400' :
+                                                                    order.status === 'In Progress' ? 'bg-blue-500/20 text-blue-400' :
+                                                                    order.status === 'Cancelled' ? 'bg-red-500/20 text-red-400' :
+                                                                    'bg-amber-500/20 text-amber-400'
+                                                                }`}>
+                                                                    {order.status}
+                                                                </Badge>
+                                                            </div>
+                                                        </div>
+                                                        <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
+                                                            <p className="text-[10px] text-muted-foreground uppercase font-bold mb-1">Diagnostic Report / Results</p>
+                                                            <p className="text-sm whitespace-pre-wrap font-medium">
+                                                                {order.results || "Results pending clinical evaluation and entry."}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="py-8 text-center bg-muted/5 rounded-xl border border-dashed">
+                                                <p className="text-sm text-muted-foreground">No laboratory test orders registered.</p>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+
+                                {/* Lab Report Explainer Widget */}
+                                <LabReportExplainer />
+                            </TabsContent>
+
+                            {/* Appointments Tab */}
+                            <TabsContent value="appointments" className="mt-6 space-y-4">
+                                <Card className="border-dashed">
+                                    <CardHeader>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <Calendar className="h-5 w-5 text-primary" /> Upcoming Appointments
+                                        </CardTitle>
+                                        <CardDescription>
+                                            View upcoming consult schedule and check appointment statuses.
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {appointments.length > 0 ? (
+                                            <div className="space-y-4">
+                                                {appointments.map((appt) => (
+                                                    <div key={appt.id} className="flex items-center justify-between p-4 rounded-xl bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="text-center px-3 py-1 bg-primary/20 rounded-lg">
+                                                                <p className="text-xs font-bold">{safeFormat(appt.appointmentDate, 'MMM')}</p>
+                                                                <p className="text-xl font-bold">{safeFormat(appt.appointmentDate, 'dd')}</p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-semibold">{appt.type}</p>
+                                                                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                                                    <Clock className="h-3 w-3" /> {safeFormat(appt.appointmentDate, 'p')}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary uppercase text-[10px]">
+                                                            {appt.status || 'Scheduled'}
+                                                        </Badge>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="py-8 text-center bg-muted/5 rounded-xl border border-dashed">
+                                                <p className="text-sm text-muted-foreground">No upcoming appointments found.</p>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
+                            {/* Health Twin & Diagnostics Tab */}
+                            <TabsContent value="twin" className="mt-6 space-y-6">
+                                {/* Digital Twin Platform Visualizer */}
+                                <TwinVisualizer patientId={patient.id} />
+                                
+                                {/* What-if trajectories simulator */}
+                                <WhatIfCoach />
+
+                                {/* Drug safety checker */}
+                                <DrugSafetyChecker />
+                            </TabsContent>
+                        </Tabs>
                     </div>
                 </div>
             </div>

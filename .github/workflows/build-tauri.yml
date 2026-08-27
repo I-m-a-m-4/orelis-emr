@@ -1,0 +1,95 @@
+name: 'Build and Release Tauri App'
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-release:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'macos-latest'
+            args: '--target universal-apple-darwin'
+            rust-target: 'universal-apple-darwin'
+          - platform: 'ubuntu-22.04'
+            args: ''
+            rust-target: ''
+          - platform: 'windows-latest'
+            args: ''
+            rust-target: ''
+          - platform: 'ubuntu-22.04'
+            args: '--apk --aab'
+            rust-target: 'aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android'
+            mobile: 'android'
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Java (Android only)
+        if: matrix.mobile == 'android'
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-target }}
+
+      - name: Rust Cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04' && matrix.mobile != 'android'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Initialize Tauri Android (Android only)
+        if: matrix.mobile == 'android'
+        run: npm run tauri:android:init
+        env:
+          CI: 'true'
+
+      - name: Build Next.js Static Export
+        run: npm run build:native
+
+      - name: Build Tauri Desktop App
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__
+          releaseName: 'Orelis v__VERSION__'
+          releaseBody: 'Automated release of Orelis EMR desktop client.'
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
+          mobile: ${{ matrix.mobile || '' }}

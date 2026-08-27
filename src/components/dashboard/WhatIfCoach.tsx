@@ -12,7 +12,7 @@ export function WhatIfCoach() {
   const [exercise, setExercise] = useState(2); // hours/week
   const [isSmoking, setIsSmoking] = useState(false);
 
-  // Simple cardiovascular risk estimation model (mocking Ontomorph's what-if projection)
+  // Simple cardiovascular risk estimation model (what-if projection)
   const calculateRisk = () => {
     let base = 3.5; // base percentage risk
     

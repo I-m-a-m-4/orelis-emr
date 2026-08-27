@@ -81,6 +81,7 @@ jobs:
         run: npm run build:native
 
       - name: Build Tauri Desktop App
+        if: matrix.mobile != 'android'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -91,4 +92,24 @@ jobs:
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
-          mobile: ${{ matrix.mobile || '' }}
+
+      - name: Build Tauri Android App
+        if: matrix.mobile == 'android'
+        run: npm run tauri android build -- --apk --aab
+
+      - name: Get Version (Android only)
+        if: matrix.mobile == 'android'
+        id: get_version
+        run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Upload Android to Release
+        if: matrix.mobile == 'android'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get_version.outputs.VERSION }}
+          draft: true
+          files: |
+            src-tauri/gen/android/app/build/outputs/apk/release/*.apk
+            src-tauri/gen/android/app/build/outputs/bundle/release/*.aab
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

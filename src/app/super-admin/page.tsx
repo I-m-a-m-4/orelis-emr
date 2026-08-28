@@ -12,38 +12,17 @@ import {
   Trash2, 
   CalendarClock, 
   Ban, 
-  Code2, 
-  Activity, 
   DollarSign, 
   Layers, 
   TrendingUp, 
-  Zap, 
-  ShieldCheck, 
-  Bug, 
   Search, 
-  Download, 
-  Trophy, 
-  Laptop, 
-  Smartphone, 
-  Globe, 
-  CheckCircle2, 
-  Clock, 
-  Sparkles, 
-  Mic, 
   Stethoscope, 
   FileText,
-  AlertTriangle,
   RefreshCw,
   Eye,
-  Check,
-  X,
   Grid,
   CalendarDays,
-  Flame,
-  ArrowUpRight,
-  Filter,
-  Pill,
-  PieChart as PieChartIcon
+  Flame
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -86,21 +65,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import html2canvas from 'html2canvas';
 import { 
-  LineChart, 
   BarChart, 
-  PieChart, 
   AreaChart,
-  ScatterChart,
-  Scatter,
-  ZAxis,
   Area,
   XAxis, 
   YAxis, 
   Bar, 
   Line, 
-  Pie, 
   Cell, 
   CartesianGrid, 
   Legend, 

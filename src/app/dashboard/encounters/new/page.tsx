@@ -44,6 +44,7 @@ import { getInitials, cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MedicalLetterhead } from '@/components/medical/letterhead';
+import { AmbientVoiceScribe, FieldVoiceDictationButton } from '@/components/medical/ambient-voice-scribe';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Clinic } from '@/lib/types';
@@ -631,19 +632,93 @@ export default function NewEncounterPage() {
                     </div>
                 </section>
 
-                {/* --- CLINICAL CONSULTATION NOTE --- */}
+                {/* --- AMBIENT VOICE SCRIBE & CLINICAL CONSULTATION NOTE --- */}
                 <section className="bg-white dark:bg-zinc-900 shadow-sm rounded-lg p-8 space-y-6 min-h-[400px] relative">
-                    <div className="flex items-center gap-2 mb-3 border-b border-dashed border-primary/20 pb-2">
-                        <Stethoscope className="h-5 w-5 text-primary" />
-                        <h3 className="text-sm font-black uppercase tracking-widest text-primary font-dm-sans">Clinical Consultation Note</h3>
+                    <div className="flex items-center justify-between mb-3 border-b border-dashed border-primary/20 pb-2">
+                        <div className="flex items-center gap-2">
+                            <Stethoscope className="h-5 w-5 text-primary" />
+                            <h3 className="text-sm font-black uppercase tracking-widest text-primary font-dm-sans">Clinical Consultation & Voice Scribe</h3>
+                        </div>
+                        <Badge variant="outline" className="text-[10px] font-bold text-primary bg-primary/10 border-primary/30">
+                            Hands-Free Dictation Ready
+                        </Badge>
                     </div>
 
-                    <div className="relative">
+                    {/* Integrated Ambient Voice Scribe */}
+                    <AmbientVoiceScribe 
+                        onApplySoap={(parsed) => {
+                            setSoap({
+                                subjective: parsed.subjective,
+                                objective: parsed.objective,
+                                assessment: parsed.assessment,
+                                plan: parsed.plan
+                            });
+                            if (parsed.prescriptions && parsed.prescriptions.length > 0) {
+                                setPrescriptions(prev => Array.from(new Set([...prev, ...parsed.prescriptions!])));
+                            }
+                        }}
+                    />
+
+                    {/* Structured SOAP Grid */}
+                    <div className="space-y-4 pt-4 border-t">
+                        <div className="flex items-center justify-between">
+                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                (S) Subjective Findings & Chief Complaint
+                            </Label>
+                            <FieldVoiceDictationButton 
+                                onTranscript={(text) => setSoap(prev => ({ ...prev, subjective: (prev.subjective + ' ' + text).trim() }))}
+                            />
+                        </div>
                         <Textarea 
-                            className="w-full min-h-[300px] border-0 focus-visible:ring-0 p-4 rounded bg-gray-50/50 dark:bg-zinc-900/30 text-sm leading-relaxed text-black dark:text-white font-dm-sans" 
-                            placeholder="Type your clinical findings, history, diagnosis, and management plan here as paragraphs..." 
+                            className="w-full min-h-[90px] border-dashed text-xs leading-relaxed text-black dark:text-white" 
+                            placeholder="Patient's reported symptoms, onset, history of presenting illness..." 
                             value={soap.subjective} 
-                            onChange={e => setSoap({ ...soap, subjective: e.target.value, objective: '', assessment: '', plan: '' })} 
+                            onChange={e => setSoap({ ...soap, subjective: e.target.value })} 
+                        />
+
+                        <div className="flex items-center justify-between pt-2">
+                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                (O) Objective Physical Findings & Observations
+                            </Label>
+                            <FieldVoiceDictationButton 
+                                onTranscript={(text) => setSoap(prev => ({ ...prev, objective: (prev.objective + ' ' + text).trim() }))}
+                            />
+                        </div>
+                        <Textarea 
+                            className="w-full min-h-[90px] border-dashed text-xs leading-relaxed text-black dark:text-white" 
+                            placeholder="Auscultation, palpation, neurological exam, vital signs correlation..." 
+                            value={soap.objective} 
+                            onChange={e => setSoap({ ...soap, objective: e.target.value })} 
+                        />
+
+                        <div className="flex items-center justify-between pt-2">
+                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                (A) Clinical Assessment & Differential Diagnosis
+                            </Label>
+                            <FieldVoiceDictationButton 
+                                onTranscript={(text) => setSoap(prev => ({ ...prev, assessment: (prev.assessment + ' ' + text).trim() }))}
+                            />
+                        </div>
+                        <Textarea 
+                            className="w-full min-h-[70px] border-dashed text-xs leading-relaxed text-black dark:text-white font-semibold" 
+                            placeholder="Working diagnosis (e.g. Acute Malaria, Hypertension Stage 2)..." 
+                            value={soap.assessment} 
+                            onChange={e => setSoap({ ...soap, assessment: e.target.value })} 
+                        />
+
+                        <div className="flex items-center justify-between pt-2">
+                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                (P) Treatment Plan, Orders & Patient Education
+                            </Label>
+                            <FieldVoiceDictationButton 
+                                onTranscript={(text) => setSoap(prev => ({ ...prev, plan: (prev.plan + ' ' + text).trim() }))}
+                            />
+                        </div>
+                        <Textarea 
+                            className="w-full min-h-[80px] border-dashed text-xs leading-relaxed text-black dark:text-white italic" 
+                            placeholder="Therapeutic management, diagnostic orders, follow-up schedule..." 
+                            value={soap.plan} 
+                            onChange={e => setSoap({ ...soap, plan: e.target.value })} 
                         />
                     </div>
 

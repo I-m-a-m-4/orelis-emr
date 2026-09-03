@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Stethoscope, LayoutDashboard, Users, Calendar, Settings, UserPlus, LifeBuoy, Shield, FileText, Newspaper, Bell, Hospital, Mailbox, Package, BadgeDollarSign, BarChart3, ExternalLink, Pill, FlaskConical, Bed, CreditCard, ClipboardList, Code } from 'lucide-react';
+import { Stethoscope, LayoutDashboard, Users, Calendar, Settings, UserPlus, LifeBuoy, Shield, FileText, Newspaper, Bell, Hospital, Mailbox, Package, BadgeDollarSign, BarChart3, ExternalLink, Pill, FlaskConical, Bed, CreditCard, ClipboardList, Code, ArrowLeftRight } from 'lucide-react';
 import {
   SidebarHeader,
   SidebarContent,
@@ -47,6 +47,7 @@ const navGroups: { label: string, items: NavItem[] }[] = [
       { href: '/dashboard/reports', label: 'Analytics & Reports', icon: BarChart3, roles: ['admin', 'doctor'] },
       { href: '/dashboard/billing', label: 'Billing Center', icon: CreditCard, roles: ['admin'] },
       { href: '/dashboard/inventory', label: 'Inventory & Stock', icon: Package, roles: ['admin', 'doctor'] },
+      { href: '/dashboard/integrations', label: 'Data Import & Integrations', icon: ArrowLeftRight, roles: ['admin'] },
       { href: '/dashboard/waitlist', label: 'Waitlist', icon: Mailbox, roles: ['admin', 'receptionist'] },
       { href: '/dashboard/hospital', label: 'Hospital Facility', icon: Hospital, roles: ['admin'] },
       { href: '/dashboard/developers', label: 'Developer APIs', icon: Code, roles: ['admin'] },

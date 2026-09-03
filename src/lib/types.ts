@@ -307,3 +307,32 @@ export interface Purchase {
   date: string; // ISO string
   source: string; // e.g. "Orelis-Integrated"
 }
+
+export interface IntegrationConfig {
+  id: string;
+  clinicId: string;
+  name: string;
+  category: 'LIS' | 'Payment' | 'Communication' | 'EHR' | 'Custom';
+  enabled: boolean;
+  apiKey?: string;
+  webhookUrl?: string;
+  secretKey?: string;
+  events?: string[];
+  lastSync?: string;
+  status: 'Connected' | 'Disconnected' | 'Error';
+}
+
+export interface ImportBatchLog {
+  id: string;
+  clinicId: string;
+  fileName: string;
+  entityType: 'Patients' | 'Inventory' | 'Appointments' | 'Prescriptions';
+  importedCount: number;
+  failedCount: number;
+  totalRecords: number;
+  timestamp: string;
+  performedBy: string;
+  status: 'Completed' | 'Partial' | 'Failed';
+  errors?: string[];
+}
+

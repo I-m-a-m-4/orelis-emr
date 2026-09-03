@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { apiFetch } from "@/lib/api-client";
+import { purgePatientFromMirror } from "@/lib/data/patients";
 import { useToast } from "@/hooks/use-toast";
 import { AlertTriangle, Trash2 } from "lucide-react";
 import { DashLoader } from "@/components/ui/dash-loader";
@@ -51,6 +52,10 @@ function DeletePatientDialog({ patient, clinicId, onDelete }: { patient: Patient
                 });
                 setOpen(false);
             } else if (result.ok) {
+                // The cascade ran on the server, which cannot reach this device's
+                // offline mirror. Without this the row is still in the mirror and
+                // the patient reappears on the next cold or offline start.
+                await purgePatientFromMirror(patient.id);
                 toast({ title: "Deleted", description: result.data?.message ?? "Patient deleted." });
                 setOpen(false);
                 onDelete();

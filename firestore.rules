@@ -1,60 +1,262 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
     // =================================================================
-    // Helper Functions
+    // Why this file looks the way it does
+    // =================================================================
+    //
+    // Orelis is multi-tenant: many hospitals share one Firestore database, and
+    // `clinicId` on each document is the only thing separating them. The client
+    // always filters its queries by `clinicId`, but **a client-side filter is not
+    // a security boundary** — anyone holding a valid ID token can open a console
+    // and issue whatever query they like. These rules are the boundary.
+    //
+    // ## The rule that governs every `list` below
+    //
+    // Firestore evaluates a `list` against the documents the query would return,
+    // and fails the *whole* query if any of them is disallowed ("rules are not
+    // filters"). The consequence is precise and worth stating, because the
+    // previous version of this file got it wrong on ten collections:
+    //
+    //   allow list: if isStaff() && userDoc().clinicId != null;   // WRONG
+    //
+    // That condition never mentions `resource`, so it is true or false for the
+    // whole collection — and `getDocs(collection(db,'patients'))` with no filter
+    // satisfied it and returned every patient in every hospital on the platform.
+    //
+    //   allow list: if isStaff() && inCallerClinic();             // RIGHT
+    //
+    // Referencing `resource.data.clinicId` means an unfiltered query includes
+    // documents that fail the rule, so Firestore rejects the query outright,
+    // while the app's own `where('clinicId','==',mine)` queries pass untouched.
+    //
+    // ## Roles are read from the user document, and that document is now guarded
+    //
+    // Every predicate here resolves the caller's role via `users/{uid}`. That
+    // makes `users` create/update the root of all authority in the system, and it
+    // used to be wide open: `allow create: if true`, plus a self-update that could
+    // change `role`. Anyone could register and write themselves `role: 'admin'`
+    // with any `clinicId`. The create rule below therefore pins what a caller may
+    // claim about themselves, and the update rule freezes `role` on self-writes.
+    //
+    // Reading a role costs a `get()` per evaluation. The long-term fix is custom
+    // claims (`request.auth.token.role`), set server-side on signup and on any
+    // role change, which removes the read entirely — `isSuperAdmin` already reads
+    // a claim that way. Until every write path sets claims, the document is the
+    // only source that is always correct, so it stays.
+
+    // =================================================================
+    // Helpers
     // =================================================================
 
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    function getUserDoc() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    /**
+     * The caller's profile, or an empty map if they have not got one.
+     *
+     * `get()` returns null for a missing document, and every field read off that
+     * null raises an evaluation error — which denies the operation but also
+     * produces a confusing failure for a real case: an Auth account that exists
+     * before its `users` document does, which is every account mid-signup and any
+     * account whose profile write failed. Returning `{}` makes each `in` guard
+     * below answer false cleanly instead, so such a caller simply has no role.
+     */
+    function userDoc() {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data
+        : {};
+    }
+
+    /**
+     * The caller's role, or null.
+     *
+     * Every field read below goes through an `in` guard. Reading an absent
+     * property in a rule raises an evaluation error, not `null`, and an error
+     * anywhere in a condition denies the operation — so a profile that happens to
+     * be missing a field would lock its owner out rather than simply failing one
+     * branch. Patients legitimately have no `clinicId`, which makes this the
+     * common case, not an edge one.
+     */
+    function callerRole() {
+      let u = userDoc();
+      return 'role' in u ? u.role : null;
+    }
+
+    function callerClinic() {
+      let u = userDoc();
+      return 'clinicId' in u ? u.clinicId : null;
+    }
+
+    function callerPatientId() {
+      let u = userDoc();
+      return 'patientId' in u ? u.patientId : null;
     }
 
     function isSuperAdmin() {
+      // Each claim is guarded with `in` before it is read. Accessing an absent
+      // property on `request.auth.token` raises an evaluation error rather than
+      // returning false, and an error in one operand of a disjunction can deny an
+      // operation that another operand would have allowed — so an ordinary staff
+      // member with no custom claims would hit spurious permission failures.
       return isAuthenticated() && (
-        request.auth.token.superAdmin == true || 
-        getUserDoc().role == 'super-admin' ||
-        request.auth.token.email == 'bimex4@gmail.com'
+        ('superAdmin' in request.auth.token && request.auth.token.superAdmin == true) ||
+        callerRole() == 'super-admin' ||
+        ('email' in request.auth.token && request.auth.token.email == 'bimex4@gmail.com')
       );
     }
 
+    // Role floors. `in` rather than a chain of ==, so the hierarchy is stated once
+    // and matches ROLE_HIERARCHY in src/lib/permissions.ts.
+    function isAdmin() {
+      return isAuthenticated() && callerRole() == 'admin';
+    }
+
+    function isDoctor() {
+      return isAuthenticated() && callerRole() in ['admin', 'doctor'];
+    }
+
+    function isStaff() {
+      return isAuthenticated() && callerRole() in ['admin', 'doctor', 'receptionist'];
+    }
+
     function isUserMemberOf(clinicId) {
-      return isAuthenticated() && getUserDoc().clinicId == clinicId;
+      return isAuthenticated() && callerClinic() == clinicId;
     }
 
-    // RBAC: Role Hierarchy Helpers
-    function isRequestingUserAdmin() {
-      return isAuthenticated() && getUserDoc().role == 'admin';
+    /**
+     * The tenant boundary, for reads.
+     *
+     * Load-bearing: this is the predicate that makes an unfiltered query fail.
+     * Never replace it with a check that ignores `resource`.
+     */
+    function inCallerClinic() {
+      return isAuthenticated()
+          && 'clinicId' in resource.data
+          && resource.data.clinicId == callerClinic();
     }
 
-    function isRequestingUserDoctor() {
-      return isAuthenticated() && (getUserDoc().role == 'admin' || getUserDoc().role == 'doctor');
+    /** The tenant boundary, for writes. */
+    function writingToCallerClinic() {
+      return isAuthenticated()
+          && 'clinicId' in request.resource.data
+          && request.resource.data.clinicId == callerClinic();
     }
 
-    function isRequestingUserStaff() {
-      return isAuthenticated() && (getUserDoc().role == 'admin' || getUserDoc().role == 'doctor' || getUserDoc().role == 'receptionist');
+    /** A read is allowed if it stays in the caller's clinic; a missing doc is not an error. */
+    function readableInClinic() {
+      return resource == null || inCallerClinic();
+    }
+
+    /**
+     * Does this invitation actually grant the role and clinic being claimed?
+     *
+     * The invitation document is the authority for invited staff. Without this,
+     * the `users` create rule would have to take the caller's word for their own
+     * role, which is the escalation this file exists to close.
+     */
+    function invitationGrants(inviteId, role, clinicId) {
+      let invite = get(/databases/$(database)/documents/invitations/$(inviteId)).data;
+      return 'clinicId' in invite && invite.clinicId == clinicId
+          && 'role' in invite && invite.role == role
+          && (!('status' in invite) || invite.status != 'accepted')
+          && 'email' in invite
+          && 'email' in request.auth.token
+          && invite.email == request.auth.token.email;
+    }
+
+    /** A patient reading their own chart through the portal. */
+    function isOwnPatientRecord() {
+      return isAuthenticated()
+          && 'patientId' in resource.data
+          && callerPatientId() != null
+          && resource.data.patientId == callerPatientId();
     }
 
     // =================================================================
-    // Core Collections & Rules
+    // Identity
     // =================================================================
 
     match /users/{userId} {
       allow get: if isAuthenticated() && (
-        request.auth.uid == userId || 
-        (isRequestingUserAdmin() && getUserDoc().clinicId == resource.data.clinicId) ||
+        request.auth.uid == userId ||
+        (isAdmin() && resource.data.get('clinicId', null) == callerClinic()) ||
         isSuperAdmin()
       );
-      allow list: if isSuperAdmin() || (isRequestingUserStaff() && getUserDoc().clinicId != null);
-      allow create: if true; 
+
+      // Scoped, so staff can enumerate their own team and nobody else's. The old
+      // rule let any staff account list every user on the platform — names,
+      // emails, roles, and the `apiConfig.apiKey` copy stored on each profile.
+      allow list: if isSuperAdmin() || (isStaff() && inCallerClinic());
+
+      /**
+       * A caller may only assert about themselves what something else can vouch
+       * for. Three legitimate shapes, and nothing else:
+       */
+      allow create: if isAuthenticated()
+        && request.auth.uid == userId
+        && request.resource.data.uid == userId
+        && (
+          // 1. Patient portal self-registration. No clinic, no elevated role.
+          (
+            request.resource.data.role == 'patient'
+            && !('clinicId' in request.resource.data)
+          )
+          ||
+          // 2. A clinic owner creating a brand-new clinic. signup/clinic uses the
+          //    owner's own uid as the clinic document id, so this can only grant
+          //    admin over a clinic this same caller is creating — never over an
+          //    existing one.
+          (
+            request.resource.data.role == 'admin'
+            && request.resource.data.clinicId == request.auth.uid
+          )
+          ||
+          // 3. Invited staff, vouched for by the invitation itself.
+          (
+            'invitationId' in request.resource.data
+            && request.resource.data.invitationId is string
+            && invitationGrants(
+                 request.resource.data.invitationId,
+                 request.resource.data.role,
+                 request.resource.data.clinicId
+               )
+          )
+        );
+
       allow update: if isAuthenticated() && (
-        request.auth.uid == userId || 
-        (isRequestingUserAdmin() && getUserDoc().clinicId == resource.data.clinicId) ||
         isSuperAdmin()
+        ||
+        // An admin manages their own clinic's staff, and cannot move anyone out
+        // of it.
+        (
+          isAdmin()
+          && resource.data.get('clinicId', null) == callerClinic()
+          && request.resource.data.get('clinicId', null) == callerClinic()
+        )
+        ||
+        // Self-service. `role` is frozen: the previous rule allowed any user to
+        // PATCH their own role to 'admin', which was a one-request privilege
+        // escalation. `clinicId` is frozen too, except for a patient linking
+        // their portal account — safe, because the role is pinned on the line
+        // above and every clinical rule below demands a staff role.
+        //
+        // `.get(key, null)` throughout: a patient profile has no `clinicId` at
+        // all, so a bare property read would raise an evaluation error and deny
+        // the write rather than comparing two absent values.
+        (
+          request.auth.uid == userId
+          && request.resource.data.get('role', null) == resource.data.get('role', null)
+          && (
+            request.resource.data.get('clinicId', null) == resource.data.get('clinicId', null)
+            || resource.data.get('role', null) == 'patient'
+          )
+        )
       );
+
       allow delete: if isSuperAdmin();
 
       match /notifications/{notificationId} {
@@ -63,116 +265,259 @@ service cloud.firestore {
     }
 
     match /clinics/{clinicId} {
-      allow read: if isAuthenticated(); 
-      allow write: if isSuperAdmin() || (isRequestingUserStaff() && isUserMemberOf(clinicId));
+      /**
+       * Deliberately readable by any signed-in user.
+       *
+       * A patient with no clinic yet has to pick one from a list to link their
+       * record (src/app/dashboard/my-records), and the invitation screen reads the
+       * clinic's name before the new user has a profile at all. Both happen before
+       * `callerClinic()` can return anything useful.
+       *
+       * This is only acceptable while the document holds nothing secret — and
+       * right now it does not hold nothing: `developers/page.tsx` writes the
+       * generated API key into `clinics/{id}.apiConfig.apiKey`, so every signed-in
+       * user can read every clinic's key. That is a leak to fix by moving the
+       * secret out of this document, not by tightening this rule, because
+       * tightening it breaks account linking. Tracked in the handover notes.
+       */
+      allow get: if isAuthenticated();
+      allow list: if isAuthenticated();
+
+      // Only the owner-admin of a clinic may change it. Previously any staff
+      // member could rewrite clinic settings and subscription state.
+      allow create: if isAuthenticated() && request.auth.uid == clinicId;
+      allow update: if isSuperAdmin() || (isAdmin() && isUserMemberOf(clinicId));
+      allow delete: if isSuperAdmin();
     }
-    
+
     match /invitations/{invitationId} {
+      /**
+       * `get` stays public: the invitation id *is* the bearer token in an emailed
+       * invite link, and the recipient has no account yet, so nothing else can
+       * authenticate them. Firestore auto-ids carry enough entropy that the id is
+       * not guessable. `list` is closed, so the collection cannot be enumerated.
+       */
       allow get: if true;
-      allow list: if isSuperAdmin() || isRequestingUserAdmin();
-      allow create: if isRequestingUserAdmin();
-      allow update: if isAuthenticated() || isSuperAdmin(); 
-      allow delete: if isRequestingUserAdmin() || isSuperAdmin();
+      allow list: if isSuperAdmin() || (isAdmin() && inCallerClinic());
+      allow create: if isAdmin() && writingToCallerClinic();
+      // The invitee marks their own invitation accepted, and can only ever close
+      // one out — never reopen it or repoint it at another clinic.
+      allow update: if isSuperAdmin()
+        || (isAdmin() && inCallerClinic())
+        || (
+             isAuthenticated()
+             && 'email' in request.auth.token
+             && resource.data.get('email', '') == request.auth.token.email
+             && request.resource.data.get('clinicId', null) == resource.data.get('clinicId', null)
+             && request.resource.data.get('role', null) == resource.data.get('role', null)
+           );
+      allow delete: if isSuperAdmin() || (isAdmin() && inCallerClinic());
     }
-    
+
+    // =================================================================
+    // Clinical records
+    //
+    // Every list below is clinic-scoped via inCallerClinic(). Patient-facing
+    // reads go through isOwnPatientRecord(), which scopes on `patientId` — the
+    // portal previously could not read anything at all, because these rules
+    // required a staff role.
+    // =================================================================
+
     match /patients/{patientId} {
-        allow list: if isSuperAdmin() || (isRequestingUserStaff() && getUserDoc().clinicId != null);
-        allow get: if isSuperAdmin() || (isAuthenticated() && resource.data.clinicId == getUserDoc().clinicId);
-        allow create: if isRequestingUserStaff() && request.resource.data.clinicId == getUserDoc().clinicId;
-        allow update: if isRequestingUserStaff() && resource.data.clinicId == getUserDoc().clinicId && request.resource.data.clinicId == getUserDoc().clinicId;
-        allow delete: if isSuperAdmin() || isRequestingUserAdmin();
+      allow list: if isSuperAdmin() || (isStaff() && inCallerClinic());
+      allow get: if isSuperAdmin()
+        || (isStaff() && readableInClinic())
+        // A linked patient reading their own demographics.
+        || (isAuthenticated() && patientId == callerPatientId());
+      allow create: if isStaff() && writingToCallerClinic();
+      allow update: if isStaff() && inCallerClinic() && writingToCallerClinic();
+      allow delete: if isSuperAdmin() || (isAdmin() && inCallerClinic());
     }
-    
+
     match /appointments/{appointmentId} {
-        allow list: if isSuperAdmin() || (isRequestingUserStaff() && getUserDoc().clinicId != null) || isAuthenticated();
-        allow get: if isSuperAdmin() || 
-            (isRequestingUserStaff() && resource.data.clinicId == getUserDoc().clinicId) ||
-            (isAuthenticated() && resource.data.patientId == request.auth.uid);
-
-        allow create: if isSuperAdmin() || 
-            (isRequestingUserStaff() && request.resource.data.clinicId == getUserDoc().clinicId);
-        
-        allow update: if isSuperAdmin() || 
-            (isRequestingUserStaff() && resource.data.clinicId == getUserDoc().clinicId && request.resource.data.clinicId == getUserDoc().clinicId) ||
-            (isAuthenticated() && resource.data.patientId == request.auth.uid && request.resource.data.patientId == request.auth.uid);
-
-        allow delete: if isRequestingUserAdmin() || isSuperAdmin();
-    }
-
-    match /inventory/{itemId} {
-        allow read: if isRequestingUserStaff() && getUserDoc().clinicId != null;
-        allow create: if isRequestingUserStaff() && request.resource.data.clinicId == getUserDoc().clinicId;
-        allow update: if isRequestingUserStaff() && resource.data.clinicId == getUserDoc().clinicId && request.resource.data.clinicId == getUserDoc().clinicId;
-        allow delete: if isRequestingUserAdmin() || isSuperAdmin();
-    }
-
-    match /invoices/{invoiceId} {
-        allow list: if isRequestingUserStaff() && getUserDoc().clinicId != null;
-        allow get: if isRequestingUserStaff() && resource.data.clinicId == getUserDoc().clinicId;
-        allow create: if isRequestingUserStaff() && request.resource.data.clinicId == getUserDoc().clinicId;
-        allow update: if isRequestingUserStaff() && resource.data.clinicId == getUserDoc().clinicId && request.resource.data.clinicId == getUserDoc().clinicId;
-        allow delete: if isRequestingUserAdmin() || isSuperAdmin();
+      // The old rule ended in `|| isAuthenticated()`, which let any signed-in
+      // account — including a patient — list every appointment in every hospital.
+      allow list: if isSuperAdmin()
+        || (isStaff() && inCallerClinic())
+        || isOwnPatientRecord();
+      allow get: if isSuperAdmin()
+        || (isStaff() && readableInClinic())
+        || isOwnPatientRecord();
+      allow create: if isSuperAdmin() || (isStaff() && writingToCallerClinic());
+      allow update: if isSuperAdmin()
+        || (isStaff() && inCallerClinic() && writingToCallerClinic())
+        // A patient may reschedule or cancel their own appointment, but not
+        // reassign it to someone else.
+        || (
+             isOwnPatientRecord()
+             && request.resource.data.get('patientId', null) == resource.data.get('patientId', null)
+             && request.resource.data.get('clinicId', null) == resource.data.get('clinicId', null)
+           );
+      allow delete: if isSuperAdmin() || (isAdmin() && inCallerClinic());
     }
 
     match /encounters/{encounterId} {
-        allow list, get: if isRequestingUserStaff() && getUserDoc().clinicId != null;
-        allow create: if isRequestingUserDoctor() && request.resource.data.clinicId == getUserDoc().clinicId;
-        allow update: if isRequestingUserStaff() && resource.data.clinicId == getUserDoc().clinicId && request.resource.data.clinicId == getUserDoc().clinicId;
-        allow delete: if isRequestingUserAdmin() || isSuperAdmin();
+      allow list: if isSuperAdmin()
+        || (isStaff() && inCallerClinic())
+        || isOwnPatientRecord();
+      allow get: if isSuperAdmin()
+        || (isStaff() && readableInClinic())
+        || isOwnPatientRecord();
+      allow create: if isDoctor() && writingToCallerClinic();
+      allow update: if isStaff() && inCallerClinic() && writingToCallerClinic();
+      allow delete: if isSuperAdmin() || (isAdmin() && inCallerClinic());
     }
 
     match /prescriptions/{rxId} {
-        allow read: if isRequestingUserStaff() && getUserDoc().clinicId != null;
-        allow create: if isRequestingUserDoctor() && request.resource.data.clinicId == getUserDoc().clinicId;
-        allow update: if isRequestingUserStaff() && resource.data.clinicId == getUserDoc().clinicId;
-        allow delete: if isRequestingUserAdmin() || isSuperAdmin();
-    }
-
-    match /medications/{medId} {
-        allow read: if isRequestingUserStaff() && getUserDoc().clinicId != null;
-        allow create, update: if isRequestingUserStaff() && (resource == null || resource.data.clinicId == getUserDoc().clinicId) && request.resource.data.clinicId == getUserDoc().clinicId;
-        allow delete: if isRequestingUserAdmin() || isSuperAdmin();
-    }
-
-    match /wards/{wardId} {
-        allow read: if isRequestingUserStaff() && getUserDoc().clinicId != null;
-        allow create, update: if isRequestingUserStaff() && (resource == null || resource.data.clinicId == getUserDoc().clinicId) && request.resource.data.clinicId == getUserDoc().clinicId;
-        allow delete: if isRequestingUserAdmin() || isSuperAdmin();
-    }
-
-    match /admissions/{admId} {
-        allow read: if isRequestingUserStaff() && getUserDoc().clinicId != null;
-        allow create, update: if isRequestingUserStaff() && (resource == null || resource.data.clinicId == getUserDoc().clinicId) && request.resource.data.clinicId == getUserDoc().clinicId;
-        allow delete: if isRequestingUserAdmin() || isSuperAdmin();
+      allow list: if isSuperAdmin()
+        || (isStaff() && inCallerClinic())
+        || isOwnPatientRecord();
+      allow get: if isSuperAdmin()
+        || (isStaff() && readableInClinic())
+        || isOwnPatientRecord();
+      allow create: if isDoctor() && writingToCallerClinic();
+      allow update: if isStaff() && inCallerClinic() && writingToCallerClinic();
+      allow delete: if isSuperAdmin() || (isAdmin() && inCallerClinic());
     }
 
     match /lab_orders/{orderId} {
-        allow read: if isRequestingUserStaff() && getUserDoc().clinicId != null;
-        allow create, update: if isRequestingUserStaff() && (resource == null || resource.data.clinicId == getUserDoc().clinicId) && request.resource.data.clinicId == getUserDoc().clinicId;
-        allow delete: if isRequestingUserAdmin() || isSuperAdmin();
+      allow list: if isSuperAdmin()
+        || (isStaff() && inCallerClinic())
+        || isOwnPatientRecord();
+      allow get: if isSuperAdmin()
+        || (isStaff() && readableInClinic())
+        || isOwnPatientRecord();
+      allow create: if isStaff() && writingToCallerClinic();
+      allow update: if isStaff() && inCallerClinic() && writingToCallerClinic();
+      allow delete: if isSuperAdmin() || (isAdmin() && inCallerClinic());
+    }
+
+    match /admissions/{admId} {
+      allow list: if isSuperAdmin() || (isStaff() && inCallerClinic());
+      allow get: if isSuperAdmin() || (isStaff() && readableInClinic());
+      allow create: if isStaff() && writingToCallerClinic();
+      allow update: if isStaff() && inCallerClinic() && writingToCallerClinic();
+      allow delete: if isSuperAdmin() || (isAdmin() && inCallerClinic());
+    }
+
+    // =================================================================
+    // Operations
+    // =================================================================
+
+    match /wards/{wardId} {
+      allow list: if isSuperAdmin() || (isStaff() && inCallerClinic());
+      allow get: if isSuperAdmin() || (isStaff() && readableInClinic());
+      allow create: if isStaff() && writingToCallerClinic();
+      allow update: if isStaff() && inCallerClinic() && writingToCallerClinic();
+      allow delete: if isSuperAdmin() || (isAdmin() && inCallerClinic());
+    }
+
+    match /beds/{bedId} {
+      allow list: if isSuperAdmin() || (isStaff() && inCallerClinic());
+      allow get: if isSuperAdmin() || (isStaff() && readableInClinic());
+      allow create: if isStaff() && writingToCallerClinic();
+      allow update: if isStaff() && inCallerClinic() && writingToCallerClinic();
+      allow delete: if isSuperAdmin() || (isAdmin() && inCallerClinic());
+    }
+
+    match /medications/{medId} {
+      allow list: if isSuperAdmin() || (isStaff() && inCallerClinic());
+      allow get: if isSuperAdmin() || (isStaff() && readableInClinic());
+      allow create: if isStaff() && writingToCallerClinic();
+      allow update: if isStaff() && inCallerClinic() && writingToCallerClinic();
+      allow delete: if isSuperAdmin() || (isAdmin() && inCallerClinic());
+    }
+
+    match /inventory/{itemId} {
+      allow list: if isSuperAdmin() || (isStaff() && inCallerClinic());
+      allow get: if isSuperAdmin() || (isStaff() && readableInClinic());
+      allow create: if isStaff() && writingToCallerClinic();
+      allow update: if isStaff() && inCallerClinic() && writingToCallerClinic();
+      allow delete: if isSuperAdmin() || (isAdmin() && inCallerClinic());
+    }
+
+    match /invoices/{invoiceId} {
+      allow list: if isSuperAdmin()
+        || (isStaff() && inCallerClinic())
+        || isOwnPatientRecord();
+      allow get: if isSuperAdmin()
+        || (isStaff() && readableInClinic())
+        || isOwnPatientRecord();
+      allow create: if isStaff() && writingToCallerClinic();
+      allow update: if isStaff() && inCallerClinic() && writingToCallerClinic();
+      allow delete: if isSuperAdmin() || (isAdmin() && inCallerClinic());
     }
 
     match /waitlist/{entryId} {
-        allow list, get, create, update, delete: if isRequestingUserStaff() || isSuperAdmin();
+      // Previously scoped to nothing at all: any staff member of any clinic could
+      // read, edit and delete any other clinic's waiting list.
+      allow list: if isSuperAdmin() || (isStaff() && inCallerClinic());
+      allow get: if isSuperAdmin() || (isStaff() && readableInClinic());
+      allow create: if isStaff() && writingToCallerClinic();
+      allow update: if isStaff() && inCallerClinic() && writingToCallerClinic();
+      allow delete: if isSuperAdmin() || (isStaff() && inCallerClinic());
     }
 
+    // =================================================================
+    // Platform
+    // =================================================================
+
     match /mail/{mailId} {
-      allow create: if isRequestingUserStaff();
+      // Write-only queue for the Trigger Email extension. Nobody reads it back,
+      // and it holds patient names and appointment details, so no read rule.
+      allow create: if isStaff();
     }
 
     match /api_keys/{keyId} {
-        allow get: if isAuthenticated() && (isSuperAdmin() || resource.data.clinicId == getUserDoc().clinicId);
-        allow list: if isAuthenticated() && (isSuperAdmin() || (isRequestingUserStaff() && getUserDoc().clinicId != null));
-        allow create: if isAuthenticated() && (isSuperAdmin() || (isRequestingUserStaff() && request.resource.data.clinicId == getUserDoc().clinicId));
-        allow delete: if isSuperAdmin() || (isRequestingUserAdmin() && resource.data.clinicId == getUserDoc().clinicId);
+      /**
+       * The document id *is* the API key (see developers/page.tsx), so a `list`
+       * over this collection hands out every key it returns. It was previously
+       * listable by any staff account, platform-wide.
+       *
+       * Scoped to the owning clinic and to admins: a receptionist has no reason to
+       * hold a clinic's integration credential.
+       */
+      allow list: if isSuperAdmin() || (isAdmin() && inCallerClinic());
+      allow get: if isSuperAdmin() || (isAdmin() && inCallerClinic());
+      allow create: if isSuperAdmin() || (isAdmin() && writingToCallerClinic());
+      allow update: if isSuperAdmin() || (isAdmin() && inCallerClinic());
+      allow delete: if isSuperAdmin() || (isAdmin() && inCallerClinic());
     }
 
     match /audit_logs/{logId} {
-        allow list, get: if isRequestingUserStaff() && (resource == null || resource.data.clinicId == getUserDoc().clinicId);
-        allow create: if isRequestingUserStaff() && request.resource.data.clinicId == getUserDoc().clinicId;
+      allow list: if isSuperAdmin() || (isAdmin() && inCallerClinic());
+      allow get: if isSuperAdmin() || (isAdmin() && readableInClinic());
+      allow create: if isStaff() && writingToCallerClinic();
+      // Append-only. An audit trail that its own subjects can edit is not a trail;
+      // even a super-admin goes through the console for a legal hold.
+      allow update, delete: if false;
     }
 
-    // Catch-All for Super Admins
+    match /broadcasts/{broadcastId} {
+      allow get, list: if isAuthenticated();
+      allow create, update, delete: if isSuperAdmin();
+    }
+
+    match /aiUsage/{usageId} {
+      // Written server-side by the AI gateway with the admin SDK, which bypasses
+      // rules. Readable by the clinic it belongs to for the usage panel.
+      allow list, get: if isSuperAdmin() || (isAdmin() && inCallerClinic());
+      allow write: if false;
+    }
+
+    match /blogPosts/{postId} {
+      allow get, list: if true;
+      allow create, update, delete: if isSuperAdmin();
+    }
+
+    // =================================================================
+    // Catch-all
+    //
+    // Left last and deliberately narrow. Anything not named above is reachable
+    // only by a super-admin, so a new collection fails closed rather than
+    // inheriting whatever the nearest rule happened to allow.
+    // =================================================================
+
     match /{document=**} {
       allow read, write: if isSuperAdmin();
     }

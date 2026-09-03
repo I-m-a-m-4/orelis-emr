@@ -13,6 +13,7 @@ import { DashLoader } from "@/components/ui/dash-loader";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import type { LabOrder, UserProfile } from "@/lib/types";
 
@@ -30,6 +31,145 @@ function LabIndexErrorAlert() {
                 </a>
             </Button>
         </div>
+    );
+}
+
+/**
+ * Capture results while completing an order.
+ *
+ * "Record Results" previously only flipped `status` to `Completed` and stored
+ * nothing — so an order could be marked done with no result attached, which is
+ * worse than leaving it open: the queue looks clear and the finding is nowhere.
+ * `LabOrder.results` exists for exactly this and was never written to.
+ */
+function RecordResultsDialog({ order }: { order: LabOrder }) {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [open, setOpen] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (!firestore) return;
+
+        const results = (new FormData(event.currentTarget).get('results') as string)?.trim();
+        if (!results) {
+            toast({
+                title: 'Results required',
+                description: 'Record the finding before completing this order.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        setSaving(true);
+        try {
+            await updateDoc(doc(firestore, 'lab_orders', order.id), {
+                results,
+                status: 'Completed',
+                completedAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            });
+            toast({ title: 'Results recorded', description: `${order.testType} completed for ${order.patientName}.` });
+            setOpen(false);
+        } catch (err: any) {
+            toast({ title: 'Could not save', description: err?.message, variant: 'destructive' });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700 text-white">
+                    Record Results
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[520px]">
+                <form onSubmit={handleSubmit}>
+                    <DialogHeader>
+                        <DialogTitle>{order.testType}</DialogTitle>
+                        <DialogDescription>
+                            {order.patientName} · requested{' '}
+                            {new Date(order.requestedAt).toLocaleDateString()}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-2">
+                        <Label htmlFor="results">Findings</Label>
+                        <Textarea
+                            id="results"
+                            name="results"
+                            rows={7}
+                            required
+                            placeholder="Values, reference ranges, and any interpretation."
+                            defaultValue={order.results ?? ''}
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={saving}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" disabled={saving}>
+                            {saving ? <DashLoader size="sm" className="text-white" /> : 'Save & complete'}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+/** Read an order and whatever results it carries. */
+function ViewLabOrderDialog({ order }: { order: LabOrder }) {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title={`View ${order.testType}`}>
+                    <FileText className="h-4 w-4" />
+                    <span className="sr-only">View {order.testType} for {order.patientName}</span>
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[520px]">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        {order.testType}
+                        <Badge variant={order.priority === 'Emergency' ? 'destructive' : 'secondary'} className="uppercase text-[10px]">
+                            {order.priority}
+                        </Badge>
+                    </DialogTitle>
+                    <DialogDescription>
+                        {order.patientName} · requested {new Date(order.requestedAt).toLocaleString()}
+                        {order.requestedBy ? ` by ${order.requestedBy}` : ''}
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-2 space-y-3">
+                    <div className="flex items-center gap-2 text-sm">
+                        <span className="text-muted-foreground">Status:</span>
+                        <Badge variant="outline">{order.status}</Badge>
+                    </div>
+                    <div className="space-y-1">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            Findings
+                        </span>
+                        {order.results ? (
+                            <p className="text-sm whitespace-pre-wrap border border-dashed rounded-md p-3 bg-muted/30">
+                                {order.results}
+                            </p>
+                        ) : (
+                            <p className="text-sm text-muted-foreground italic">
+                                No results recorded yet.
+                            </p>
+                        )}
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button onClick={() => setOpen(false)}>Close</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }
 
@@ -234,13 +374,9 @@ export default function LaboratoryPage() {
                                                         </Button>
                                                     )}
                                                     {order.status === 'In Progress' && (
-                                                        <Button size="sm" className="h-7 text-xs bg-green-500 hover:bg-green-600 text-white" onClick={() => updateStatus(order.id, 'Completed')}>
-                                                            Record Results
-                                                        </Button>
+                                                        <RecordResultsDialog order={order} />
                                                     )}
-                                                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
-                                                        <FileText className="h-4 w-4" />
-                                                    </Button>
+                                                    <ViewLabOrderDialog order={order} />
                                                 </div>
                                             </TableCell>
                                         </TableRow>

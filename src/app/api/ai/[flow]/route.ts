@@ -55,6 +55,30 @@ const FLOWS: Record<string, FlowDef> = {
       });
     },
   },
+  'clinical-scribe': {
+    // Dictating into a chart is a clinician's act. A receptionist must not be able
+    // to author clinical content, and a patient account must never reach this.
+    minRole: 'doctor',
+    run: async (input) => {
+      const { transcribeEncounter } = await import('@/ai/flows/clinical-scribe');
+
+      const audioDataUrl = String(input?.audioDataUrl ?? '');
+      if (!audioDataUrl.startsWith('data:audio/')) {
+        throw new Error('An audio data URL is required.');
+      }
+      // ~10 MB of base64 is a little over 7 MB of audio, comfortably more than a
+      // long consultation at Opus bitrates. Bounded because this string is held
+      // in memory and forwarded to the model.
+      if (audioDataUrl.length > 10_000_000) {
+        throw new Error('That recording is too long. Record in shorter segments.');
+      }
+
+      return transcribeEncounter({
+        audioDataUrl,
+        context: input?.context ? String(input.context) : undefined,
+      });
+    },
+  },
 };
 
 /**

@@ -8,12 +8,13 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 
 interface ClinicPageProps {
-    params: { id: string };
+    // Next.js 15 passes route params as a Promise; both entry points await it.
+    params: Promise<{ id: string }>;
 }
 
 // THIS IS A SERVER COMPONENT for SEO
 export async function generateMetadata({ params }: ClinicPageProps): Promise<Metadata> {
-    const clinicId = params.id;
+    const { id: clinicId } = await params;
     // Note: In a production environment with proper Firebase Admin setup:
     // const clinicDoc = await db.collection('clinics').doc(clinicId).get();
     // const clinic = clinicDoc.data();
@@ -30,7 +31,7 @@ export async function generateMetadata({ params }: ClinicPageProps): Promise<Met
 }
 
 export default async function ClinicPublicPage({ params }: ClinicPageProps) {
-    const clinicId = params.id;
+    const { id: clinicId } = await params;
 
     let clinic = {
         name: "Premium Health Center",

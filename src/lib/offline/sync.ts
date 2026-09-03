@@ -41,6 +41,7 @@ import {
     cacheContradictsStamp,
     clearAllTables,
     getLastSyncMetadata,
+    reconcileMirror,
     setLastSyncMetadata,
     syncProfileToOffline,
     syncRowsToOffline,
@@ -213,6 +214,19 @@ const TARGETS: SyncTarget[] = [
 const SYNC_THROTTLE_MS = 10 * 60 * 1000;
 
 /**
+ * How far back the tombstone watermark reaches from the start of a fetch.
+ *
+ * A row written locally is protected from reconciliation until its Firestore
+ * write has had a chance to land. The margin exists because the two timestamps
+ * being compared come from different clocks: the watermark from `Date.now()` on
+ * this device, and the row's `updatedAt` from whichever device wrote it. Five
+ * minutes is far longer than a write needs and far shorter than the throttle, so
+ * it costs one extra sync cycle before a genuine deletion is reflected — the safe
+ * direction to err in.
+ */
+const PENDING_WRITE_GRACE_MS = 5 * 60 * 1000;
+
+/**
  * Delta sync is off, and turning it on before the backfill runs loses records.
  *
  * The intended query is `where('updatedAt','>',lastSync)`, which is far cheaper
@@ -246,6 +260,11 @@ export interface TargetOutcome {
     fetched: number;
     /** Why nothing was attempted, when nothing was. */
     skipped: 'throttled' | null;
+    /**
+     * Mirrored rows dropped because the server no longer has them. Absent when
+     * the fetch filled its page, since reconciliation is skipped there.
+     */
+    reconciled?: number;
     error?: string;
 }
 
@@ -265,6 +284,18 @@ function buildQuery(firestore: Firestore, target: SyncTarget, clinicId: string):
 }
 
 /**
+ * The outcome of one target's fetch.
+ *
+ * `truncated` is what makes tombstone reconciliation safe. A fetch that filled
+ * its page proves nothing about the records beyond it, so the caller must not
+ * treat "absent from `rows`" as "deleted on the server".
+ */
+interface FetchOutcome {
+    rows: any[];
+    truncated: boolean;
+}
+
+/**
  * Fetch one target, falling back to an unordered read if the ordered one needs a
  * composite index that does not exist yet.
  *
@@ -279,10 +310,13 @@ async function fetchTarget(
     firestore: Firestore,
     target: SyncTarget,
     clinicId: string
-): Promise<any[]> {
+): Promise<FetchOutcome> {
     try {
         const snap = await getDocs(buildQuery(firestore, target, clinicId));
-        return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        return {
+            rows: snap.docs.map((d) => ({ id: d.id, ...d.data() })),
+            truncated: snap.size >= target.limit,
+        };
     } catch (err: any) {
         const needsIndex =
             err?.code === 'failed-precondition' || /requires an index/i.test(err?.message ?? '');
@@ -303,7 +337,10 @@ async function fetchTarget(
                 fbLimit(target.limit)
             )
         );
-        return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        return {
+            rows: snap.docs.map((d) => ({ id: d.id, ...d.data() })),
+            truncated: snap.size >= target.limit,
+        };
     }
 }
 
@@ -337,7 +374,11 @@ async function syncOneTarget(
     }
 
     try {
-        const rows = await fetchTarget(firestore, target, clinicId);
+        // Captured before the fetch: any mirrored row stamped at or after this
+        // instant was written locally while the fetch was in flight, so the
+        // server's answer cannot be evidence that it was deleted.
+        const fetchStartedAt = Date.now();
+        const { rows, truncated } = await fetchTarget(firestore, target, clinicId);
 
         // `syncRowsToOffline` returns false only when the write did not reach
         // disk on a platform that has a mirror. On web it returns true because
@@ -355,8 +396,38 @@ async function syncOneTarget(
             };
         }
 
+        /**
+         * Tombstones. `syncRowsToOffline` only upserts, so without this a record
+         * deleted on the server — or on another device — lives in the mirror
+         * forever and is served back on the next offline read. That is the
+         * "I deleted it and it came back" bug.
+         *
+         * Skipped when the page was full: `truncated` means there are records
+         * beyond the limit that this fetch never asked for, and reconciling
+         * against a partial view would delete the clinic's older history. A
+         * clinic over the limit keeps its ghosts, which is the right trade —
+         * a stale row is a nuisance, a deleted year of encounters is not.
+         *
+         * `protectNewerThan` carries a margin back from the fetch to absorb
+         * clock skew between this device and Firestore's `updatedAt` stamps.
+         */
+        let reconciled = 0;
+        if (!truncated) {
+            reconciled = await reconcileMirror(
+                target.table,
+                clinicId,
+                rows.map((r) => r.id),
+                { protectNewerThan: fetchStartedAt - PENDING_WRITE_GRACE_MS }
+            );
+            if (reconciled > 0) {
+                console.info(
+                    `[sync] ${target.table}: dropped ${reconciled} mirrored row(s) no longer on the server.`
+                );
+            }
+        }
+
         await setLastSyncMetadata(clinicId, target.type, Date.now());
-        return { table: target.table, ok: true, fetched: rows.length, skipped: null };
+        return { table: target.table, ok: true, fetched: rows.length, skipped: null, reconciled };
     } catch (err: any) {
         // Offline is the expected case here, not an anomaly: hydration runs on
         // every dashboard mount, including in a lift. No stamp, no wipe, and the

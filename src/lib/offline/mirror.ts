@@ -76,6 +76,8 @@ type MirrorBackend = Pick<
   | 'syncRowsToOffline'
   | 'syncRowToOffline'
   | 'deleteRowFromOffline'
+  | 'reconcileMirror'
+  | 'deleteRowsForPatient'
   | 'getCachedRowsResult'
   | 'getCachedRows'
   | 'getCachedRowsForPatient'
@@ -200,6 +202,32 @@ export async function syncRowToOffline(
 
 export async function deleteRowFromOffline(table: MirrorTable, id: string): Promise<void> {
   return ((await backend()) ?? WEB).deleteRowFromOffline(table, id);
+}
+
+/**
+ * Remove mirrored rows for a clinic that the server no longer has.
+ *
+ * Only safe with the ids of a fetch that was not truncated by its limit, and
+ * `protectNewerThan` must be set to the instant that fetch began (less a margin)
+ * so a row written locally while the fetch was in flight is not mistaken for a
+ * deletion — see the full reasoning on `reconcileMirror` in ./sqlite.ts. Returns
+ * how many rows were dropped.
+ */
+export async function reconcileMirror(
+  table: MirrorTable,
+  clinicId: string,
+  serverIds: string[],
+  opts: { protectNewerThan?: number } = {}
+): Promise<number> {
+  return ((await backend()) ?? WEB).reconcileMirror(table, clinicId, serverIds, opts);
+}
+
+/** Purge one patient's rows from a mirrored collection. Returns rows dropped. */
+export async function deleteRowsForPatient(
+  table: MirrorTable,
+  patientId: string
+): Promise<number> {
+  return ((await backend()) ?? WEB).deleteRowsForPatient(table, patientId);
 }
 
 export async function getCachedRowsResult<T = any>(

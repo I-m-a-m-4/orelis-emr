@@ -81,6 +81,12 @@ function InviteForm({ id }: { id: string }) {
                 role: inviteData.role,
                 clinicId: inviteData.clinicId,
                 status: 'active',
+                // Required by firestore.rules: a self-written profile may only
+                // claim an elevated role if an invitation vouches for it. The rule
+                // re-reads this invitation server-side and checks that its role,
+                // clinic and email all match, so a caller cannot simply assert a
+                // role here.
+                invitationId: inviteData.id,
                 createdAt: new Date().toISOString()
             });
 

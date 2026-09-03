@@ -13,6 +13,10 @@ import dynamic from 'next/dynamic';
 import { useToast } from "@/hooks/use-toast";
 
 import { PaystackButton } from "@/components/paystack-button";
+import {
+    NewInvoiceDialog, DownloadInvoiceButton, ViewInvoiceDialog,
+} from "@/components/billing/invoice-actions";
+import type { Patient } from "@/lib/types";
 
 
 export default function BillingPage() {
@@ -38,6 +42,22 @@ export default function BillingPage() {
 
     const { data: invoices, loading, error: queryError } = useCollection<any>(invoicesQuery);
 
+    // Needed to raise an invoice against a named patient. Equality-only, so no
+    // composite index is involved.
+    const patientsQuery = useMemo(() => {
+        if (!userProfile?.clinicId || !firestore) return null;
+        return query(collection(firestore, 'patients'), where('clinicId', '==', userProfile.clinicId));
+    }, [userProfile?.clinicId, firestore]);
+    const { data: patients } = useCollection<Patient>(patientsQuery);
+
+    // The clinic's own name heads the generated PDF.
+    const clinicRef = useMemo(() => {
+        if (!userProfile?.clinicId || !firestore) return null;
+        return doc(firestore, 'clinics', userProfile.clinicId);
+    }, [userProfile?.clinicId, firestore]);
+    const { data: clinic } = useDoc<any>(clinicRef);
+    const clinicName = clinic?.name ?? 'Orelis Clinic';
+
     const paystackConfig = {
         publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
         email: user?.email || '',
@@ -55,9 +75,7 @@ export default function BillingPage() {
                     </h1>
                     <p className="text-sm text-muted-foreground">Manage your clinic's subscription plans and patient invoices.</p>
                 </div>
-                <Button className="button-glow">
-                    <Plus className="mr-2 h-4 w-4" /> New Patient Invoice
-                </Button>
+                <NewInvoiceDialog clinicId={userProfile?.clinicId} patients={patients} />
             </div>
 
             {/* Plans Section - Simplified to Flat Rate */}
@@ -147,8 +165,8 @@ export default function BillingPage() {
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="flex justify-end gap-2">
-                                                        <Button variant="ghost" size="icon"><Download className="h-4 w-4" /></Button>
-                                                        <Button variant="ghost" size="icon"><FileText className="h-4 w-4" /></Button>
+                                                        <DownloadInvoiceButton invoice={inv} clinicName={clinicName} />
+                                                        <ViewInvoiceDialog invoice={inv} clinicName={clinicName} />
                                                     </div>
                                                 </TableCell>
                                             </TableRow>

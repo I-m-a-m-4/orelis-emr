@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -147,6 +148,70 @@ export default function WardsPage() {
     );
 }
 
+/** Who is actually in this ward — the question "Details" was silently refusing. */
+function WardDetailsDialog({ ward, admissions }: { ward: Ward; admissions: Admission[] }) {
+    const [open, setOpen] = useState(false);
+    const free = Math.max(0, ward.totalBeds - admissions.length);
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 text-[11px] font-bold cursor-pointer">
+                    Details
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[560px]">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        {ward.name}
+                        <Badge variant="secondary">{ward.type}</Badge>
+                    </DialogTitle>
+                    <DialogDescription>
+                        {admissions.length} of {ward.totalBeds} beds occupied · {free} free
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="py-2">
+                    {admissions.length ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Patient</TableHead>
+                                    <TableHead>Bed</TableHead>
+                                    <TableHead>Admitted</TableHead>
+                                    <TableHead>Reason</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {admissions.map((a) => (
+                                    <TableRow key={a.id}>
+                                        <TableCell className="font-medium">{a.patientName}</TableCell>
+                                        <TableCell>{a.bedNumber}</TableCell>
+                                        <TableCell className="text-xs">
+                                            {a.admittedAt ? new Date(a.admittedAt).toLocaleDateString() : '—'}
+                                        </TableCell>
+                                        <TableCell className="text-xs text-muted-foreground">
+                                            {a.reason || '—'}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    ) : (
+                        <p className="text-sm text-muted-foreground py-6 text-center">
+                            No patients are currently admitted to this ward.
+                        </p>
+                    )}
+                </div>
+
+                <DialogFooter>
+                    <Button onClick={() => setOpen(false)}>Close</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 function WardCard({ ward, admissions }: { ward: Ward, admissions: Admission[] }) {
     const wardAdmissions = admissions.filter(a => a.wardId === ward.id);
     const occupancyRate = (wardAdmissions.length / ward.totalBeds) * 100;
@@ -178,7 +243,7 @@ function WardCard({ ward, admissions }: { ward: Ward, admissions: Admission[] })
                 </div>
             </CardContent>
             <CardFooter className="bg-muted/30 border-t border-dashed py-3 flex justify-between">
-                <Button variant="ghost" size="sm" className="h-8 text-[11px] font-bold">Details</Button>
+                <WardDetailsDialog ward={ward} admissions={wardAdmissions} />
                 <div className="flex -space-x-2">
                     {wardAdmissions.slice(0, 3).map((a, i) => (
                         <div key={i} className="w-6 h-6 rounded-full bg-primary/20 border-2 border-background flex items-center justify-center text-[8px] font-bold" title={a.patientName}>

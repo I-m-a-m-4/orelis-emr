@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Stethoscope, LayoutDashboard, Users, Calendar, Settings, UserPlus, LifeBuoy, Shield, FileText, Newspaper, Bell, Hospital, Mailbox, Package, BadgeDollarSign, BarChart3, ExternalLink, Pill, FlaskConical, Bed, CreditCard, ClipboardList } from 'lucide-react';
+import { Stethoscope, LayoutDashboard, Users, Calendar, Settings, UserPlus, LifeBuoy, Shield, FileText, Newspaper, Bell, Hospital, Mailbox, Package, BadgeDollarSign, BarChart3, ExternalLink, Pill, FlaskConical, Bed, CreditCard, ClipboardList, Code } from 'lucide-react';
 import {
   SidebarHeader,
   SidebarContent,
@@ -26,11 +26,14 @@ const navGroups: { label: string, items: NavItem[] }[] = [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'doctor', 'receptionist', 'patient'] },
       { href: '/dashboard/appointments', label: 'Appointments', icon: Calendar, roles: ['admin', 'doctor', 'receptionist', 'patient'] },
       { href: '/dashboard/patients', label: 'Patients', icon: Users, roles: ['admin', 'doctor', 'receptionist'] },
+      { href: '/dashboard/my-records', label: 'My Records', icon: FileText, roles: ['patient', 'admin', 'doctor'] },
+      { href: '/dashboard/notifications', label: 'Notifications', icon: Bell, roles: ['admin', 'doctor', 'receptionist', 'patient'] },
     ]
   },
   {
     label: 'Clinical',
     items: [
+      { href: '/dashboard/encounters', label: 'Consultations', icon: ClipboardList, roles: ['admin', 'doctor'] },
       { href: '/dashboard/records', label: 'Clinical Archive', icon: Stethoscope, roles: ['admin', 'doctor'] },
       { href: '/dashboard/lab', label: 'Laboratory', icon: FlaskConical, roles: ['admin', 'doctor'] },
       { href: '/dashboard/pharmacy', label: 'Pharmacy', icon: Pill, roles: ['admin', 'doctor'] },
@@ -41,9 +44,12 @@ const navGroups: { label: string, items: NavItem[] }[] = [
   {
     label: 'Management',
     items: [
+      { href: '/dashboard/reports', label: 'Analytics & Reports', icon: BarChart3, roles: ['admin', 'doctor'] },
       { href: '/dashboard/billing', label: 'Billing Center', icon: CreditCard, roles: ['admin'] },
-      { href: '/dashboard/reports', label: 'Analytics & Finance', icon: BarChart3, roles: ['admin'] },
+      { href: '/dashboard/inventory', label: 'Inventory & Stock', icon: Package, roles: ['admin', 'doctor'] },
       { href: '/dashboard/waitlist', label: 'Waitlist', icon: Mailbox, roles: ['admin', 'receptionist'] },
+      { href: '/dashboard/hospital', label: 'Hospital Facility', icon: Hospital, roles: ['admin'] },
+      { href: '/dashboard/developers', label: 'Developer APIs', icon: Code, roles: ['admin'] },
     ]
   }
 ];

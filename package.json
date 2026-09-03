@@ -10,6 +10,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "test:rules": "firebase emulators:exec --only firestore --project orelis-rules-test \"node scratch/rules.test.mjs\"",
     "build:native": "node scripts/build-native.mjs",
     "native:restore": "node scripts/tauri-postbuild.mjs",
     "tauri": "tauri",
@@ -95,6 +96,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
     "@tailwindcss/typography": "^0.5.15",
     "@tauri-apps/cli": "^2.11.4",
     "@types/react": "^18",

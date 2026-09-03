@@ -38,8 +38,12 @@ async function getPost(slug: string): Promise<BlogPost | null> {
     return post || null;
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
-    const post = await getPost(params.slug);
+// Next.js 15 hands route params to a page as a Promise, so both entry points
+// await it. Typing it as a plain object compiles under `tsc` but fails the
+// generated PageProps constraint at build time.
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = await params;
+    const post = await getPost(slug);
 
     if (!post) {
         return {
@@ -60,8 +64,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 
-export default async function BlogPostPage({ params }: { params: { slug: string } }) {
-    const post = await getPost(params.slug);
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = await params;
+    const post = await getPost(slug);
 
     if (!post) {
         notFound();

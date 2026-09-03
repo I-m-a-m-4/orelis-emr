@@ -1,6 +1,7 @@
 'use client';
 
 import Database from '@tauri-apps/plugin-sql';
+import { writtenSince } from './watermark';
 
 /**
  * Orelis local SQLite mirror.
@@ -329,6 +330,107 @@ export async function deleteRowFromOffline(table: MirrorTable, id: string): Prom
     await handle.execute(`DELETE FROM ${table} WHERE id = $1`, [id]);
   } catch (err) {
     console.error(`SQLite delete error (${table}):`, err);
+  }
+}
+
+/**
+ * Drop every mirrored row for one clinic whose id is not in `serverIds`.
+ *
+ * This is the tombstone half of sync, and without it deletes do not stick.
+ * `syncRowsToOffline` only ever upserts, so a record removed on the server — or
+ * by another device — stays in this mirror indefinitely and is handed straight
+ * back to the UI by the next offline read. The symptom is precise: the record
+ * vanishes when it is deleted (the live Firestore listener drops it) and is back
+ * after the next cold start, which reads the mirror.
+ *
+ * ## Only ever call this with the ids of a *complete* fetch
+ *
+ * Every sync target carries a `limit`. If a fetch filled its page, "not in
+ * `serverIds`" also describes every record beyond that limit — a clinic's older
+ * history, which is perfectly valid and simply was not requested — and
+ * reconciling against it would delete exactly the data this subsystem exists to
+ * keep. `syncOneTarget` in ./sync.ts is responsible for that call and skips
+ * reconciliation for any collection whose page came back full.
+ *
+ * ## `protectNewerThan` guards writes the server has not seen yet
+ *
+ * `persistRecord` mirrors a new record immediately and lets the Firestore write
+ * settle in its own time. So there is a window where a row is legitimately in the
+ * mirror and legitimately absent from the server — and reconciling in that window
+ * would delete a record the user typed seconds ago, which is the precise failure
+ * this whole subsystem exists to prevent. Any row whose own `updatedAt` (or
+ * `createdAt`) is at or after this watermark is therefore kept regardless of the
+ * server's answer. Callers pass the instant the fetch began, less a margin.
+ */
+export async function reconcileMirror(
+  table: MirrorTable,
+  clinicId: string,
+  serverIds: string[],
+  opts: { protectNewerThan?: number } = {}
+): Promise<number> {
+  const handle = await getOfflineDb();
+  if (!handle || !clinicId) return 0;
+
+  try {
+    const existing: any[] = await handle.select(
+      `SELECT id, data FROM ${table} WHERE clinic_id = $1`,
+      [clinicId]
+    );
+
+    const keep = new Set(serverIds.map(String));
+    const watermark = opts.protectNewerThan;
+
+    const stale = existing
+      .filter((row) => {
+        if (keep.has(String(row.id))) return false;
+        if (watermark === undefined) return true;
+        return !writtenSince(row.data, watermark);
+      })
+      .map((row) => String(row.id));
+
+    if (!stale.length) return 0;
+
+    // Chunked for the same reason upsertRows is: one DELETE per stale id would
+    // be hundreds of round trips, and one with hundreds of binds exceeds the
+    // driver's variable ceiling.
+    for (let offset = 0; offset < stale.length; offset += MAX_BIND_VARIABLES) {
+      const chunk = stale.slice(offset, offset + MAX_BIND_VARIABLES);
+      const placeholders = chunk.map((_, i) => `$${i + 1}`).join(', ');
+      await handle.execute(`DELETE FROM ${table} WHERE id IN (${placeholders})`, chunk);
+    }
+
+    return stale.length;
+  } catch (err) {
+    console.error(`SQLite reconcile error (${table}):`, err);
+    return 0;
+  }
+}
+
+/**
+ * Purge one patient's rows from a mirrored collection.
+ *
+ * `/api/admin/cascade-delete` removes a patient's appointments, encounters,
+ * invoices, prescriptions, labs and admissions server-side, but it runs under
+ * `firebase-admin` on the server and cannot reach this device's mirror. Without
+ * this, a deleted patient's entire chart stays readable offline — and reachable
+ * by `getCachedRow('patients', id)`, which is how `encounters.ts` resolves a
+ * patient name.
+ */
+export async function deleteRowsForPatient(
+  table: MirrorTable,
+  patientId: string
+): Promise<number> {
+  const handle = await getOfflineDb();
+  if (!handle || !patientId) return 0;
+  try {
+    const result: any = await handle.execute(
+      `DELETE FROM ${table} WHERE json_extract(data, '$.patientId') = $1`,
+      [patientId]
+    );
+    return Number(result?.rowsAffected ?? 0);
+  } catch (err) {
+    console.error(`SQLite patient purge error (${table}):`, err);
+    return 0;
   }
 }
 

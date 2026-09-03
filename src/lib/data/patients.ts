@@ -41,6 +41,15 @@ export interface PatientInput {
   notes?: string;
   country?: string;
   patientCode?: string;
+  /** The clinic's own registration number, distinct from `patientCode`. */
+  hospitalNumber?: string;
+  /**
+   * Clinic-defined extra fields from the registration form.
+   *
+   * Spread *before* the known fields in `toRecord` so a custom key that happens
+   * to be called `surname` cannot overwrite the real one.
+   */
+  custom?: Record<string, string>;
   nextOfKin?: {
     name?: string;
     relation?: string;
@@ -78,6 +87,8 @@ function validate(input: PatientInput): string | null {
 
 function toRecord(input: PatientInput) {
   return {
+    // First, so a clinic-defined key colliding with a core field loses to it.
+    ...(input.custom ?? {}),
     firstName: input.firstName.trim(),
     surname: input.surname.trim(),
     dob: input.dob ?? '',
@@ -92,6 +103,7 @@ function toRecord(input: PatientInput) {
     religion: input.religion ?? '',
     notes: input.notes ?? '',
     country: input.country ?? '',
+    hospitalNumber: input.hospitalNumber ?? '',
     nextOfKin: {
       name: input.nextOfKin?.name ?? '',
       relation: input.nextOfKin?.relation ?? '',
@@ -203,6 +215,53 @@ export async function updatePatient(
   } catch (err: any) {
     console.error('Error updating patient:', err);
     return { success: false, message: `Failed to update patient: ${err?.message ?? err}` };
+  }
+}
+
+/**
+ * Remove a deleted patient and their whole chart from this device's mirror.
+ *
+ * The cascade itself runs at `/api/admin/cascade-delete` under `firebase-admin`,
+ * which has no access to this device's SQLite/IndexedDB mirror. Two things then
+ * go wrong if the client does not clean up after a successful delete:
+ *
+ * - The live Firestore listener drops the patient, so they vanish from the list
+ *   and the delete *looks* like it worked. The mirror still holds the row, so the
+ *   next cold or offline start serves them straight back — the "I delete it and
+ *   it comes back" report.
+ * - `hydrateClinicData` now reconciles tombstones, but it is throttled to ten
+ *   minutes per collection and skips reconciliation entirely for a clinic whose
+ *   records exceed the sync limit. Neither is a delay a deletion can wait on.
+ *
+ * The collection list mirrors `PATIENT_SCOPED` in the cascade route. A name that
+ * drifts from that list does not error, it silently leaves that chart behind.
+ *
+ * Best-effort by design: a mirror that cannot be opened must not turn a delete
+ * that already succeeded on the server into a user-visible failure.
+ */
+export async function purgePatientFromMirror(patientId: string): Promise<void> {
+  if (!patientId) return;
+
+  try {
+    const { deleteRowFromOffline, deleteRowsForPatient } = await import(
+      '@/lib/offline/mirror'
+    );
+
+    const PATIENT_SCOPED = [
+      'appointments',
+      'encounters',
+      'invoices',
+      'prescriptions',
+      'lab_orders',
+      'admissions',
+    ] as const;
+
+    await Promise.all(
+      PATIENT_SCOPED.map((table) => deleteRowsForPatient(table, patientId))
+    );
+    await deleteRowFromOffline('patients', patientId);
+  } catch (err) {
+    console.error(`Could not purge patient ${patientId} from the local mirror:`, err);
   }
 }
 

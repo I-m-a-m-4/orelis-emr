@@ -1,6 +1,7 @@
 'use client';
 
 import { StatCard } from "@/components/dashboard/stat-card";
+import { ClinicMetrics } from "@/components/dashboard/clinic-metrics";
 import { Activity, Users, Calendar, Stethoscope, BadgeDollarSign, Package, FlaskConical, Bed, Clock, Pill, TrendingUp, AlertCircle, MessageSquare, ClipboardList, Link as LinkIcon } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,10 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
 import { collection, doc, query, where, orderBy, limit } from "firebase/firestore";
-import type { Patient, Appointment, UserProfile, Encounter } from "@/lib/types";
+import type {
+    Patient, Appointment, UserProfile, Encounter,
+    Medication, Prescription, LabOrder, Admission, Bed as BedRecord
+} from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo } from "react";
 import { LoadingAnimation } from "@/components/layout/loading-animation";
@@ -32,7 +36,13 @@ const AdminDashboard = ({
     staff,
     invoices,
     inventory,
-    encounters
+    encounters,
+    medications,
+    prescriptions,
+    labOrders,
+    admissions,
+    beds,
+    waitlist
 }: {
     userProfile: UserProfile,
     patients: Patient[] | null,
@@ -40,34 +50,42 @@ const AdminDashboard = ({
     staff: UserProfile[] | null,
     invoices: any[] | null,
     inventory: any[] | null,
-    encounters: Encounter[] | null
+    encounters: Encounter[] | null,
+    medications: Medication[] | null,
+    prescriptions: Prescription[] | null,
+    labOrders: LabOrder[] | null,
+    admissions: Admission[] | null,
+    beds: BedRecord[] | null,
+    waitlist: any[] | null
 }) => {
-    const doctors = staff?.filter(s => s.role === 'doctor') || [];
-    const upcomingAppointments = appointments?.filter(a => new Date(a.appointmentDate) > new Date() && a.status === 'Scheduled') || [];
-    const totalRevenue = invoices?.reduce((acc, inv) => acc + (inv.amount || 0), 0) || 0;
-    const lowStockItems = inventory?.filter(i => i.quantity <= (i.minStock || 5)) || [];
-
-    // Growth calculation (last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const newPatientsCount = patients?.filter(p => new Date(p.registrationDate) > thirtyDaysAgo).length || 0;
-
     return (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            <StatCard title="Total Patients" value={(patients?.length || 0).toString()} icon={<Users className="h-4 w-4 text-primary" />} href="/dashboard/patients" />
-            <StatCard title="Upcoming Visits" value={(upcomingAppointments.length).toString()} icon={<Calendar className="h-4 w-4 text-primary" />} href="/dashboard/appointments" />
-            <StatCard title="Total Staff" value={(staff?.length || 0).toString()} icon={<Activity className="h-4 w-4 text-primary" />} href="/dashboard/staff" />
-            <StatCard title="Total Revenue" value={`₦${totalRevenue.toLocaleString()}`} icon={<BadgeDollarSign className="h-4 w-4 text-primary" />} href="/dashboard/reports" />
-            <StatCard title="Low Stock Items" value={lowStockItems.length.toString()} icon={<AlertCircle className="h-4 w-4 text-orange-500" />} description={lowStockItems.length > 0 ? "Items require restock" : "All levels healthy"} href="/dashboard/pharmacy" />
-            <StatCard title="Monthly Growth" value={`+${newPatientsCount}`} icon={<TrendingUp className="h-4 w-4 text-blue-500" />} description="New patients (30d)" href="/dashboard/reports" />
-            <StatCard title="Total Encounters" value={(encounters?.length || 0).toString()} icon={<ClipboardList className="h-4 w-4 text-purple-500" />} href="/dashboard/encounters" />
-            <StatCard title="Active Doctors" value={doctors.length.toString()} icon={<Stethoscope className="h-4 w-4 text-primary" />} href="/dashboard/staff" />
-            <Card className="sm:col-span-2 lg:col-span-1 xl:col-span-1 border-primary/20 bg-primary/5 flex flex-col justify-center p-4">
-                <Button asChild className="w-full button-glow"><Link href="/dashboard/patients/new"><Users className="mr-2 h-4 w-4" /> Register New Patient</Link></Button>
-            </Card>
-            <Card className="sm:col-span-2 lg:col-span-1 xl:col-span-1 border-primary/20 bg-primary/5 flex flex-col justify-center p-4">
-                <Button asChild variant="outline" className="w-full border-primary/40"><Link href="/dashboard/records"><Stethoscope className="mr-2 h-4 w-4 text-primary" /> Record Encounter</Link></Button>
-            </Card>
+        <div className="flex flex-col gap-8">
+            <div className="flex flex-wrap items-center gap-3">
+                <Button asChild className="button-glow">
+                    <Link href="/dashboard/patients/new"><Users className="mr-2 h-4 w-4" /> Register New Patient</Link>
+                </Button>
+                <Button asChild variant="outline" className="border-primary/40">
+                    <Link href="/dashboard/records"><Stethoscope className="mr-2 h-4 w-4 text-primary" /> Record Encounter</Link>
+                </Button>
+                <Button asChild variant="outline">
+                    <Link href="/dashboard/reports"><FileText className="mr-2 h-4 w-4" /> Full Reports</Link>
+                </Button>
+            </div>
+
+            <ClinicMetrics
+                patients={patients}
+                appointments={appointments}
+                encounters={encounters}
+                staff={staff}
+                invoices={invoices}
+                inventory={inventory}
+                medications={medications}
+                prescriptions={prescriptions}
+                labOrders={labOrders}
+                admissions={admissions}
+                beds={beds}
+                waitlist={waitlist}
+            />
         </div>
     );
 }
@@ -654,6 +672,42 @@ function DashboardContent({ userProfile }: { userProfile: UserProfile }) {
     }, [firestore, userProfile]);
     const { data: waitlist } = useCollection<any>(waitlistQuery);
 
+    /**
+     * The five collections the KPI board needs that the page did not previously
+     * load. All are plain `clinicId ==` equality queries with no ordering, so
+     * none of them needs a composite index — the ordering that the pharmacy and
+     * lab *pages* apply is what requires one, not this.
+     */
+    const medicationsQuery = useMemo(() => {
+        if (!firestore || !userProfile.clinicId || userProfile.role !== 'admin') return null;
+        return query(collection(firestore, 'medications'), where('clinicId', '==', userProfile.clinicId));
+    }, [firestore, userProfile]);
+    const { data: medications } = useCollection<Medication>(medicationsQuery);
+
+    const prescriptionsQuery = useMemo(() => {
+        if (!firestore || !userProfile.clinicId || userProfile.role !== 'admin') return null;
+        return query(collection(firestore, 'prescriptions'), where('clinicId', '==', userProfile.clinicId));
+    }, [firestore, userProfile]);
+    const { data: prescriptions } = useCollection<Prescription>(prescriptionsQuery);
+
+    const labOrdersQuery = useMemo(() => {
+        if (!firestore || !userProfile.clinicId || userProfile.role !== 'admin') return null;
+        return query(collection(firestore, 'lab_orders'), where('clinicId', '==', userProfile.clinicId));
+    }, [firestore, userProfile]);
+    const { data: labOrders } = useCollection<LabOrder>(labOrdersQuery);
+
+    const admissionsQuery = useMemo(() => {
+        if (!firestore || !userProfile.clinicId || userProfile.role !== 'admin') return null;
+        return query(collection(firestore, 'admissions'), where('clinicId', '==', userProfile.clinicId));
+    }, [firestore, userProfile]);
+    const { data: admissions } = useCollection<Admission>(admissionsQuery);
+
+    const bedsQuery = useMemo(() => {
+        if (!firestore || !userProfile.clinicId || userProfile.role !== 'admin') return null;
+        return query(collection(firestore, 'beds'), where('clinicId', '==', userProfile.clinicId));
+    }, [firestore, userProfile]);
+    const { data: beds } = useCollection<BedRecord>(bedsQuery);
+
     const recentPatients = allPatients
         ?.sort((a, b) => new Date(b.registrationDate).getTime() - new Date(a.registrationDate).getTime())
         .slice(0, 4) || [];
@@ -667,7 +721,7 @@ function DashboardContent({ userProfile }: { userProfile: UserProfile }) {
         if (appointmentsLoading || staffLoading || patientsLoading) return <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"><Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" /></div>;
 
         switch (userProfile.role) {
-            case 'admin': return <AdminDashboard userProfile={userProfile} patients={allPatients} appointments={appointments} staff={staff} invoices={invoices} inventory={inventory} encounters={encounters} />;
+            case 'admin': return <AdminDashboard userProfile={userProfile} patients={allPatients} appointments={appointments} staff={staff} invoices={invoices} inventory={inventory} encounters={encounters} medications={medications} prescriptions={prescriptions} labOrders={labOrders} admissions={admissions} beds={beds} waitlist={waitlist} />;
             case 'doctor': return <DoctorDashboard userProfile={userProfile} appointments={appointments} encounters={encounters} />;
             case 'receptionist': return <ReceptionistDashboard userProfile={userProfile} patients={allPatients} appointments={appointments} waitlist={waitlist} />;
             case 'patient': return <PatientDashboard userProfile={userProfile} />;

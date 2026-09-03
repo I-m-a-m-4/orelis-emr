@@ -50,6 +50,7 @@
  */
 
 import type { CachedResult, MirrorTable, QueuedAction } from './sqlite';
+import { writtenSince } from './watermark';
 
 /**
  * Bumping this runs `onupgradeneeded`, which creates any store or index that is
@@ -404,6 +405,110 @@ export async function deleteRowFromOffline(table: MirrorTable, id: string): Prom
     await txDone(tx);
   } catch (err) {
     console.error(`IndexedDB delete error (${table}):`, err);
+  }
+}
+
+/**
+ * Drop every mirrored row for one clinic whose id is not in `serverIds`.
+ *
+ * The IndexedDB half of the tombstone contract — see `reconcileMirror` in
+ * ./sqlite.ts for why deletes do not otherwise stick, why the caller must only
+ * ever pass ids from a fetch that was *not* truncated by its limit, and what
+ * `protectNewerThan` is guarding against.
+ */
+export async function reconcileMirror(
+  table: MirrorTable,
+  clinicId: string,
+  serverIds: string[],
+  opts: { protectNewerThan?: number } = {}
+): Promise<number> {
+  const handle = await getOfflineIdb();
+  if (!handle || !clinicId) return 0;
+
+  try {
+    // Read in its own transaction. A readwrite transaction that awaits between
+    // requests can auto-commit the moment the microtask queue drains, and the
+    // deletes would then land on an inactive transaction.
+    const readTx = handle.transaction(table, 'readonly');
+    const readStore = readTx.objectStore(table);
+
+    // Whole rows rather than keys: the watermark check needs each record's own
+    // `updatedAt`, which lives in the stored blob.
+    const existing: MirrorRow[] = readStore.indexNames.contains('by_clinic')
+      ? await req<MirrorRow[]>(readStore.index('by_clinic').getAll(clinicId))
+      : (await req<MirrorRow[]>(readStore.getAll())).filter((r) => r.clinic_id === clinicId);
+
+    const keep = new Set(serverIds.map(String));
+    const watermark = opts.protectNewerThan;
+
+    const stale = existing
+      .filter((row) => {
+        if (keep.has(String(row.id))) return false;
+        if (watermark === undefined) return true;
+        return !writtenSince(row.data, watermark);
+      })
+      .map((row) => row.id);
+
+    if (!stale.length) return 0;
+
+    const tx = handle.transaction(table, 'readwrite');
+    const store = tx.objectStore(table);
+    for (const key of stale) store.delete(key);
+    await txDone(tx);
+
+    return stale.length;
+  } catch (err) {
+    console.error(`IndexedDB reconcile error (${table}):`, err);
+    return 0;
+  }
+}
+
+/**
+ * Purge one patient's rows from a mirrored collection.
+ *
+ * Counterpart to `deleteRowsForPatient` in ./sqlite.ts: the cascade delete runs
+ * server-side under `firebase-admin` and cannot reach this store, so without
+ * this a deleted patient's chart stays readable offline.
+ */
+export async function deleteRowsForPatient(
+  table: MirrorTable,
+  patientId: string
+): Promise<number> {
+  const handle = await getOfflineIdb();
+  if (!handle || !patientId) return 0;
+
+  try {
+    const readTx = handle.transaction(table, 'readonly');
+    const readStore = readTx.objectStore(table);
+
+    let keys: IDBValidKey[];
+    if (readStore.indexNames.contains('by_patient_time')) {
+      keys = await req(readStore.index('by_patient_time').getAllKeys(prefixRange(patientId)));
+    } else {
+      // `invoices` carries a patientId but is deliberately absent from
+      // PATIENT_SCOPED, so it has no patient index and needs the parsed blob.
+      keys = (await req<MirrorRow[]>(readStore.getAll()))
+        .filter((r) => {
+          try {
+            return JSON.parse(r.data)?.patientId === patientId;
+          } catch {
+            return false;
+          }
+        })
+        .map((r) => r.id);
+    }
+
+    if (!keys.length) return 0;
+
+    const tx = handle.transaction(table, 'readwrite');
+    const store = tx.objectStore(table);
+    for (const key of keys) store.delete(key);
+    await txDone(tx);
+
+    return keys.length;
+  } catch (err) {
+    console.error(`IndexedDB patient purge error (${table}):`, err);
+    return 0;
   }
 }
 

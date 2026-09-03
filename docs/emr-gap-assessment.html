@@ -1,0 +1,701 @@
+<title>Orelis Readiness Triage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  /* ---- Light palette: complete, on bare :root ---- */
+  :root {
+    color-scheme: light;
+
+    --paper:      #f7f8fa;
+    --card:       #ffffff;
+    --ink:        #14181d;
+    --ink-soft:   #4a545f;
+    --ink-faint:  #7b8794;
+    --rule:       #dfe3e8;
+    --rule-soft:  #ecEEF1;
+
+    /* Brand orange, demoted to furniture. */
+    --brand:      #dd6410;
+
+    /* Severity is the accent in a triage document. */
+    --sev-unsafe: #b3243c;
+    --sev-block:  #dd6410;
+    --sev-expect: #9c7a0b;
+    --sev-later:  #4c6e8a;
+
+    --unsafe-wash: #b3243c14;
+    --block-wash:  #dd641014;
+    --expect-wash: #9c7a0b14;
+    --later-wash:  #4c6e8a14;
+
+    --shadow: 0 1px 2px #14181d0a, 0 8px 24px #14181d08;
+
+    --measure: 68ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper:     #12161a;
+      --card:      #1a1f25;
+      --ink:       #eef1f4;
+      --ink-soft:  #a7b2be;
+      --ink-faint: #78838f;
+      --rule:      #2a3138;
+      --rule-soft: #21272d;
+
+      --brand:      #f0813a;
+      --sev-unsafe: #e8697f;
+      --sev-block:  #f0813a;
+      --sev-expect: #d7ae2e;
+      --sev-later:  #7ea6c6;
+
+      --unsafe-wash: #e8697f1c;
+      --block-wash:  #f0813a1c;
+      --expect-wash: #d7ae2e1c;
+      --later-wash:  #7ea6c61c;
+
+      --shadow: 0 1px 2px #0006, 0 8px 24px #0004;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper:     #12161a;
+    --card:      #1a1f25;
+    --ink:       #eef1f4;
+    --ink-soft:  #a7b2be;
+    --ink-faint: #78838f;
+    --rule:      #2a3138;
+    --rule-soft: #21272d;
+
+    --brand:      #f0813a;
+    --sev-unsafe: #e8697f;
+    --sev-block:  #f0813a;
+    --sev-expect: #d7ae2e;
+    --sev-later:  #7ea6c6;
+
+    --unsafe-wash: #e8697f1c;
+    --block-wash:  #f0813a1c;
+    --expect-wash: #d7ae2e1c;
+    --later-wash:  #7ea6c61c;
+
+    --shadow: 0 1px 2px #0006, 0 8px 24px #0004;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 78rem;
+    margin: 0 auto;
+    padding: clamp(2rem, 5vw, 4.5rem) clamp(1.25rem, 4vw, 3rem) 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3.5rem;
+  }
+
+  .measure { max-width: var(--measure); }
+
+  /* ---------------------------------------------------------- masthead */
+
+  .masthead { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .7rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--brand);
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+  }
+  .eyebrow::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--rule);
+  }
+
+  h1 {
+    font-family: Spectral, Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(2.1rem, 5vw, 3.1rem);
+    line-height: 1.1;
+    letter-spacing: -.015em;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  .standfirst {
+    font-family: Spectral, Georgia, serif;
+    font-size: clamp(1.05rem, 2vw, 1.2rem);
+    line-height: 1.55;
+    color: var(--ink-soft);
+    max-width: var(--measure);
+    margin: 0;
+  }
+
+  .scope {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem 1.5rem;
+    padding-top: .5rem;
+    font-size: .82rem;
+    color: var(--ink-faint);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+  }
+
+  /* ---------------------------------------------------------- sections */
+
+  section { display: flex; flex-direction: column; gap: 1.5rem; }
+
+  h2 {
+    font-family: Spectral, Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(1.4rem, 2.6vw, 1.75rem);
+    line-height: 1.2;
+    letter-spacing: -.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h2 .count {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .72rem;
+    font-weight: 500;
+    letter-spacing: .08em;
+    color: var(--ink-faint);
+    vertical-align: .55em;
+    margin-left: .6rem;
+  }
+
+  p { margin: 0; }
+  .measure p + p { margin-top: .9rem; }
+
+  a { color: var(--brand); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  code, .mono {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .86em;
+  }
+  code {
+    background: var(--rule-soft);
+    padding: .1em .35em;
+    border-radius: 3px;
+    color: var(--ink);
+  }
+
+  /* ------------------------------------------------------------ have */
+
+  .have {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: clamp(1.25rem, 3vw, 1.75rem);
+    box-shadow: var(--shadow);
+    display: grid;
+    gap: 1rem 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  }
+  .have h3 {
+    grid-column: 1 / -1;
+    margin: 0;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .7rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+  .have div strong {
+    display: block;
+    font-weight: 600;
+    font-size: .95rem;
+    margin-bottom: .15rem;
+  }
+  .have div span { font-size: .88rem; color: var(--ink-soft); }
+
+  /* ------------------------------------------------------------ gaps */
+
+  .tier-head {
+    display: flex;
+    align-items: baseline;
+    gap: .85rem;
+    flex-wrap: wrap;
+  }
+
+  .sev {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .68rem;
+    font-weight: 500;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: .25rem .5rem;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .sev.unsafe { color: var(--sev-unsafe); background: var(--unsafe-wash); }
+  .sev.block  { color: var(--sev-block);  background: var(--block-wash); }
+  .sev.expect { color: var(--sev-expect); background: var(--expect-wash); }
+  .sev.later  { color: var(--sev-later);  background: var(--later-wash); }
+
+  .gaps { display: flex; flex-direction: column; gap: .75rem; }
+
+  .gap {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--stripe, var(--rule));
+    border-radius: 3px;
+    padding: 1.05rem 1.25rem;
+    box-shadow: var(--shadow);
+  }
+  .gap.unsafe { --stripe: var(--sev-unsafe); }
+  .gap.block  { --stripe: var(--sev-block); }
+  .gap.expect { --stripe: var(--sev-expect); }
+  .gap.later  { --stripe: var(--sev-later); }
+
+  .gap h3 {
+    margin: 0 0 .4rem;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.35;
+    text-wrap: balance;
+  }
+  .gap p { font-size: .9rem; color: var(--ink-soft); max-width: 62ch; }
+  .gap .evidence {
+    margin-top: .55rem;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .76rem;
+    color: var(--ink-faint);
+    display: flex;
+    flex-wrap: wrap;
+    gap: .3rem .9rem;
+  }
+
+  /* grouped "expected" items read as an inventory, not essays */
+  .inventory {
+    display: grid;
+    gap: .1rem 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--sev-expect);
+    border-radius: 3px;
+    padding: 1.15rem 1.35rem;
+    box-shadow: var(--shadow);
+  }
+  .inventory div {
+    padding: .45rem 0;
+    border-bottom: 1px solid var(--rule-soft);
+    font-size: .9rem;
+  }
+  .inventory div:last-child { border-bottom: 0; }
+  .inventory strong { font-weight: 600; }
+  .inventory span { color: var(--ink-soft); }
+
+  /* ---------------------------------------------------------- closing */
+
+  .do-first {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--brand);
+    border-radius: 4px;
+    padding: clamp(1.35rem, 3vw, 2rem);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+  }
+  .do-first ol {
+    margin: 0;
+    padding-left: 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: .8rem;
+  }
+  .do-first li { font-size: .95rem; max-width: 66ch; }
+  .do-first li strong { font-weight: 600; }
+  .do-first li::marker {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .82rem;
+    color: var(--brand);
+  }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-top: 1.5rem;
+    font-size: .82rem;
+    color: var(--ink-faint);
+    max-width: var(--measure);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Clinical readiness assessment</p>
+    <h1>What a hospital EMR needs that Orelis doesn&rsquo;t have yet</h1>
+    <p class="standfirst">
+      Ordered by triage, not by effort. The question a hospital&rsquo;s medical director will
+      ask is not &ldquo;what features are missing&rdquo; but &ldquo;can this system hurt a
+      patient, and can I get my records out of it&rdquo;. Everything below is graded against
+      those two questions first.
+    </p>
+    <div class="scope">
+      <span>Assessed: firestore.rules &middot; src/lib &middot; src/app/dashboard &middot; src/ai</span>
+      <span>Not assessed: deployment, backups, contracts</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>What&rsquo;s genuinely strong already</h2>
+    <p class="measure">
+      Worth stating plainly, because the list below is long and it would be easy to read it as
+      a verdict on the whole system. Several things here are better than what mid-market EMR
+      vendors ship.
+    </p>
+    <div class="have">
+      <h3>Credit where it&rsquo;s due</h3>
+      <div>
+        <strong>Genuine offline-first writes</strong>
+        <span>Two local stores, a documented non-blocking write contract, and a sync layer that
+        refuses to stamp success it didn&rsquo;t achieve. Most EMRs simply fail in a ward with
+        no signal.</span>
+      </div>
+      <div>
+        <strong>Multi-tenant from the ground up</strong>
+        <span>One <code>clinicId</code> boundary, consistently applied in every query, plus a
+        cache-ownership guard that wipes a device when the tenant changes.</span>
+      </div>
+      <div>
+        <strong>Audit logging with pre-delete snapshots</strong>
+        <span>Including access logging on chart reads, which is the event a privacy
+        investigation actually asks for and which most systems never record.</span>
+      </div>
+      <div>
+        <strong>A real AI gateway</strong>
+        <span>One route, role floors per flow, usage accounting, lazy flow imports. The right
+        shape, not a pile of endpoints.</span>
+      </div>
+      <div>
+        <strong>Server-side cascade deletes</strong>
+        <span>Chunked under the 500-write batch ceiling, Auth deleted only after Firestore
+        succeeds. Someone thought about the half-finished case.</span>
+      </div>
+      <div>
+        <strong>RBAC now proven, not just written</strong>
+        <span>42 emulator tests covering cross-tenant isolation, privilege escalation and role
+        floors. Run with <code>npm run test:rules</code>.</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="tier-head">
+      <h2>Can hurt a patient<span class="count">7 gaps</span></h2>
+      <span class="sev unsafe">Unsafe to sell into a hospital</span>
+    </div>
+    <p class="measure">
+      These are not feature gaps. Each one is a mechanism by which the software can contribute
+      to a clinical error, or by which a record can stop being defensible.
+    </p>
+
+    <div class="gaps">
+      <article class="gap unsafe">
+        <h3>Nothing checks a prescription against the patient&rsquo;s allergies</h3>
+        <p>
+          <code>Patient.allergies[]</code> is captured and then never consulted. A doctor can
+          prescribe penicillin to a patient whose chart records a penicillin allergy, and the
+          system will not say a word. <code>DrugSafetyChecker</code> exists, but it&rsquo;s a
+          standalone panel a clinician has to remember to open &mdash; it is not in the
+          prescribing path. Allergy checking has to be a blocking interruption at the moment of
+          order, not a tool.
+        </p>
+        <p class="evidence">
+          <span>src/lib/types.ts &rarr; allergies[]</span>
+          <span>src/components/dashboard/DrugSafetyChecker.tsx</span>
+        </p>
+      </article>
+
+      <article class="gap unsafe">
+        <h3>No dose-range or interaction checking at the point of order</h3>
+        <p>
+          Prescriptions are free text: <code>{ name, dosage, frequency, duration }</code> with
+          no formulary link, so nothing can catch a paediatric overdose, a decimal slip
+          (5&nbsp;mg written as 50&nbsp;mg), or a contraindicated pair. This is the single most
+          common category of preventable harm in hospital medicine, and it is exactly the class
+          of error software is good at catching.
+        </p>
+        <p class="evidence"><span>src/lib/types.ts &rarr; Prescription.medications[]</span></p>
+      </article>
+
+      <article class="gap unsafe">
+        <h3>A finalized clinical note can still be rewritten</h3>
+        <p>
+          <code>Encounter.status</code> has a <code>Finalized</code> state, but the update rule
+          permits any staff member in the clinic to edit the note afterwards, silently and in
+          place. A medical record must be append-only once signed: corrections are
+          <em>amendments</em> that sit alongside the original with their own author and
+          timestamp. As it stands, a note can be altered after an adverse event and the chart
+          will show no trace &mdash; which makes the whole record hard to defend, not just that
+          one entry.
+        </p>
+        <p class="evidence"><span>firestore.rules &rarr; match /encounters</span></p>
+      </article>
+
+      <article class="gap unsafe">
+        <h3>Vitals are stored as strings, so nothing can trend or alarm on them</h3>
+        <p>
+          <code>Observation.value</code> is a <code>string</code>. &ldquo;120/80&rdquo;,
+          &ldquo;120 / 80&rdquo; and &ldquo;bp 120 over 80&rdquo; are three different values to
+          this system and none of them is a number. That rules out sepsis and deterioration
+          scoring (NEWS/MEWS), growth charts, and any &ldquo;this reading is dangerous&rdquo;
+          alert &mdash; the things that make vitals worth recording electronically at all.
+        </p>
+        <p class="evidence"><span>src/lib/types.ts &rarr; Observation.value: string</span></p>
+      </article>
+
+      <article class="gap unsafe">
+        <h3>No patient-identity safeguards beyond one unique number</h3>
+        <p>
+          Registration checks the hospital number for duplicates and stops there. Real hospitals
+          get the same patient registered three times under variant spellings, and then half the
+          history is on the wrong chart. An EMR needs fuzzy duplicate detection at registration
+          and a supervised record-merge tool. Merging is unglamorous and it is the difference
+          between a chart you can trust and one you can&rsquo;t.
+        </p>
+        <p class="evidence"><span>src/app/dashboard/patients/new/page.tsx</span></p>
+      </article>
+
+      <article class="gap unsafe">
+        <h3>No prescriber binding on a prescription</h3>
+        <p>
+          <code>doctorName</code> is a string copied onto the record. Nothing binds the order to
+          a verified, licensed prescriber identity, and nothing stops the field being wrong. For
+          controlled drugs that is a regulatory problem as much as a clinical one.
+        </p>
+        <p class="evidence"><span>src/lib/types.ts &rarr; Prescription.doctorName</span></p>
+      </article>
+
+      <article class="gap unsafe">
+        <h3>No backup, restore, or full-record export</h3>
+        <p>
+          I found no scheduled export, no restore procedure, and no way for a hospital to take
+          its own data out. This is the question that ends procurement conversations: a medical
+          director cannot put a hospital&rsquo;s legal records somewhere they cannot retrieve
+          them from, and cannot leave a vendor they cannot export from. It is also the only
+          protection against a bad migration or a mistaken cascade delete.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <div class="tier-head">
+      <h2>Blocks the roadmap<span class="count">6 gaps</span></h2>
+      <span class="sev block">Architectural, and in the way</span>
+    </div>
+    <p class="measure">
+      These aren&rsquo;t safety issues, but each one prevents several features from being built
+      at all &mdash; including ones already asked for.
+    </p>
+
+    <div class="gaps">
+      <article class="gap block">
+        <h3>Nothing runs unless a browser tab is open</h3>
+        <p>
+          There are no Cloud Functions and no scheduler anywhere in the project. Everything
+          happens in a client. That means no automated appointment reminders, no overnight sync,
+          no drug-expiry alerts, no month-end reports, no backup job &mdash; and it is why
+          &ldquo;automated WhatsApp reminders&rdquo; cannot be built as asked today. This is the
+          single highest-leverage thing to add, because at least six other features are waiting
+          behind it.
+        </p>
+      </article>
+
+      <article class="gap block">
+        <h3>No server-side validation of clinical data</h3>
+        <p>
+          Clients write to Firestore directly. Security rules check <em>who</em> and
+          <em>which tenant</em>, but not <em>what</em>: an encounter with no SOAP body, a
+          negative drug quantity, or a date of birth in 2190 is accepted. Rules can enforce
+          shape, and the writes that matter clinically should go through a server route that
+          validates them.
+        </p>
+      </article>
+
+      <article class="gap block">
+        <h3>Roles are read from a document, not a token</h3>
+        <p>
+          Every rule evaluation does a <code>get()</code> on <code>users/{uid}</code> to learn
+          the caller&rsquo;s role. That costs a read per check, caps how complex rules can get,
+          and &mdash; the real problem &mdash; means revoking someone&rsquo;s access depends on
+          a document write rather than a token that expires. Custom claims set server-side on
+          signup and on any role change fix all three. <code>isSuperAdmin</code> already reads a
+          claim this way; the rest should follow.
+        </p>
+        <p class="evidence"><span>firestore.rules &rarr; userDoc()</span></p>
+      </article>
+
+      <article class="gap block">
+        <h3>The clinic API key is stored in three places, one of them widely readable</h3>
+        <p>
+          Key generation writes it to <code>api_keys/{theKeyItself}</code>, to
+          <code>clinics/{id}.apiConfig</code>, and to <code>users/{uid}.apiConfig</code>. The
+          clinic document has to stay broadly readable so a patient can pick a clinic to link
+          their record to &mdash; so the secret has to move out of it, into a collection only
+          the owning admin can read. Tightening the rule instead would break account linking.
+        </p>
+        <p class="evidence"><span>src/app/dashboard/developers/page.tsx:66&ndash;80</span></p>
+      </article>
+
+      <article class="gap block">
+        <h3>Patient account linking is done client-side, on trust</h3>
+        <p>
+          Linking a portal account to a hospital record is a client write that sets
+          <code>patientId</code> on the user&rsquo;s own profile after the client checks a code.
+          A crafted request can skip the check. This belongs in a server route that verifies the
+          patient code against the surname and then writes the link &mdash; the same shape the
+          staff-invite flow already uses.
+        </p>
+        <p class="evidence"><span>src/app/dashboard/my-records/page.tsx</span></p>
+      </article>
+
+      <article class="gap block">
+        <h3>No consent record and no break-the-glass access</h3>
+        <p>
+          Two things every hospital deployment eventually needs: a record of what the patient
+          consented to and when, and a way for a clinician to reach a chart they don&rsquo;t
+          normally have rights to in an emergency &mdash; while being made to state a reason
+          that lands in the audit trail. Right now access is binary, so the emergency case
+          forces either over-broad permissions or a clinician locked out at the worst moment.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <div class="tier-head">
+      <h2>Expected by any hospital buyer<span class="count">12 gaps</span></h2>
+      <span class="sev expect">Procurement checklist</span>
+    </div>
+    <p class="measure">
+      Nothing here is dangerous by its absence, but each is something a Nigerian tertiary
+      hospital will ask about directly during evaluation. Roughly in the order they tend to come
+      up.
+    </p>
+
+    <div class="inventory">
+      <div><strong>Coded diagnoses (ICD-10 / SNOMED)</strong> <span>&mdash; <code>diagnosis</code> is free text, which blocks claims, reporting and any epidemiology</span></div>
+      <div><strong>NHIA / HMO claims workflow</strong> <span>&mdash; pre-authorisation, capitation lists, claim batching and rejection handling</span></div>
+      <div><strong>Lab analyser interfacing</strong> <span>&mdash; results are typed by hand today; ASTM/HL7 links remove a transcription-error class</span></div>
+      <div><strong>HL7 FHIR export</strong> <span>&mdash; the lingua franca for referrals, HIEs and any government reporting</span></div>
+      <div><strong>Imaging / PACS links</strong> <span>&mdash; DICOM study references on the chart, even without an internal viewer</span></div>
+      <div><strong>Discharge summaries &amp; referral letters</strong> <span>&mdash; generated documents, not free text pasted into a note</span></div>
+      <div><strong>Antenatal &amp; maternity module</strong> <span>&mdash; a very large share of Nigerian hospital volume, with its own visit schedule</span></div>
+      <div><strong>Theatre scheduling</strong> <span>&mdash; lists, staffing, pre-op checklists, consent capture</span></div>
+      <div><strong>Blood bank</strong> <span>&mdash; group, crossmatch, unit tracking, transfusion reactions</span></div>
+      <div><strong>Statutory registers</strong> <span>&mdash; birth, death and notifiable-disease reporting are legal obligations, not features</span></div>
+      <div><strong>Immunization schedules</strong> <span>&mdash; <code>immunizations[]</code> is stored but no schedule logic or due/overdue view</span></div>
+      <div><strong>Multi-site hospitals</strong> <span>&mdash; one tenant, several branches, shared patients, separate stock and staffing</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="tier-head">
+      <h2>Compliance you should name before a customer does<span class="count">4 gaps</span></h2>
+      <span class="sev later">Do early, cheaply</span>
+    </div>
+    <div class="gaps">
+      <article class="gap later">
+        <h3>NDPR obligations aren&rsquo;t represented anywhere in the system</h3>
+        <p>
+          Nigeria&rsquo;s Data Protection Regulation gives patients access and correction rights
+          and imposes a breach-notification duty. None of it exists as a feature: no data-subject
+          access export, no retention schedule, no record of what was disclosed to whom. These
+          are cheap to build early and expensive to retrofit once there is real data.
+        </p>
+      </article>
+      <article class="gap later">
+        <h3>No retention or archival policy</h3>
+        <p>
+          Records currently live forever, and the offline mirror keeps copies on every device
+          that has ever synced. A retention schedule and a device-wipe-on-signout path are both
+          needed before a hospital&rsquo;s legal team asks.
+        </p>
+      </article>
+      <article class="gap later">
+        <h3>The audit trail isn&rsquo;t tamper-evident</h3>
+        <p>
+          It is now append-only by rule, which is the important half. The other half is making
+          alteration <em>detectable</em> &mdash; hash chaining, or export to storage the
+          application itself cannot rewrite.
+        </p>
+      </article>
+      <article class="gap later">
+        <h3>No environment separation visible</h3>
+        <p>
+          One Firebase project appears to serve everything. Real patient data and a developer
+          testing a cascade delete should not share a database. The emulator config added for the
+          rules tests is a start.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <h2>If you only do three things</h2>
+    <div class="do-first">
+      <ol>
+        <li>
+          <strong>Add a scheduler.</strong> One Cloud Function on a cron unblocks reminders,
+          backups, expiry alerts and reports in one move. Nothing else on this page unlocks as
+          much per hour spent.
+        </li>
+        <li>
+          <strong>Put allergy and dose checking in the prescribing path.</strong> Not as a panel
+          a clinician can open &mdash; as an interruption they have to dismiss with a reason.
+          This is the gap most likely to hurt someone.
+        </li>
+        <li>
+          <strong>Make finalized notes immutable, with amendments.</strong> Cheap to implement,
+          and it is what turns the chart into a record a hospital can defend.
+        </li>
+      </ol>
+      <p style="font-size:.88rem;color:var(--ink-soft);max-width:66ch;">
+        Coded diagnoses are the natural fourth: free-text <code>diagnosis</code> quietly blocks
+        claims, reporting and interop all at once, and the longer it stays free text the more
+        history has to be re-coded later.
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    Assessment based on a read of the repository at the current commit &mdash; security rules,
+    the offline and sync layers, the dashboard routes and the AI flows. Deployment configuration,
+    backup arrangements and any commercial or regulatory agreements were not in scope, so treat
+    the compliance section as a prompt for your own review rather than a finding.
+  </footer>
+
+</div>

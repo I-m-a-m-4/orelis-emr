@@ -203,6 +203,79 @@
                 { "fieldPath": "clinicId", "order": "ASCENDING" },
                 { "fieldPath": "updatedAt", "order": "ASCENDING" }
             ]
+        },
+        {
+            "collectionGroup": "medications",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "clinicId", "order": "ASCENDING" },
+                { "fieldPath": "name", "order": "ASCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "inventory",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "clinicId", "order": "ASCENDING" },
+                { "fieldPath": "name", "order": "ASCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "waitlist",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "clinicId", "order": "ASCENDING" },
+                { "fieldPath": "joinedAt", "order": "ASCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "api_keys",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "clinicId", "order": "ASCENDING" },
+                { "fieldPath": "createdAt", "order": "DESCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "encounters",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "clinicId", "order": "ASCENDING" },
+                { "fieldPath": "patientId", "order": "ASCENDING" },
+                { "fieldPath": "date", "order": "DESCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "medications",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "clinicId", "order": "ASCENDING" },
+                { "fieldPath": "updatedAt", "order": "ASCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "wards",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "clinicId", "order": "ASCENDING" },
+                { "fieldPath": "updatedAt", "order": "ASCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "beds",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "clinicId", "order": "ASCENDING" },
+                { "fieldPath": "updatedAt", "order": "ASCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "invoices",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "clinicId", "order": "ASCENDING" },
+                { "fieldPath": "createdAt", "order": "DESCENDING" }
+            ]
         }
     ],
     "fieldOverrides": []

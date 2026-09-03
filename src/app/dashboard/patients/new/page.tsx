@@ -16,7 +16,8 @@ import { cn, generatePatientCode } from "@/lib/utils";
 import { format } from "date-fns";
 import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useDoc } from '@/firebase';
-import { collection, addDoc, doc, query, where, getDocs } from 'firebase/firestore';
+import { collection, doc, query, where, getDocs } from 'firebase/firestore';
+import { createPatient } from '@/lib/data/patients';
 import type { UserProfile } from '@/lib/types';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -64,6 +65,34 @@ export default function AddPatientPage() {
     };
 
 
+    /**
+     * Is a uniqueness pre-check worth blocking registration for?
+     *
+     * `getDocs` needs the server. Offline it rejects with `unavailable`, and
+     * treating that as "cannot verify, so refuse" would stop a receptionist
+     * registering a walk-in during an outage — the exact case this app's
+     * offline-first write path exists to support. So a check that cannot run is
+     * skipped with a warning rather than failing the registration: a duplicate
+     * hospital number is a merge someone fixes later, a patient turned away at
+     * the desk is not recoverable.
+     */
+    const isDuplicate = async (field: 'hospitalNumber' | 'patientCode', value: string) => {
+        if (!firestore || !userProfile?.clinicId || !value) return false;
+        try {
+            const snap = await getDocs(
+                query(
+                    collection(firestore, 'patients'),
+                    where('clinicId', '==', userProfile.clinicId),
+                    where(field, '==', value)
+                )
+            );
+            return !snap.empty;
+        } catch (err) {
+            console.warn(`Could not check ${field} for duplicates (offline?):`, err);
+            return false;
+        }
+    };
+
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setIsSaving(true);
@@ -78,98 +107,110 @@ export default function AddPatientPage() {
             return;
         }
 
-        const formData = new FormData(event.currentTarget);
-        const hospitalNumber = formData.get('hospitalNumber') as string;
-
-        // Check for existing hospital number
-        const hrnQuery = query(
-            collection(firestore, 'patients'),
-            where('clinicId', '==', userProfile.clinicId),
-            where('hospitalNumber', '==', hospitalNumber)
-        );
-        const hrnSnap = await getDocs(hrnQuery);
-        if (!hrnSnap.empty) {
-            toast({
-                title: 'Duplicate ID!',
-                description: 'A patient with this Hospital Registration Number already exists.',
-                variant: 'destructive',
-            });
-            setIsSaving(false);
-            return;
-        }
-
-        // Check for existing patient code
-        const codeQuery = query(
-            collection(firestore, 'patients'),
-            where('clinicId', '==', userProfile.clinicId),
-            where('patientCode', '==', patientCode)
-        );
-        const codeSnap = await getDocs(codeQuery);
-        if (!codeSnap.empty) {
-            toast({
-                title: 'Duplicate Code!',
-                description: 'This secure linking code is already assigned.',
-                variant: 'destructive',
-            });
-            setIsSaving(false);
-            return;
-        }
-
-        const customData: Record<string, string> = {};
-        customFields.forEach(field => {
-            if (field.key) {
-                customData[field.key] = field.value;
-            }
-        });
-
-        const patientData = {
-            clinicId: userProfile.clinicId,
-            patientCode: patientCode,
-            firstName: formData.get('firstName') as string,
-            surname: formData.get('surname') as string,
-            dob: dob?.toISOString() ?? '',
-            sex: formData.get('sex') as string,
-            maritalStatus: formData.get('maritalStatus') as string,
-            address: formData.get('address') as string,
-            phone: formData.get('phone') as string,
-            email: formData.get('email') as string,
-            occupation: formData.get('occupation') as string,
-            origin: formData.get('origin') as string,
-            tribe: formData.get('tribe') as string,
-            religion: formData.get('religion') as string,
-            notes: formData.get('notes') as string,
-            nextOfKin: {
-                name: formData.get('nextOfKinName') as string,
-                relation: formData.get('nextOfKinRelation') as string,
-                phone: formData.get('nextOfKinPhone') as string,
-                address: formData.get('nextOfKinAddress') as string,
-            },
-            registrationDate: new Date().toISOString(),
-            status: 'Active',
-            hospitalNumber: hospitalNumber,
-            ...customData,
-        };
-
+        // Everything from here is inside try/finally. Previously an offline
+        // `getDocs` rejection escaped the handler, so `setIsSaving(false)` never
+        // ran and the button spun forever with no error and no saved patient.
         try {
-            const docRef = await addDoc(collection(firestore, 'patients'), patientData);
+            const formData = new FormData(event.currentTarget);
+            const hospitalNumber = formData.get('hospitalNumber') as string;
+
+            if (await isDuplicate('hospitalNumber', hospitalNumber)) {
+                toast({
+                    title: 'Duplicate ID!',
+                    description: 'A patient with this Hospital Registration Number already exists.',
+                    variant: 'destructive',
+                });
+                return;
+            }
+
+            if (await isDuplicate('patientCode', patientCode)) {
+                toast({
+                    title: 'Duplicate Code!',
+                    description: 'This secure linking code is already assigned.',
+                    variant: 'destructive',
+                });
+                return;
+            }
+
+            const custom: Record<string, string> = {};
+            customFields.forEach(field => {
+                if (field.key) {
+                    custom[field.key] = field.value;
+                }
+            });
+
+            /**
+             * `createPatient` rather than a bare `addDoc`.
+             *
+             * `await addDoc(...)` resolves only on *server* acknowledgement — with
+             * no network it never settles and never rejects, so the success toast
+             * and `setIsSaving(false)` never ran and the record looked lost even
+             * though Firestore had queued it. `createPatient` goes through
+             * `persistRecord`, which returns as soon as the row is in the local
+             * mirror, stamps `updatedAt` for delta sync, and writes the audit
+             * event. See the module comment in src/lib/data/base.ts.
+             */
+            const result = await createPatient(
+                firestore,
+                {
+                    uid: userProfile.uid,
+                    name: userProfile.name,
+                    email: userProfile.email,
+                    role: userProfile.role,
+                },
+                {
+                    clinicId: userProfile.clinicId,
+                    patientCode,
+                    hospitalNumber,
+                    firstName: formData.get('firstName') as string,
+                    surname: formData.get('surname') as string,
+                    dob: dob?.toISOString() ?? '',
+                    sex: formData.get('sex') as any,
+                    maritalStatus: formData.get('maritalStatus') as any,
+                    address: formData.get('address') as string,
+                    phone: formData.get('phone') as string,
+                    email: formData.get('email') as string,
+                    occupation: formData.get('occupation') as string,
+                    origin: formData.get('origin') as string,
+                    tribe: formData.get('tribe') as string,
+                    religion: formData.get('religion') as string,
+                    notes: formData.get('notes') as string,
+                    nextOfKin: {
+                        name: formData.get('nextOfKinName') as string,
+                        relation: formData.get('nextOfKinRelation') as string,
+                        phone: formData.get('nextOfKinPhone') as string,
+                        address: formData.get('nextOfKinAddress') as string,
+                    },
+                    custom,
+                }
+            );
+
+            if (!result.success || !result.id) {
+                toast({
+                    title: 'Error!',
+                    description: result.message || 'Could not save patient record.',
+                    variant: 'destructive',
+                });
+                return;
+            }
 
             setSuccessData({
-                id: docRef.id,
-                name: `${patientData.firstName} ${patientData.surname}`,
-                code: patientData.patientCode
+                id: result.id,
+                name: `${formData.get('firstName')} ${formData.get('surname')}`,
+                code: patientCode,
             });
 
             toast({
                 title: 'Success!',
-                description: `Patient created successfully. Unique Code: **${patientData.patientCode}**`,
+                description: result.pending
+                    ? `Saved on this device and will sync when you are back online. Code: ${patientCode}`
+                    : `Patient created successfully. Unique Code: ${patientCode}`,
             });
-            setIsSaving(false);
-
         } catch (error: any) {
             console.error("Error adding patient:", error);
             toast({
                 title: 'Error!',
-                description: 'Could not save patient record. ' + (error.message || ''),
+                description: 'Could not save patient record. ' + (error?.message || ''),
                 variant: 'destructive',
             });
         } finally {

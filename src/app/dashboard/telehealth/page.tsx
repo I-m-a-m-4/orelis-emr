@@ -1,14 +1,147 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
 import { useUser, useFirestore, useCollection, useDoc } from "@/firebase";
-import { collection, query, where, orderBy, doc } from 'firebase/firestore';
+import { collection, query, where, orderBy, doc, addDoc } from 'firebase/firestore';
 import { Video, Calendar, User, Users, Phone, ExternalLink, Activity, Clock, ShieldCheck, Mail, AlertCircle, X, Maximize2, Mic, MicOff, VideoOff, MessageSquare, Monitor } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { DashLoader } from "@/components/ui/dash-loader";
+import { JitsiCall } from "@/components/telehealth/jitsi-call";
 import type { Appointment, UserProfile } from "@/lib/types";
+
+/**
+ * The room two parties will meet in.
+ *
+ * Derived from the appointment alone, deliberately. The previous naming folded in
+ * `user.uid`, so the room a patient was invited to depended on which member of
+ * staff generated the link — a locum covering the clinic would open a different
+ * room and each would sit alone in it. A Firestore auto-id carries enough entropy
+ * that the name is not guessable, which matters because meet.jit.si rooms are
+ * public to anyone holding the name.
+ */
+function roomFor(appointment: Appointment): string {
+    return `orelis-${appointment.clinicId}-${appointment.id}`;
+}
+
+function joinUrl(roomName: string): string {
+    return `https://meet.jit.si/${roomName}`;
+}
+
+/**
+ * Email a patient their join link.
+ *
+ * Writes to the `mail` collection, which is what the Firebase Trigger Email
+ * extension watches — the same route the appointment confirmation already uses.
+ * The address is asked for rather than looked up because this page does not load
+ * patient records, and prompting is better than guessing at a contact detail.
+ */
+function ResendLinkDialog({
+    appointment,
+    clinicName,
+}: {
+    appointment: Appointment;
+    clinicName?: string;
+}) {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [open, setOpen] = useState(false);
+    const [sending, setSending] = useState(false);
+
+    const handleSend = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (!firestore) return;
+
+        const email = (new FormData(event.currentTarget).get('email') as string)?.trim();
+        if (!email) {
+            toast({ title: 'Email required', description: 'Enter where the link should go.', variant: 'destructive' });
+            return;
+        }
+
+        setSending(true);
+        const url = joinUrl(roomFor(appointment));
+        const when = new Date(appointment.appointmentDate).toLocaleString([], {
+            dateStyle: 'full',
+            timeStyle: 'short',
+        });
+
+        try {
+            await addDoc(collection(firestore, 'mail'), {
+                to: [email],
+                message: {
+                    subject: `Your video consultation link${clinicName ? ` — ${clinicName}` : ''}`,
+                    html: `
+                        <h1>Your video consultation</h1>
+                        <p>Dear ${appointment.patientName},</p>
+                        <p>Your remote appointment is scheduled for <strong>${when}</strong>.</p>
+                        <p>Join using this link at the time of your appointment:</p>
+                        <p><a href="${url}">${url}</a></p>
+                        <p>No app or account is needed — the link opens in your browser. Please allow
+                        access to your camera and microphone when prompted.</p>
+                        ${clinicName ? `<p>— ${clinicName}</p>` : ''}
+                    `,
+                },
+            });
+
+            toast({ title: 'Link sent', description: `Join link emailed to ${email}.` });
+            setOpen(false);
+        } catch (err: any) {
+            console.error('Could not send the telehealth link:', err);
+            toast({
+                title: 'Could not send',
+                description: err?.message ?? 'The email was not queued.',
+                variant: 'destructive',
+            });
+        } finally {
+            setSending(false);
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button size="sm" variant="ghost" className="h-8 rounded-none cursor-pointer">
+                    <Mail className="h-3.5 w-3.5 mr-2" /> Resend Link
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[440px]">
+                <form onSubmit={handleSend}>
+                    <DialogHeader>
+                        <DialogTitle>Send join link</DialogTitle>
+                        <DialogDescription>
+                            Emails {appointment.patientName} the link for this consultation.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-3">
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Patient email</Label>
+                            <Input id="email" name="email" type="email" placeholder="patient@example.com" required />
+                        </div>
+                        <p className="text-xs text-muted-foreground break-all">
+                            Link: {joinUrl(roomFor(appointment))}
+                        </p>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={sending}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" disabled={sending}>
+                            {sending ? <DashLoader size="sm" className="text-white" /> : 'Send link'}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 export default function TelehealthPage() {
     const { user } = useUser();
@@ -42,8 +175,8 @@ export default function TelehealthPage() {
     }, [appointments]);
 
     const startCall = (appointment: Appointment) => {
-        const roomName = `orelis-${appointment.id}-${user?.uid?.substring(0, 5)}`;
-        setMeetingRoom(roomName);
+        // Same helper the emailed link uses, so both parties land in one room.
+        setMeetingRoom(roomFor(appointment));
         setActiveCall(appointment);
         toast({
             title: "Connecting...",
@@ -95,28 +228,11 @@ export default function TelehealthPage() {
                     </div>
                 </header>
                 <div className="flex-1 bg-black relative">
-                    <iframe
-                        src={`https://meet.jit.si/${meetingRoom}#config.prejoinPageEnabled=false&userInfo.displayName="${userProfile?.name || 'Doctor'}"`}
-                        className="w-full h-full border-none"
-                        allow="camera; microphone; display-capture; autoplay; clipboard-write"
+                    <JitsiCall
+                        roomName={meetingRoom}
+                        displayName={userProfile?.name || 'Doctor'}
+                        onEnd={endCall}
                     />
-
-                    {/* Controls Overlay (Mockup style for Orelis aesthetics) */}
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 p-4 bg-background/20 backdrop-blur-xl border border-white/10 rounded-none shadow-2xl">
-                        <Button variant="outline" size="icon" className="h-12 w-12 rounded-none bg-white/5 border-white/10 hover:bg-white/10">
-                            <Mic className="h-5 w-5" />
-                        </Button>
-                        <Button variant="outline" size="icon" className="h-12 w-12 rounded-none bg-white/5 border-white/10 hover:bg-white/10">
-                            <Video className="h-5 w-5" />
-                        </Button>
-                        <Button variant="outline" size="icon" className="h-12 w-12 rounded-none bg-white/5 border-white/10 hover:bg-white/10">
-                            <Monitor className="h-5 w-5" />
-                        </Button>
-                        <div className="w-px h-8 bg-white/10" />
-                        <Button variant="destructive" size="icon" className="h-12 w-12 rounded-none" onClick={endCall}>
-                            <Phone className="h-5 w-5 rotate-[135deg]" />
-                        </Button>
-                    </div>
                 </div>
             </div>
         );
@@ -130,9 +246,11 @@ export default function TelehealthPage() {
                     <p className="text-muted-foreground text-sm">Secure virtual consultations and remote patient monitoring.</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" className="h-9">
-                        <Calendar className="mr-2 h-4 w-4" />
-                        Schedule Virtual Visit
+                    <Button variant="outline" className="h-9" asChild>
+                        <Link href="/dashboard/appointments/new">
+                            <Calendar className="mr-2 h-4 w-4" />
+                            Schedule Virtual Visit
+                        </Link>
                     </Button>
                     <Button className="button-glow h-9" onClick={startImmediateCall}>
                         <Video className="mr-2 h-4 w-4" />
@@ -178,9 +296,7 @@ export default function TelehealthPage() {
                                         >
                                             <Video className="h-3.5 w-3.5 mr-2" /> Start Call
                                         </Button>
-                                        <Button size="sm" variant="ghost" className="h-8 rounded-none">
-                                            <Mail className="h-3.5 w-3.5 mr-2" /> Resend Link
-                                        </Button>
+                                        <ResendLinkDialog appointment={session} />
                                     </div>
                                 </div>
                             ))

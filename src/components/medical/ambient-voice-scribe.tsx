@@ -1,525 +1,484 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Mic, 
-  MicOff, 
-  Sparkles, 
-  Wand2, 
-  Loader2, 
-  Square, 
-  Play, 
-  RotateCcw, 
-  Copy, 
-  Check, 
-  Volume2, 
-  AlertCircle,
-  FileText,
-  Activity,
-  ArrowRight
+import React, { useState } from 'react';
+import {
+    Activity, AlertTriangle, Check, Copy, FileText, HelpCircle, Loader2, Mic,
+    RotateCcw, Sparkles, Square,
 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import {
+    Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useAudioRecorder } from '@/hooks/use-audio-recorder';
+import { apiFetch } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+
+/**
+ * Clinical voice scribe.
+ *
+ * ## What changed and why it mattered
+ *
+ * This component used to run on `webkitSpeechRecognition` and a keyword matcher.
+ * Three things were wrong, in increasing order of severity:
+ *
+ * 1. **It only worked in Chromium.** Safari and Firefox have no Web Speech API, so
+ *    the button did nothing at all — and neither do many packaged WebViews.
+ * 2. **The waveform was `Math.random()`.** It animated identically whether the
+ *    microphone was live or muted, so there was no way to notice a failed
+ *    recording until the consultation was over.
+ * 3. **It invented clinical content.** When the keyword matcher found nothing for
+ *    a field it substituted a sentence — "Physical examination findings documented
+ *    per vocal dictation", "Clinical assessment pending diagnostic confirmation" —
+ *    and offered to write that into the chart. A fabricated examination finding in
+ *    a signed medical record is a patient-safety and medico-legal problem, and it
+ *    is the specific reason this rewrite exists.
+ *
+ * Now: `MediaRecorder` captures audio anywhere, a real `AnalyserNode` drives the
+ * meter, and the audio goes to `clinical-scribe` — a Gemini flow that transcribes
+ * *and* structures in one pass, returns the verbatim transcript alongside the
+ * fielded note so the clinician can check it, and lists what it could not make out
+ * instead of guessing. **An empty field stays empty.**
+ *
+ * Nothing reaches the chart without the clinician pressing Apply.
+ */
 
 interface ParsedSoap {
-  subjective: string;
-  objective: string;
-  assessment: string;
-  plan: string;
-  chiefComplaint?: string;
-  prescriptions?: string[];
-  labs?: string[];
+    subjective: string;
+    objective: string;
+    assessment: string;
+    plan: string;
+    chiefComplaint?: string;
+    prescriptions?: string[];
+    labs?: string[];
+}
+
+interface ScribeResult extends ParsedSoap {
+    verbatimTranscript: string;
+    uncertainties?: string[];
 }
 
 interface AmbientVoiceScribeProps {
-  onApplySoap?: (soap: ParsedSoap) => void;
-  onAppendText?: (field: 'subjective' | 'objective' | 'assessment' | 'plan', text: string) => void;
-  className?: string;
+    onApplySoap?: (soap: ParsedSoap) => void;
+    onAppendText?: (field: 'subjective' | 'objective' | 'assessment' | 'plan', text: string) => void;
+    /** Anything already known about the encounter, to steer the transcription. */
+    context?: string;
+    className?: string;
 }
 
-export function AmbientVoiceScribe({ onApplySoap, onAppendText, className }: AmbientVoiceScribeProps) {
-  const { toast } = useToast();
-  const [isListening, setIsListening] = useState(false);
-  const [transcript, setTranscript] = useState('');
-  const [interimTranscript, setInterimTranscript] = useState('');
-  const [isProcessingAI, setIsProcessingAI] = useState(false);
-  const [parsedSoap, setParsedSoap] = useState<ParsedSoap | null>(null);
-  const [isSupported, setIsSupported] = useState(true);
-  const [audioLevel, setAudioLevel] = useState<number[]>(new Array(16).fill(10));
-  const [copied, setCopied] = useState(false);
+function formatDuration(ms: number): string {
+    const total = Math.floor(ms / 1000);
+    return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+}
 
-  const recognitionRef = useRef<any>(null);
-  const animationFrameRef = useRef<number | null>(null);
+/** Send a recording for transcription. Shared by both exports in this file. */
+async function runScribe(
+    audioDataUrl: string,
+    context?: string
+): Promise<{ ok: true; data: ScribeResult } | { ok: false; error: string }> {
+    const result = await apiFetch<ScribeResult>('/api/ai/clinical-scribe', {
+        method: 'POST',
+        body: { audioDataUrl, context },
+        description: 'Transcribe clinical dictation',
+        // Never queue this. A transcription replayed hours later would arrive
+        // detached from the consultation it belongs to, and the clinician has
+        // already moved on — better to fail now and keep the audio.
+        queueOnFailure: false,
+    });
 
-  // Initialize Web Speech API
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        setIsSupported(false);
-        return;
-      }
-
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-
-      recognition.onresult = (event: any) => {
-        let currentInterim = '';
-        let finalTranscriptChunk = '';
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const item = event.results[i];
-          if (item.isFinal) {
-            finalTranscriptChunk += item[0].transcript + ' ';
-          } else {
-            currentInterim += item[0].transcript;
-          }
-        }
-
-        if (finalTranscriptChunk) {
-          setTranscript(prev => (prev + ' ' + finalTranscriptChunk).trim());
-        }
-        setInterimTranscript(currentInterim);
-      };
-
-      recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        if (event.error === 'not-allowed') {
-          toast({
-            variant: 'destructive',
-            title: 'Microphone Blocked',
-            description: 'Please grant microphone permissions in your browser to use voice dictation.'
-          });
-          setIsListening(false);
-        }
-      };
-
-      recognition.onend = () => {
-        // If it stopped but state is still listening, restart it
-        if (isListening && recognitionRef.current) {
-          try {
-            recognitionRef.current.start();
-          } catch {
-            setIsListening(false);
-          }
-        }
-      };
-
-      recognitionRef.current = recognition;
+    if (!result.ok || !result.data) {
+        return { ok: false, error: result.error ?? 'The scribe could not process that recording.' };
     }
+    return { ok: true, data: result.data };
+}
 
-    return () => {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch {}
-      }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
+const FIELD_STYLES: { key: keyof ParsedSoap; label: string; hint: string }[] = [
+    { key: 'subjective', label: 'Subjective', hint: 'Symptoms & history' },
+    { key: 'objective', label: 'Objective', hint: 'Vitals & examination' },
+    { key: 'assessment', label: 'Assessment', hint: 'Diagnosis' },
+    { key: 'plan', label: 'Plan', hint: 'Treatment & orders' },
+];
+
+export function AmbientVoiceScribe({
+    onApplySoap,
+    onAppendText,
+    context,
+    className,
+}: AmbientVoiceScribeProps) {
+    const { toast } = useToast();
+    const recorder = useAudioRecorder();
+    const [processing, setProcessing] = useState(false);
+    const [result, setResult] = useState<ScribeResult | null>(null);
+    const [copied, setCopied] = useState(false);
+
+    const recording = recorder.state === 'recording';
+
+    const handleStart = async () => {
+        if (!recorder.supported) {
+            toast({
+                variant: 'destructive',
+                title: 'Recording unavailable',
+                description: 'This browser cannot access a microphone.',
+            });
+            return;
+        }
+        setResult(null);
+        const ok = await recorder.start();
+        if (ok) {
+            toast({ title: 'Recording', description: 'Speak naturally. Stop when you are done.' });
+        } else if (recorder.error) {
+            toast({ variant: 'destructive', title: 'Microphone unavailable', description: recorder.error });
+        }
     };
-  }, []);
 
-  // Simulate audio visualizer bars when listening
-  useEffect(() => {
-    if (isListening) {
-      const updateWave = () => {
-        setAudioLevel(prev => prev.map(() => Math.floor(Math.random() * 40) + 12));
-        animationFrameRef.current = requestAnimationFrame(updateWave);
-      };
-      animationFrameRef.current = requestAnimationFrame(updateWave);
-    } else {
-      setAudioLevel(new Array(16).fill(10));
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    }
-  }, [isListening]);
+    const handleStop = async () => {
+        const audio = await recorder.stop();
+        if (!audio) {
+            toast({
+                variant: 'destructive',
+                title: 'Nothing recorded',
+                description: 'No audio was captured. Check your microphone and try again.',
+            });
+            return;
+        }
 
-  const toggleListening = () => {
-    if (!isSupported) {
-      toast({
-        variant: 'destructive',
-        title: 'Voice Recognition Unsupported',
-        description: 'Your current browser or WebView does not support speech recognition. Please use Chrome, Edge, or Tauri native client.'
-      });
-      return;
-    }
-
-    if (isListening) {
-      if (recognitionRef.current) {
+        setProcessing(true);
         try {
-          recognitionRef.current.stop();
-        } catch {}
-      }
-      setIsListening(false);
-      setInterimTranscript('');
-      toast({
-        title: 'Recording Paused',
-        description: 'Dictation paused. You can structure it into SOAP with AI or copy the text.'
-      });
-    } else {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.start();
-          setIsListening(true);
-          toast({
-            title: 'Ambient Dictation Active',
-            description: 'Listening to clinical conversation. Speak freely...'
-          });
-        } catch (e) {
-          console.error(e);
+            const outcome = await runScribe(audio.dataUrl, context);
+            if (!outcome.ok) {
+                toast({ variant: 'destructive', title: 'Transcription failed', description: outcome.error });
+                return;
+            }
+            setResult(outcome.data);
+            toast({
+                title: 'Transcribed',
+                description: outcome.data.uncertainties?.length
+                    ? `Review ${outcome.data.uncertainties.length} unclear term(s) before applying.`
+                    : 'Check the note against the transcript before applying.',
+            });
+        } finally {
+            setProcessing(false);
         }
-      }
-    }
-  };
+    };
 
-  const handleReset = () => {
-    if (recognitionRef.current && isListening) {
-      try {
-        recognitionRef.current.stop();
-      } catch {}
-    }
-    setIsListening(false);
-    setTranscript('');
-    setInterimTranscript('');
-    setParsedSoap(null);
-  };
+    const handleReset = () => {
+        recorder.reset();
+        setResult(null);
+    };
 
-  // Extract structured SOAP Note from free-form speech
-  const handleAIParse = async () => {
-    const fullText = (transcript + ' ' + interimTranscript).trim();
-    if (!fullText) {
-      toast({
-        variant: 'destructive',
-        title: 'No Audio Transcribed',
-        description: 'Please speak or record some clinical notes first before structuring with AI.'
-      });
-      return;
-    }
+    const handleApply = () => {
+        if (!result || !onApplySoap) return;
+        onApplySoap({
+            subjective: result.subjective,
+            objective: result.objective,
+            assessment: result.assessment,
+            plan: result.plan,
+            chiefComplaint: result.chiefComplaint,
+            prescriptions: result.prescriptions,
+            labs: result.labs,
+        });
+        toast({ title: 'Applied to chart', description: 'Review each field before finalising the encounter.' });
+    };
 
-    setIsProcessingAI(true);
+    const handleCopy = () => {
+        if (!result?.verbatimTranscript) return;
+        void navigator.clipboard.writeText(result.verbatimTranscript);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        toast({ title: 'Transcript copied' });
+    };
 
-    try {
-      // Local Intelligent Extraction Engine
-      const subjectiveKeywords = ['presenting with', 'complaining of', 'complains of', 'reports', 'stated', 'history of', 'patient feels', 'fever for', 'pain in'];
-      const objectiveKeywords = ['bp', 'blood pressure', 'heart rate', 'hr', 'temp', 'temperature', 'pulse', 'spo2', 'lungs', 'chest', 'on examination', 'exam shows', 'abdomen', 'auscultation'];
-      const assessmentKeywords = ['impression', 'assessment', 'diagnosed with', 'diagnosis', 'suspected', 'probable', 'r/o', 'rule out', 'acute', 'chronic'];
-      const planKeywords = ['plan', 'rx', 'prescribe', 'prescribed', 'medication', 'order', 'ordered', 'investigation', 'follow up', 'admit', 'advise', 'counsel'];
+    return (
+        <Card className={cn('border-dashed border-primary/30 bg-card/80 backdrop-blur-md shadow-lg overflow-hidden', className)}>
+            <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+                <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-2.5">
+                        <div className={cn(
+                            'p-2 rounded-xl border transition-all duration-300',
+                            recording
+                                ? 'bg-destructive/10 border-destructive/40 text-destructive'
+                                : 'bg-primary/10 border-primary/30 text-primary'
+                        )}>
+                            <Mic className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                Clinical Voice Scribe
+                                {recording && (
+                                    <Badge className="bg-destructive hover:bg-destructive text-white text-[9px] font-black uppercase tracking-wider">
+                                        Recording {formatDuration(recorder.durationMs)}
+                                    </Badge>
+                                )}
+                            </CardTitle>
+                            <CardDescription className="text-xs">
+                                Dictate the consultation. Nothing is written to the chart until you apply it.
+                            </CardDescription>
+                        </div>
+                    </div>
 
-      const sentences = fullText.split(/(?<=[.?!])\s+/);
+                    <div className="flex items-center gap-2 shrink-0">
+                        {(result || recorder.state === 'stopped') && (
+                            <Button size="sm" variant="ghost" onClick={handleReset} className="h-8 text-xs" disabled={processing}>
+                                <RotateCcw className="h-3.5 w-3.5" />
+                                <span className="sr-only">Start over</span>
+                            </Button>
+                        )}
+                        <Button
+                            size="sm"
+                            variant={recording ? 'destructive' : 'default'}
+                            onClick={recording ? handleStop : handleStart}
+                            disabled={processing || recorder.state === 'requesting'}
+                            className="gap-1.5 text-xs font-semibold shadow-md"
+                        >
+                            {recorder.state === 'requesting' ? (
+                                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Opening mic…</>
+                            ) : recording ? (
+                                <><Square className="h-3.5 w-3.5" /> Stop & transcribe</>
+                            ) : (
+                                <><Mic className="h-3.5 w-3.5" /> Start dictation</>
+                            )}
+                        </Button>
+                    </div>
+                </div>
+            </CardHeader>
 
-      let sub = '';
-      let obj = '';
-      let ass = '';
-      let pln = '';
-      const prescriptions: string[] = [];
-      const labs: string[] = [];
-
-      sentences.forEach(s => {
-        const lower = s.toLowerCase();
-        
-        // Extract Prescriptions & Labs
-        if (lower.includes('mg') || lower.includes('tablets') || lower.includes('capsule') || lower.includes('daily') || lower.includes('bd') || lower.includes('tid') || lower.includes('qds') || lower.includes('prescribe')) {
-          prescriptions.push(s.trim());
-        }
-        if (lower.includes('lab') || lower.includes('test') || lower.includes('cbc') || lower.includes('fbc') || lower.includes('x-ray') || lower.includes('ultrasound') || lower.includes('urinalysis') || lower.includes('scan') || lower.includes('mp') || lower.includes('widal')) {
-          labs.push(s.trim());
-        }
-
-        if (objectiveKeywords.some(k => lower.includes(k))) {
-          obj += s + ' ';
-        } else if (assessmentKeywords.some(k => lower.includes(k))) {
-          ass += s + ' ';
-        } else if (planKeywords.some(k => lower.includes(k))) {
-          pln += s + ' ';
-        } else {
-          sub += s + ' ';
-        }
-      });
-
-      // Fallback heuristics if unclassified
-      if (!ass && (sub.toLowerCase().includes('malaria') || sub.toLowerCase().includes('typhoid') || sub.toLowerCase().includes('hypertension') || sub.toLowerCase().includes('pneumonia') || sub.toLowerCase().includes('dermatitis'))) {
-        ass = 'Clinical presentation consistent with documented symptoms.';
-      }
-
-      const result: ParsedSoap = {
-        subjective: sub.trim() || 'Patient presented for clinical evaluation: ' + fullText.slice(0, 150),
-        objective: obj.trim() || 'Physical examination findings documented per vocal dictation.',
-        assessment: ass.trim() || 'Clinical assessment pending diagnostic confirmation.',
-        plan: pln.trim() || (prescriptions.length ? prescriptions.join('; ') : 'Continue supportive care and follow-up as advised.'),
-        prescriptions,
-        labs
-      };
-
-      setParsedSoap(result);
-      toast({
-        title: 'SOAP Note Formatted',
-        description: 'Audio parsed into Subjective, Objective, Assessment, and Plan.'
-      });
-    } catch (e) {
-      console.error('AI Parse error:', e);
-      toast({
-        variant: 'destructive',
-        title: 'Processing Error',
-        description: 'Failed to format SOAP note. Text is preserved in the transcript.'
-      });
-    } finally {
-      setIsProcessingAI(false);
-    }
-  };
-
-  const handleApplyToForm = () => {
-    if (!parsedSoap) return;
-    if (onApplySoap) {
-      onApplySoap(parsedSoap);
-      toast({
-        title: 'Applied to Encounter Chart',
-        description: 'SOAP sections have been inserted into the medical chart.'
-      });
-    }
-  };
-
-  const handleCopyTranscript = () => {
-    const fullText = (transcript + ' ' + interimTranscript).trim();
-    if (fullText) {
-      navigator.clipboard.writeText(fullText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      toast({ title: 'Copied to Clipboard' });
-    }
-  };
-
-  return (
-    <Card className={cn("border-dashed border-primary/30 bg-card/80 backdrop-blur-md shadow-lg overflow-hidden", className)}>
-      <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className={cn("p-2 rounded-xl border transition-all duration-300", isListening ? "bg-red-500/10 border-red-500/40 text-red-500 animate-pulse" : "bg-primary/10 border-primary/30 text-primary")}>
-              <Mic className="h-5 w-5" />
-            </div>
-            <div>
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                Ambient Clinical Voice Scribe
-                {isListening && (
-                  <Badge className="bg-red-500 hover:bg-red-600 text-white text-[9px] font-black uppercase tracking-wider animate-pulse">
-                    Live Recording
-                  </Badge>
+            <CardContent className="space-y-3 pt-4">
+                {!recorder.supported && (
+                    <div className="flex items-start gap-2 text-xs text-destructive bg-destructive/5 border border-destructive/20 rounded-md p-3">
+                        <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                        <span>This browser cannot record audio. Dictation needs microphone support.</span>
+                    </div>
                 )}
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Speak naturally during the consultation — AI will structure your SOAP note in real-time.
-              </CardDescription>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant={isListening ? "destructive" : "default"}
-              onClick={toggleListening}
-              className="gap-1.5 text-xs font-semibold shadow-md"
-            >
-              {isListening ? (
-                <>
-                  <Square className="h-3.5 w-3.5 fill-current" /> Stop Dictation
-                </>
-              ) : (
-                <>
-                  <Mic className="h-3.5 w-3.5" /> Start Recording
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
+                {recorder.error && !recording && (
+                    <div className="flex items-start gap-2 text-xs text-destructive bg-destructive/5 border border-destructive/20 rounded-md p-3">
+                        <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                        <span>{recorder.error}</span>
+                    </div>
+                )}
 
-        {/* Real-time Audio Waveform */}
-        {isListening && (
-          <div className="flex items-center justify-center gap-1 mt-3 py-2 bg-background/60 rounded-lg border border-red-500/20">
-            {audioLevel.map((height, idx) => (
-              <div
-                key={idx}
-                className="w-1.5 bg-gradient-to-t from-orange-500 to-red-500 rounded-full transition-all duration-75"
-                style={{ height: `${height}px` }}
-              />
-            ))}
-          </div>
-        )}
-      </CardHeader>
+                {/* Real levels. Flat bars mean the microphone is genuinely hearing
+                    nothing — which is the whole point of showing them. */}
+                {recording && (
+                    <div className="space-y-1.5">
+                        <div className="flex items-end justify-center gap-1 h-14 px-3 py-2 rounded-lg bg-muted/30 border border-dashed">
+                            {recorder.levels.map((level, i) => (
+                                <div
+                                    key={i}
+                                    className="w-1.5 rounded-full bg-primary transition-all duration-75"
+                                    style={{ height: `${Math.max(6, level)}%` }}
+                                />
+                            ))}
+                        </div>
+                        {recorder.levels.every((l) => l < 3) && (
+                            <p className="text-[11px] text-amber-500 text-center flex items-center justify-center gap-1">
+                                <AlertTriangle className="h-3 w-3" /> No sound detected — check your microphone
+                            </p>
+                        )}
+                    </div>
+                )}
 
-      <CardContent className="pt-4 space-y-4">
-        {/* Live Audio Transcript Box */}
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-xs text-muted-foreground font-semibold">
-            <span>Speech Stream</span>
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={handleCopyTranscript} 
-                className="hover:text-foreground flex items-center gap-1 text-[11px]"
-                title="Copy Transcript"
-              >
-                {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
-                {copied ? 'Copied' : 'Copy'}
-              </button>
-              {(transcript || interimTranscript) && (
-                <button 
-                  onClick={handleReset} 
-                  className="hover:text-destructive flex items-center gap-1 text-[11px]"
-                  title="Clear Recording"
-                >
-                  <RotateCcw className="h-3 w-3" /> Clear
-                </button>
-              )}
-            </div>
-          </div>
+                {processing && (
+                    <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" /> Transcribing and structuring…
+                    </div>
+                )}
 
-          <div className="min-h-24 max-h-48 overflow-y-auto p-3 rounded-xl border bg-background/50 font-sans text-xs leading-relaxed border-border/80">
-            {transcript || interimTranscript ? (
-              <p className="text-foreground">
-                {transcript} <span className="text-muted-foreground italic font-medium">{interimTranscript}</span>
-              </p>
-            ) : (
-              <p className="text-muted-foreground/60 italic text-center py-6">
-                Microphone is ready. Click &quot;Start Recording&quot; and begin your patient consultation or clinical summary...
-              </p>
-            )}
-          </div>
-        </div>
+                {result && (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                        {/* Uncertainties first: they are the thing most likely to
+                            cause harm if scrolled past. */}
+                        {result.uncertainties?.length ? (
+                            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 space-y-1.5">
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-amber-500 flex items-center gap-1.5">
+                                    <HelpCircle className="h-3.5 w-3.5" /> Confirm before applying
+                                </p>
+                                <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-0.5">
+                                    {result.uncertainties.map((item, i) => <li key={i}>{item}</li>)}
+                                </ul>
+                            </div>
+                        ) : null}
 
-        {/* AI SOAP Extraction Preview */}
-        {parsedSoap && (
-          <div className="space-y-3 pt-2 border-t border-border/60 animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
-                <Sparkles className="h-3.5 w-3.5" /> Structured SOAP Note Preview
-              </div>
-              <Button size="sm" onClick={handleApplyToForm} className="h-7 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
-                <Check className="h-3.5 w-3.5" /> Auto-Fill Patient Chart
-              </Button>
-            </div>
+                        <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                    <FileText className="h-3.5 w-3.5" /> Verbatim transcript
+                                </p>
+                                <Button size="sm" variant="ghost" onClick={handleCopy} className="h-6 text-[11px] gap-1">
+                                    {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                                    {copied ? 'Copied' : 'Copy'}
+                                </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground leading-relaxed max-h-32 overflow-y-auto border border-dashed rounded-md p-2.5 bg-muted/20 whitespace-pre-wrap">
+                                {result.verbatimTranscript || 'No speech was transcribed.'}
+                            </p>
+                        </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-              <div className="p-2.5 rounded-lg border bg-muted/20 space-y-1">
-                <p className="font-bold text-primary text-[11px] uppercase tracking-wider">Subjective (Symptoms & History)</p>
-                <p className="text-muted-foreground leading-relaxed">{parsedSoap.subjective}</p>
-              </div>
-              <div className="p-2.5 rounded-lg border bg-muted/20 space-y-1">
-                <p className="font-bold text-blue-500 text-[11px] uppercase tracking-wider">Objective (Vitals & Physical Exam)</p>
-                <p className="text-muted-foreground leading-relaxed">{parsedSoap.objective}</p>
-              </div>
-              <div className="p-2.5 rounded-lg border bg-muted/20 space-y-1">
-                <p className="font-bold text-amber-500 text-[11px] uppercase tracking-wider">Assessment (Diagnosis)</p>
-                <p className="text-muted-foreground leading-relaxed">{parsedSoap.assessment}</p>
-              </div>
-              <div className="p-2.5 rounded-lg border bg-muted/20 space-y-1">
-                <p className="font-bold text-green-500 text-[11px] uppercase tracking-wider">Plan (Prescriptions & Orders)</p>
-                <p className="text-muted-foreground leading-relaxed">{parsedSoap.plan}</p>
-              </div>
-            </div>
-          </div>
-        )}
-      </CardContent>
+                        <div className="flex items-center justify-between pt-1 border-t border-border/60">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
+                                <Sparkles className="h-3.5 w-3.5" /> Structured note
+                            </div>
+                            {onApplySoap && (
+                                <Button size="sm" onClick={handleApply} className="h-7 text-xs gap-1.5">
+                                    <Check className="h-3.5 w-3.5" /> Apply to chart
+                                </Button>
+                            )}
+                        </div>
 
-      <CardFooter className="flex items-center justify-between bg-muted/10 border-t border-border/40 py-2.5 px-4">
-        <span className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-          <Activity className="h-3.5 w-3.5 text-emerald-500" /> Offline Voice Dictation Engine
-        </span>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={handleAIParse}
-          disabled={isProcessingAI || (!transcript && !interimTranscript)}
-          className="gap-1.5 text-xs font-bold border-primary/40 hover:bg-primary/10 text-primary"
-        >
-          {isProcessingAI ? (
-            <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Structuring SOAP...
-            </>
-          ) : (
-            <>
-              <Wand2 className="h-3.5 w-3.5" /> Structure into SOAP
-            </>
-          )}
-        </Button>
-      </CardFooter>
-    </Card>
-  );
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                            {FIELD_STYLES.map(({ key, label, hint }) => {
+                                const value = result[key];
+                                const text = typeof value === 'string' ? value.trim() : '';
+                                return (
+                                    <div key={key} className="p-2.5 rounded-lg border bg-muted/20 space-y-1">
+                                        <div className="flex items-center justify-between">
+                                            <p className="font-bold text-primary text-[11px] uppercase tracking-wider">
+                                                {label}
+                                            </p>
+                                            {onAppendText && text && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="h-5 px-1.5 text-[10px]"
+                                                    onClick={() => onAppendText(key as any, text)}
+                                                >
+                                                    Append
+                                                </Button>
+                                            )}
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground/60 uppercase">{hint}</p>
+                                        {/* An empty field is shown as empty, on purpose. */}
+                                        {text ? (
+                                            <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{text}</p>
+                                        ) : (
+                                            <p className="text-muted-foreground/50 italic">Nothing was dictated for this section.</p>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {(result.prescriptions?.length || result.labs?.length) ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                                {result.prescriptions?.length ? (
+                                    <div className="p-2.5 rounded-lg border bg-muted/20 space-y-1">
+                                        <p className="font-bold text-[11px] uppercase tracking-wider text-muted-foreground">
+                                            Medications mentioned
+                                        </p>
+                                        <ul className="list-disc pl-4 text-muted-foreground space-y-0.5">
+                                            {result.prescriptions.map((rx, i) => <li key={i}>{rx}</li>)}
+                                        </ul>
+                                    </div>
+                                ) : null}
+                                {result.labs?.length ? (
+                                    <div className="p-2.5 rounded-lg border bg-muted/20 space-y-1">
+                                        <p className="font-bold text-[11px] uppercase tracking-wider text-muted-foreground">
+                                            Investigations mentioned
+                                        </p>
+                                        <ul className="list-disc pl-4 text-muted-foreground space-y-0.5">
+                                            {result.labs.map((lab, i) => <li key={i}>{lab}</li>)}
+                                        </ul>
+                                    </div>
+                                ) : null}
+                            </div>
+                        ) : null}
+                    </div>
+                )}
+            </CardContent>
+
+            <CardFooter className="bg-muted/10 border-t border-border/40 py-2.5 px-4">
+                <span className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                    <Activity className="h-3.5 w-3.5 text-emerald-500" />
+                    Transcribed on the server · never auto-filed to the chart
+                </span>
+            </CardFooter>
+        </Card>
+    );
 }
 
 /**
- * Individual Push-To-Talk Mic Button for standalone input fields
+ * Push-to-talk dictation for one field.
+ *
+ * Same engine as the full scribe — record, send, receive text — so it works in
+ * every browser the app supports rather than only Chromium. Returns the verbatim
+ * transcript: a single field wants what was said, not a restructured note.
  */
-export function FieldVoiceDictationButton({ 
-  onTranscript,
-  className 
-}: { 
-  onTranscript: (text: string) => void;
-  className?: string;
+export function FieldVoiceDictationButton({
+    onTranscript,
+    className,
+}: {
+    onTranscript: (text: string) => void;
+    className?: string;
 }) {
-  const [isRecording, setIsRecording] = useState(false);
-  const recognitionRef = useRef<any>(null);
+    const { toast } = useToast();
+    const recorder = useAudioRecorder();
+    const [processing, setProcessing] = useState(false);
 
-  const toggleFieldRecord = (e: React.MouseEvent) => {
-    e.preventDefault();
+    const recording = recorder.state === 'recording';
+    const busy = processing || recorder.state === 'requesting';
 
-    if (isRecording) {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch {}
-      }
-      setIsRecording(false);
-    } else {
-      if (typeof window === 'undefined') return;
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (!SpeechRecognition) return;
+    const handleClick = async (event: React.MouseEvent) => {
+        event.preventDefault();
 
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
+        if (recording) {
+            const audio = await recorder.stop();
+            if (!audio) {
+                toast({ variant: 'destructive', title: 'Nothing recorded' });
+                return;
+            }
 
-      recognition.onresult = (event: any) => {
-        const text = event.results[0][0].transcript;
-        if (text) {
-          onTranscript(text);
+            setProcessing(true);
+            try {
+                const outcome = await runScribe(audio.dataUrl);
+                if (!outcome.ok) {
+                    toast({ variant: 'destructive', title: 'Transcription failed', description: outcome.error });
+                    return;
+                }
+                const text = outcome.data.verbatimTranscript?.trim();
+                if (text) {
+                    onTranscript(text);
+                } else {
+                    toast({ variant: 'destructive', title: 'No speech detected' });
+                }
+            } finally {
+                setProcessing(false);
+                recorder.reset();
+            }
+            return;
         }
-      };
 
-      recognition.onerror = () => {
-        setIsRecording(false);
-      };
+        const ok = await recorder.start();
+        if (!ok && recorder.error) {
+            toast({ variant: 'destructive', title: 'Microphone unavailable', description: recorder.error });
+        }
+    };
 
-      recognition.onend = () => {
-        setIsRecording(false);
-      };
-
-      try {
-        recognition.start();
-        recognitionRef.current = recognition;
-        setIsRecording(true);
-      } catch {
-        setIsRecording(false);
-      }
-    }
-  };
-
-  return (
-    <Button
-      type="button"
-      size="icon"
-      variant={isRecording ? "destructive" : "ghost"}
-      onClick={toggleFieldRecord}
-      className={cn("h-7 w-7 rounded-md shrink-0 transition-all", isRecording && "animate-pulse", className)}
-      title={isRecording ? "Stop dictating" : "Voice dictation"}
-    >
-      <Mic className={cn("h-3.5 w-3.5", isRecording ? "text-white" : "text-muted-foreground hover:text-primary")} />
-    </Button>
-  );
+    return (
+        <Button
+            type="button"
+            size="icon"
+            variant={recording ? 'destructive' : 'ghost'}
+            onClick={handleClick}
+            disabled={busy || !recorder.supported}
+            className={cn('h-7 w-7 rounded-md shrink-0 transition-all', recording && 'animate-pulse', className)}
+            title={
+                !recorder.supported
+                    ? 'Dictation needs microphone support'
+                    : recording
+                        ? 'Stop and transcribe'
+                        : 'Dictate into this field'
+            }
+        >
+            {processing
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : recording
+                    ? <Square className="h-3.5 w-3.5 text-white" />
+                    : <Mic className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />}
+            <span className="sr-only">
+                {recording ? 'Stop dictating' : 'Dictate into this field'}
+            </span>
+        </Button>
+    );
 }

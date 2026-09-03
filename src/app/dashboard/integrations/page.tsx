@@ -269,7 +269,7 @@ export default function DataImportIntegrationsPage() {
 
     // Apply Preset Mapping
     const applyPreset = (preset: typeof MIGRATION_PRESETS[0]) => {
-        setFieldMappings(preset.mappings);
+        setFieldMappings(preset.mappings as Record<string, string>);
         toast({
             title: `Applied Preset: ${preset.name}`,
             description: "Field mapping rules updated for " + preset.name

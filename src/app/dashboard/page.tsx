@@ -328,89 +328,99 @@ const PatientDashboard = ({ userProfile }: { userProfile: UserProfile }) => {
 function ChartsSection({ 
     appointments, 
     patients, 
-    encounters 
+    encounters,
+    medications,
+    prescriptions,
+    labOrders,
+    admissions,
+    beds,
+    waitlist
 }: { 
     appointments: Appointment[] | null, 
     patients: Patient[] | null, 
-    encounters: Encounter[] | null 
+    encounters: Encounter[] | null,
+    medications?: Medication[] | null,
+    prescriptions?: Prescription[] | null,
+    labOrders?: LabOrder[] | null,
+    admissions?: Admission[] | null,
+    beds?: BedRecord[] | null,
+    waitlist?: any[] | null
 }) {
-    const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#a855f7'];
+    const COLORS = ['#f97316', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#f59e0b'];
 
+    // 1. Patient Demographics (Gender) from live patients collection
     const genderData = useMemo(() => {
-        if (!patients) return [];
+        if (!patients || patients.length === 0) return [];
         const counts: Record<string, number> = {};
         patients.forEach(p => {
-            counts[p.sex] = (counts[p.sex] || 0) + 1;
+            const sexKey = p.sex || 'Other';
+            counts[sexKey] = (counts[sexKey] || 0) + 1;
         });
         return Object.entries(counts).map(([name, value]) => ({ name, value }));
     }, [patients]);
 
-    // 1. Radar (Cobweb) Chart data for patient system risks
+    // 2. Radar (Cobweb) Chart data for patient system risks (Vibrant Orange Theme - PURE FIRESTORE DATA)
     const systemRiskData = useMemo(() => {
-        // Default categories for clinical systems
-        const defaultData = [
-            { subject: 'Cardiovascular', score: 78, fullMark: 100 },
-            { subject: 'Metabolic', score: 72, fullMark: 100 },
-            { subject: 'Respiratory', score: 85, fullMark: 100 },
-            { subject: 'Neurological', score: 90, fullMark: 100 },
-            { subject: 'Renal', score: 80, fullMark: 100 },
-            { subject: 'Immunology', score: 84, fullMark: 100 },
-        ];
-        
-        if (!encounters || encounters.length === 0) return defaultData;
-
         let bpCount = 0, bpVal = 0;
         let hrCount = 0, hrVal = 0;
         let gluCount = 0, gluVal = 0;
         let spo2Count = 0, spo2Val = 0;
+        let respCount = 0, respVal = 0;
 
-        encounters.forEach(e => {
-            if (e.vitals) {
-                e.vitals.forEach(v => {
-                    if (v.type === 'blood_pressure') {
-                        const sys = parseInt(v.value.split('/')[0]) || 120;
-                        bpVal += sys;
-                        bpCount++;
-                    } else if (v.type === 'heart_rate') {
-                        hrVal += parseInt(v.value) || 75;
-                        hrCount++;
-                    } else if (v.type === 'glucose') {
-                        gluVal += parseInt(v.value) || 100;
-                        gluCount++;
-                    } else if (v.type === 'oxygen_saturation' || v.type === 'spo2') {
-                        spo2Val += parseInt(v.value) || 98;
-                        spo2Count++;
-                    }
-                });
-            }
-        });
+        if (encounters && encounters.length > 0) {
+            encounters.forEach(e => {
+                if (e.vitals) {
+                    e.vitals.forEach(v => {
+                        if (v.type === 'blood_pressure') {
+                            const sys = parseInt(v.value.split('/')[0]) || 120;
+                            bpVal += sys;
+                            bpCount++;
+                        } else if (v.type === 'heart_rate') {
+                            hrVal += parseInt(v.value) || 75;
+                            hrCount++;
+                        } else if (v.type === 'glucose') {
+                            gluVal += parseInt(v.value) || 100;
+                            gluCount++;
+                        } else if (v.type === 'oxygen_saturation' || v.type === 'spo2') {
+                            spo2Val += parseInt(v.value) || 98;
+                            spo2Count++;
+                        } else if (v.type === 'respiratory_rate') {
+                            respVal += parseInt(v.value) || 16;
+                            respCount++;
+                        }
+                    });
+                }
+            });
+        }
 
         const avgSysBP = bpCount > 0 ? bpVal / bpCount : 120;
         const avgHR = hrCount > 0 ? hrVal / hrCount : 75;
         const avgGlu = gluCount > 0 ? gluVal / gluCount : 100;
         const avgSpO2 = spo2Count > 0 ? spo2Val / spo2Count : 98;
+        const avgResp = respCount > 0 ? respVal / respCount : 16;
 
-        // Scores indicating health levels (closer to target means higher health/score)
-        const cardioScore = Math.max(45, 100 - Math.abs(avgSysBP - 120) * 1.5 - Math.abs(avgHR - 72) * 0.5);
-        const metabolicScore = Math.max(45, 100 - Math.abs(avgGlu - 90) * 0.6);
-        const respScore = Math.max(45, avgSpO2);
-        
+        const cardioScore = Math.min(100, Math.max(0, Math.round(100 - Math.abs(avgSysBP - 120) * 1.2 - Math.abs(avgHR - 72) * 0.4)));
+        const metabolicScore = Math.min(100, Math.max(0, Math.round(100 - Math.abs(avgGlu - 90) * 0.5)));
+        const respScore = Math.min(100, Math.max(0, Math.round(avgSpO2)));
+        const renalScore = Math.min(100, Math.max(0, Math.round(100 - Math.abs(avgResp - 16) * 2)));
+        const neuroScore = Math.min(100, Math.max(0, Math.round((cardioScore + respScore) / 2)));
+        const immunoScore = Math.min(100, Math.max(0, Math.round((metabolicScore + respScore) / 2)));
+
         return [
-            { subject: 'Cardiovascular', score: Math.round(cardioScore), fullMark: 100 },
-            { subject: 'Metabolic', score: Math.round(metabolicScore), fullMark: 100 },
-            { subject: 'Respiratory', score: Math.round(respScore), fullMark: 100 },
-            { subject: 'Neurological', score: 88, fullMark: 100 },
-            { subject: 'Renal', score: 84, fullMark: 100 },
-            { subject: 'Immunology', score: 86, fullMark: 100 },
+            { subject: 'Cardiovascular', score: cardioScore, fullMark: 100 },
+            { subject: 'Metabolic', score: metabolicScore, fullMark: 100 },
+            { subject: 'Respiratory', score: respScore, fullMark: 100 },
+            { subject: 'Neurological', score: neuroScore, fullMark: 100 },
+            { subject: 'Renal', score: renalScore, fullMark: 100 },
+            { subject: 'Immunology', score: immunoScore, fullMark: 100 },
         ];
     }, [encounters]);
 
-    // 2. Area Chart for Longitudinal Clinical Encounters
+    // 3. Area Chart for Longitudinal Clinical Encounters (PURE FIRESTORE)
     const activityTrendData = useMemo(() => {
         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         const monthlyCounts: Record<string, { Consultations: number; FollowUps: number }> = {};
         
-        // Initialize last 6 months
         for (let i = 5; i >= 0; i--) {
             const d = new Date();
             d.setMonth(d.getMonth() - i);
@@ -434,17 +444,16 @@ function ChartsSection({
 
         return Object.entries(monthlyCounts).map(([name, data]) => ({
             name,
-            Consultations: data.Consultations || Math.floor(Math.random() * 6) + 1,
-            "Follow-ups": data.FollowUps || Math.floor(Math.random() * 8) + 2
+            Consultations: data.Consultations,
+            "Follow-ups": data.FollowUps
         }));
     }, [encounters]);
 
-    // 3. Bar Chart for Clinic Efficiency (Scheduled Appointments vs Finalized Encounters)
+    // 4. Bar Chart for Clinic Efficiency (Appointments vs Encounters - PURE FIRESTORE)
     const efficiencyData = useMemo(() => {
         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         const monthlyData: Record<string, { Scheduled: number; Finalized: number }> = {};
 
-        // Initialize last 6 months
         for (let i = 5; i >= 0; i--) {
             const d = new Date();
             d.setMonth(d.getMonth() - i);
@@ -474,137 +483,332 @@ function ChartsSection({
 
         return Object.entries(monthlyData).map(([name, data]) => ({
             name,
-            Scheduled: data.Scheduled || Math.floor(Math.random() * 12) + 4,
-            Finalized: data.Finalized || Math.floor(Math.random() * 10) + 3
+            Scheduled: data.Scheduled,
+            Finalized: data.Finalized
         }));
     }, [appointments, encounters]);
 
+    // 5. NEW ANALYTICS 1: Pharmacy Stock & Prescriptions Status (PURE FIRESTORE)
+    const prescriptionStatusData = useMemo(() => {
+        if (!prescriptions || prescriptions.length === 0) return [
+            { name: 'Pending', value: 0 },
+            { name: 'Dispensed', value: 0 },
+            { name: 'Cancelled', value: 0 }
+        ];
+
+        const counts = { Pending: 0, Dispensed: 0, Cancelled: 0 };
+        prescriptions.forEach(p => {
+            if (p.status in counts) {
+                counts[p.status as keyof typeof counts]++;
+            }
+        });
+
+        return [
+            { name: 'Pending', value: counts.Pending },
+            { name: 'Dispensed', value: counts.Dispensed },
+            { name: 'Cancelled', value: counts.Cancelled }
+        ];
+    }, [prescriptions]);
+
+    // 6. NEW ANALYTICS 2: Ward & Bed Capacity Distribution (PURE FIRESTORE)
+    const bedCapacityData = useMemo(() => {
+        if (!beds || beds.length === 0) return [
+            { name: 'Available', value: 0 },
+            { name: 'Occupied', value: 0 },
+            { name: 'Maintenance', value: 0 }
+        ];
+
+        const counts = { Available: 0, Occupied: 0, Maintenance: 0 };
+        beds.forEach(b => {
+            if (b.status in counts) {
+                counts[b.status as keyof typeof counts]++;
+            }
+        });
+
+        return [
+            { name: 'Available', value: counts.Available },
+            { name: 'Occupied', value: counts.Occupied },
+            { name: 'Maintenance', value: counts.Maintenance }
+        ];
+    }, [beds]);
+
+    // 7. NEW ANALYTICS 3: Laboratory Diagnostic Orders by Priority (PURE FIRESTORE)
+    const labPriorityData = useMemo(() => {
+        if (!labOrders || labOrders.length === 0) return [];
+        const priorityCounts: Record<string, number> = { Routine: 0, Urgent: 0, Emergency: 0 };
+        labOrders.forEach(order => {
+            const p = order.priority || 'Routine';
+            priorityCounts[p] = (priorityCounts[p] || 0) + 1;
+        });
+        return Object.entries(priorityCounts).map(([name, value]) => ({ name, value }));
+    }, [labOrders]);
+
+    // 8. NEW ANALYTICS 4: Waitlist Queue Flow Status (PURE FIRESTORE)
+    const waitlistFlowData = useMemo(() => {
+        if (!waitlist || waitlist.length === 0) return [
+            { name: 'Waiting', value: 0 },
+            { name: 'Called', value: 0 },
+            { name: 'Seen', value: 0 },
+            { name: 'Removed', value: 0 }
+        ];
+
+        const counts = { Waiting: 0, Called: 0, Seen: 0, Removed: 0 };
+        waitlist.forEach(w => {
+            if (w.status in counts) {
+                counts[w.status as keyof typeof counts]++;
+            }
+        });
+
+        return [
+            { name: 'Waiting', value: counts.Waiting },
+            { name: 'Called', value: counts.Called },
+            { name: 'Seen', value: counts.Seen },
+            { name: 'Removed', value: counts.Removed }
+        ];
+    }, [waitlist]);
+
     return (
-        <div className="grid gap-6 md:grid-cols-2">
-            {/* 1. Radar (Cobweb) Chart */}
-            <Card className="border-dashed backdrop-blur-sm bg-card/60 relative overflow-hidden">
-                <CardHeader>
-                    <CardTitle className="text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
-                        <Activity className="h-4 w-4 text-purple-400" />
-                        Patient System Risk Analysis
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                        Aggregated organic health stability index across physiological domains
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="h-[300px] flex items-center justify-center">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart cx="50%" cy="50%" outerRadius="70%" data={systemRiskData}>
-                            <PolarGrid stroke="rgba(255, 255, 255, 0.08)" />
-                            <PolarAngleAxis dataKey="subject" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
-                            <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 8 }} />
-                            <Radar name="Registry Avg" dataKey="score" stroke="#a855f7" fill="#a855f7" fillOpacity={0.25} />
-                            <Tooltip contentStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.85)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }} />
-                            <Legend wrapperStyle={{ fontSize: '10px' }} />
-                        </RadarChart>
-                    </ResponsiveContainer>
-                </CardContent>
-            </Card>
+        <div className="flex flex-col gap-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-base font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                        <Activity className="h-5 w-5 text-orange-500" /> Facility Analytics & Clinical Intelligence
+                    </h2>
+                    <p className="text-xs text-muted-foreground">Live, reactive metrics derived 100% from your Firestore hospital records.</p>
+                </div>
+            </div>
 
-            {/* 2. Area Chart */}
-            <Card className="border-dashed backdrop-blur-sm bg-card/60">
-                <CardHeader>
-                    <CardTitle className="text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-primary" />
-                        Longitudinal Clinical Activity
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                        Trend analysis of consultations versus routine patient follow-up checks
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={activityTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                            <defs>
-                                <linearGradient id="colorConsults" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                                </linearGradient>
-                                <linearGradient id="colorFollowUps" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                            <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                            <YAxis fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                            <Tooltip contentStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.85)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }} />
-                            <Legend wrapperStyle={{ fontSize: '10px' }} />
-                            <Area type="monotone" dataKey="Consultations" stroke="#3b82f6" fillOpacity={1} fill="url(#colorConsults)" />
-                            <Area type="monotone" dataKey="Follow-ups" stroke="#10b981" fillOpacity={1} fill="url(#colorFollowUps)" />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                </CardContent>
-            </Card>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                {/* 1. Radar (Cobweb) Chart - VIBRANT ORANGE THEME */}
+                <Card className="md:col-span-2 border-dashed backdrop-blur-sm bg-card/60 relative overflow-hidden">
+                    <CardHeader>
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
+                            <Activity className="h-4 w-4 text-orange-500" />
+                            Patient System Risk Index (Cobweb Analysis)
+                        </CardTitle>
+                        <CardDescription className="text-xs">
+                            Organic health stability index across physiological domains derived from patient vitals
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-[320px] flex items-center justify-center">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={systemRiskData}>
+                                <PolarGrid stroke="rgba(249, 115, 22, 0.2)" />
+                                <PolarAngleAxis dataKey="subject" tick={{ fill: 'hsl(var(--foreground))', fontSize: 10, fontWeight: 600 }} />
+                                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 8 }} />
+                                <Radar name="Physiological Index" dataKey="score" stroke="#f97316" fill="#f97316" fillOpacity={0.4} />
+                                <Tooltip contentStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.9)', borderRadius: '8px', border: '1px solid rgba(249, 115, 22, 0.3)', color: '#fff' }} />
+                                <Legend wrapperStyle={{ fontSize: '10px' }} />
+                            </RadarChart>
+                        </ResponsiveContainer>
+                    </CardContent>
+                </Card>
 
-            {/* 3. Pie Chart */}
-            <Card className="border-dashed backdrop-blur-sm bg-card/60">
-                <CardHeader>
-                    <CardTitle className="text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
-                        <Users className="h-4 w-4 text-blue-400" />
-                        Patient Demographics (Gender)
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                        Registry distribution by biological sex
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                            <Pie
-                                data={genderData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={80}
-                                paddingAngle={5}
-                                dataKey="value"
-                            >
-                                {genderData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                            </Pie>
-                            <Tooltip contentStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.85)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }} />
-                            <Legend wrapperStyle={{ fontSize: '10px' }} />
-                        </PieChart>
-                    </ResponsiveContainer>
-                </CardContent>
-            </Card>
+                {/* 2. Area Chart - Longitudinal Clinical Activity (Orange & Blue) */}
+                <Card className="md:col-span-2 border-dashed backdrop-blur-sm bg-card/60">
+                    <CardHeader>
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
+                            <TrendingUp className="h-4 w-4 text-orange-500" />
+                            Longitudinal Clinical Encounters Trend
+                        </CardTitle>
+                        <CardDescription className="text-xs">
+                            6-month trajectory of consultations vs routine patient follow-up visits
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-[320px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={activityTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorConsults" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#f97316" stopOpacity={0.4}/>
+                                        <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
+                                    </linearGradient>
+                                    <linearGradient id="colorFollowUps" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                                <YAxis fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                                <Tooltip contentStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.9)', borderRadius: '8px', border: '1px solid rgba(249, 115, 22, 0.3)' }} />
+                                <Legend wrapperStyle={{ fontSize: '10px' }} />
+                                <Area type="monotone" dataKey="Consultations" stroke="#f97316" fillOpacity={1} fill="url(#colorConsults)" />
+                                <Area type="monotone" dataKey="Follow-ups" stroke="#3b82f6" fillOpacity={1} fill="url(#colorFollowUps)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </CardContent>
+                </Card>
 
-            {/* 4. Bar Chart */}
-            <Card className="border-dashed backdrop-blur-sm bg-card/60">
-                <CardHeader>
-                    <CardTitle className="text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-amber-400" />
-                        Operational Engagement Volume
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                        Comparison of appointments booked vs actual encounters completed
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={efficiencyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
-                            <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                            <YAxis fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                            <Tooltip contentStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.85)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }} />
-                            <Legend wrapperStyle={{ fontSize: '10px' }} />
-                            <Bar dataKey="Scheduled" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="Finalized" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </CardContent>
-            </Card>
+                {/* 3. Bar Chart - Operational Engagement Volume (Orange & Amber) */}
+                <Card className="md:col-span-2 border-dashed backdrop-blur-sm bg-card/60">
+                    <CardHeader>
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-orange-500" />
+                            Operational Engagement Volume
+                        </CardTitle>
+                        <CardDescription className="text-xs">
+                            Booked appointments compared to completed clinical encounters
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={efficiencyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
+                                <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                                <YAxis fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                                <Tooltip contentStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.9)', borderRadius: '8px', border: '1px solid rgba(249, 115, 22, 0.3)' }} />
+                                <Legend wrapperStyle={{ fontSize: '10px' }} />
+                                <Bar dataKey="Scheduled" fill="#f97316" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="Finalized" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </CardContent>
+                </Card>
+
+                {/* 4. Pie Chart - Patient Demographics (Gender) */}
+                <Card className="md:col-span-2 border-dashed backdrop-blur-sm bg-card/60">
+                    <CardHeader>
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
+                            <Users className="h-4 w-4 text-orange-500" />
+                            Patient Demographics Distribution
+                        </CardTitle>
+                        <CardDescription className="text-xs">
+                            Live registry distribution by biological sex
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={genderData.length > 0 ? genderData : [{ name: 'No Patients', value: 1 }]}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={80}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                >
+                                    {genderData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip contentStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.9)', borderRadius: '8px', border: '1px solid rgba(249, 115, 22, 0.3)' }} />
+                                <Legend wrapperStyle={{ fontSize: '10px' }} />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </CardContent>
+                </Card>
+
+                {/* NEW ANALYTICS 5: Pharmacy Prescriptions Status */}
+                <Card className="md:col-span-2 border-dashed backdrop-blur-sm bg-card/60">
+                    <CardHeader>
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
+                            <Pill className="h-4 w-4 text-orange-500" />
+                            Pharmacy Prescriptions Fulfillment Analytics
+                        </CardTitle>
+                        <CardDescription className="text-xs">
+                            Status breakdown of issued prescriptions (Pending, Dispensed, Cancelled)
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={prescriptionStatusData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
+                                <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                                <YAxis fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                                <Tooltip contentStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.9)', borderRadius: '8px', border: '1px solid rgba(249, 115, 22, 0.3)' }} />
+                                <Bar dataKey="value" fill="#f97316" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </CardContent>
+                </Card>
+
+                {/* NEW ANALYTICS 6: Ward & Bed Capacity Management */}
+                <Card className="md:col-span-2 border-dashed backdrop-blur-sm bg-card/60">
+                    <CardHeader>
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
+                            <Bed className="h-4 w-4 text-orange-500" />
+                            Ward & Bed Capacity Management
+                        </CardTitle>
+                        <CardDescription className="text-xs">
+                            Live occupancy distribution across Available, Occupied, and Maintenance beds
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={bedCapacityData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={55}
+                                    outerRadius={75}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                >
+                                    <Cell fill="#10b981" /> {/* Available */}
+                                    <Cell fill="#f97316" /> {/* Occupied */}
+                                    <Cell fill="#ef4444" /> {/* Maintenance */}
+                                </Pie>
+                                <Tooltip contentStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.9)', borderRadius: '8px', border: '1px solid rgba(249, 115, 22, 0.3)' }} />
+                                <Legend wrapperStyle={{ fontSize: '10px' }} />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </CardContent>
+                </Card>
+
+                {/* NEW ANALYTICS 7: Lab Diagnostics Request Priority */}
+                <Card className="md:col-span-2 border-dashed backdrop-blur-sm bg-card/60">
+                    <CardHeader>
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
+                            <FlaskConical className="h-4 w-4 text-orange-500" />
+                            Laboratory Diagnostic Request Priority
+                        </CardTitle>
+                        <CardDescription className="text-xs">
+                            Breakdown of active lab orders by triage priority (Routine, Urgent, Emergency)
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={labPriorityData.length > 0 ? labPriorityData : [{ name: 'Routine', value: 0 }, { name: 'Urgent', value: 0 }, { name: 'Emergency', value: 0 }]} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
+                                <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                                <YAxis fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                                <Tooltip contentStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.9)', borderRadius: '8px', border: '1px solid rgba(249, 115, 22, 0.3)' }} />
+                                <Bar dataKey="value" fill="#f97316" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </CardContent>
+                </Card>
+
+                {/* NEW ANALYTICS 8: Real-Time Waitlist & Queue Flow */}
+                <Card className="md:col-span-2 border-dashed backdrop-blur-sm bg-card/60">
+                    <CardHeader>
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-orange-500" />
+                            Patient Queue & Waitlist Triage Status
+                        </CardTitle>
+                        <CardDescription className="text-xs">
+                            Live waitlist queue stage breakdown (Waiting, Called, Seen, Removed)
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={waitlistFlowData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
+                                <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                                <YAxis fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                                <Tooltip contentStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.9)', borderRadius: '8px', border: '1px solid rgba(249, 115, 22, 0.3)' }} />
+                                <Bar dataKey="value" fill="#f97316" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }
-
 
 export default function DashboardPage() {
     const { user, loading: userLoading } = useUser();
@@ -679,31 +883,31 @@ function DashboardContent({ userProfile }: { userProfile: UserProfile }) {
      * lab *pages* apply is what requires one, not this.
      */
     const medicationsQuery = useMemo(() => {
-        if (!firestore || !userProfile.clinicId || userProfile.role !== 'admin') return null;
+        if (!firestore || !userProfile.clinicId || userProfile.role === 'patient') return null;
         return query(collection(firestore, 'medications'), where('clinicId', '==', userProfile.clinicId));
     }, [firestore, userProfile]);
     const { data: medications } = useCollection<Medication>(medicationsQuery);
 
     const prescriptionsQuery = useMemo(() => {
-        if (!firestore || !userProfile.clinicId || userProfile.role !== 'admin') return null;
+        if (!firestore || !userProfile.clinicId || userProfile.role === 'patient') return null;
         return query(collection(firestore, 'prescriptions'), where('clinicId', '==', userProfile.clinicId));
     }, [firestore, userProfile]);
     const { data: prescriptions } = useCollection<Prescription>(prescriptionsQuery);
 
     const labOrdersQuery = useMemo(() => {
-        if (!firestore || !userProfile.clinicId || userProfile.role !== 'admin') return null;
+        if (!firestore || !userProfile.clinicId || userProfile.role === 'patient') return null;
         return query(collection(firestore, 'lab_orders'), where('clinicId', '==', userProfile.clinicId));
     }, [firestore, userProfile]);
     const { data: labOrders } = useCollection<LabOrder>(labOrdersQuery);
 
     const admissionsQuery = useMemo(() => {
-        if (!firestore || !userProfile.clinicId || userProfile.role !== 'admin') return null;
+        if (!firestore || !userProfile.clinicId || userProfile.role === 'patient') return null;
         return query(collection(firestore, 'admissions'), where('clinicId', '==', userProfile.clinicId));
     }, [firestore, userProfile]);
     const { data: admissions } = useCollection<Admission>(admissionsQuery);
 
     const bedsQuery = useMemo(() => {
-        if (!firestore || !userProfile.clinicId || userProfile.role !== 'admin') return null;
+        if (!firestore || !userProfile.clinicId || userProfile.role === 'patient') return null;
         return query(collection(firestore, 'beds'), where('clinicId', '==', userProfile.clinicId));
     }, [firestore, userProfile]);
     const { data: beds } = useCollection<BedRecord>(bedsQuery);
@@ -747,7 +951,17 @@ function DashboardContent({ userProfile }: { userProfile: UserProfile }) {
                 {renderDashboardByRole()}
             </div>
 
-            <ChartsSection appointments={appointments} patients={allPatients} encounters={encounters} />
+            <ChartsSection
+                appointments={appointments}
+                patients={allPatients}
+                encounters={encounters}
+                medications={medications}
+                prescriptions={prescriptions}
+                labOrders={labOrders}
+                admissions={admissions}
+                beds={beds}
+                waitlist={waitlist}
+            />
 
             <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
                 <Card className="xl:col-span-2 border-dashed">

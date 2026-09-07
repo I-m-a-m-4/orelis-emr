@@ -6,8 +6,19 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 
 export default function SignUpPage() {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background grid-bg">
-      <div className="w-full max-w-4xl mx-auto p-4">
+    <div className="relative flex items-center justify-center min-h-screen bg-background overflow-hidden">
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover opacity-30 z-0"
+      >
+        <source src="/signup-video-page.mp4" type="video/mp4" />
+      </video>
+      <div className="absolute inset-0 grid-bg z-0" />
+      
+      <div className="relative z-10 w-full max-w-4xl mx-auto p-4">
         <div className="text-center mb-8">
             <Link href="/" className="flex items-center justify-center gap-2">
                 <Stethoscope className="h-10 w-10 text-primary" />

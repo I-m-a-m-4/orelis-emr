@@ -98,8 +98,9 @@ export interface Clinic {
   staffCount?: number;
   specialties?: string[];
   subscription?: {
-    plan: 'price_annual' | 'trial' | 'infinite';
+    plan: 'starter' | 'clinic' | 'hospital' | 'enterprise' | 'infinite' | 'price_annual' | 'trial';
     status: 'active' | 'trialing' | 'expired';
+    billingCycle?: 1 | 3 | 6 | 12; // months
     customerId?: string;
     expiryDate?: string | null; // ISO string
   };

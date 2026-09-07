@@ -4,25 +4,39 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
 import { doc, collection, query, where, orderBy } from 'firebase/firestore';
 import { useMemo, useState } from 'react';
-import { CreditCard, Plus, Receipt, Download, FileText, CheckCircle2, Zap, ShieldCheck, Crown, ExternalLink } from 'lucide-react';
+import { CreditCard, Receipt, ExternalLink, Zap, Shield, Building2, Crown, ShieldCheck, Check } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import dynamic from 'next/dynamic';
 import { useToast } from "@/hooks/use-toast";
-
+import { cn } from "@/lib/utils";
 import { PaystackButton } from "@/components/paystack-button";
-import {
-    NewInvoiceDialog, DownloadInvoiceButton, ViewInvoiceDialog,
-} from "@/components/billing/invoice-actions";
+import { NewInvoiceDialog, DownloadInvoiceButton, ViewInvoiceDialog } from "@/components/billing/invoice-actions";
 import type { Patient } from "@/lib/types";
 
+const CYCLE_OPTIONS = [
+    { label: '1 Month', months: 1, discount: 0 },
+    { label: '3 Months', months: 3, discount: 0.05 },
+    { label: '6 Months', months: 6, discount: 0.10 },
+    { label: '1 Year', months: 12, discount: 0.15 },
+];
+
+const PLANS = [
+    { id: 'starter', name: 'Starter', monthlyPrice: 15000, icon: Zap, color: 'text-sky-400', borderColor: 'border-sky-400/30', bgColor: 'bg-sky-500/5', desc: 'Solo practitioners' },
+    { id: 'clinic', name: 'Clinic', monthlyPrice: 35000, icon: Shield, color: 'text-orange-400', borderColor: 'border-orange-400/50', bgColor: 'bg-orange-500/5', desc: 'Multi-doctor practices' },
+    { id: 'hospital', name: 'Hospital', monthlyPrice: 75000, icon: Building2, color: 'text-violet-400', borderColor: 'border-violet-400/30', bgColor: 'bg-violet-500/5', desc: 'Full-service hospitals' },
+    { id: 'enterprise', name: 'Enterprise', monthlyPrice: null, icon: Crown, color: 'text-amber-400', borderColor: 'border-amber-400/30', bgColor: 'bg-amber-500/5', desc: 'Custom needs' },
+];
 
 export default function BillingPage() {
     const { user } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
+
+    const [cycleIdx, setCycleIdx] = useState(0);
+    const cycle = CYCLE_OPTIONS[cycleIdx];
+    const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
 
     const userProfileRef = useMemo(() => {
         if (!user || !firestore) return null;
@@ -30,41 +44,40 @@ export default function BillingPage() {
     }, [user, firestore]);
     const { data: userProfile } = useDoc<any>(userProfileRef);
 
-    const invoicesQuery = useMemo(() => {
-        if (!userProfile?.clinicId || !firestore) return null;
-        // NOTE: This query requires an index: clinicId (ASC) + createdAt (DESC)
-        return query(
-            collection(firestore, 'invoices'),
-            where('clinicId', '==', userProfile.clinicId),
-            orderBy('createdAt', 'desc')
-        );
-    }, [userProfile, firestore]);
-
-    const { data: invoices, loading, error: queryError } = useCollection<any>(invoicesQuery);
-
-    // Needed to raise an invoice against a named patient. Equality-only, so no
-    // composite index is involved.
-    const patientsQuery = useMemo(() => {
-        if (!userProfile?.clinicId || !firestore) return null;
-        return query(collection(firestore, 'patients'), where('clinicId', '==', userProfile.clinicId));
-    }, [userProfile?.clinicId, firestore]);
-    const { data: patients } = useCollection<Patient>(patientsQuery);
-
-    // The clinic's own name heads the generated PDF.
     const clinicRef = useMemo(() => {
         if (!userProfile?.clinicId || !firestore) return null;
         return doc(firestore, 'clinics', userProfile.clinicId);
     }, [userProfile?.clinicId, firestore]);
     const { data: clinic } = useDoc<any>(clinicRef);
     const clinicName = clinic?.name ?? 'Orelis Clinic';
+    
+    // Read current plan (fallback to starter)
+    const currentPlanId = clinic?.subscription?.plan ?? 'starter';
+    const isInfinite = currentPlanId === 'infinite';
+
+    const invoicesQuery = useMemo(() => {
+        if (!userProfile?.clinicId || !firestore) return null;
+        return query(collection(firestore, 'invoices'), where('clinicId', '==', userProfile.clinicId), orderBy('createdAt', 'desc'));
+    }, [userProfile, firestore]);
+    const { data: invoices, loading, error: queryError } = useCollection<any>(invoicesQuery);
+
+    const patientsQuery = useMemo(() => {
+        if (!userProfile?.clinicId || !firestore) return null;
+        return query(collection(firestore, 'patients'), where('clinicId', '==', userProfile.clinicId));
+    }, [userProfile?.clinicId, firestore]);
+    const { data: patients } = useCollection<Patient>(patientsQuery);
+
+    const selectedPlan = PLANS.find(p => p.id === (selectedPlanId || currentPlanId));
+    const payAmount = selectedPlan?.monthlyPrice 
+        ? Math.round(selectedPlan.monthlyPrice * cycle.months * (1 - cycle.discount)) 
+        : 0;
 
     const paystackConfig = {
         publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
         email: user?.email || '',
-        amount: 200000,
+        amount: payAmount * 100, // Paystack uses kobo
         reference: new Date().getTime().toString(),
     };
-
 
     return (
         <div className="flex flex-col gap-6">
@@ -78,41 +91,113 @@ export default function BillingPage() {
                 <NewInvoiceDialog clinicId={userProfile?.clinicId} patients={patients} />
             </div>
 
-            {/* Plans Section - Simplified to Flat Rate */}
-            <div className="max-w-xl mx-auto w-full">
-                <Card className="relative flex flex-col border-dashed border-primary shadow-2xl ring-2 ring-primary/10 overflow-hidden bg-primary/5">
-                    <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <Crown className="w-24 h-24 text-primary rotate-12" />
+            {/* Plans Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div className="lg:col-span-3 space-y-6">
+                    {/* Cycle Toggle */}
+                    <div className="flex items-center gap-1 rounded-xl border border-border bg-muted/40 p-1 w-fit">
+                        {CYCLE_OPTIONS.map((opt, i) => (
+                            <button
+                                key={opt.label}
+                                onClick={() => setCycleIdx(i)}
+                                className={cn(
+                                    'relative rounded-lg px-4 py-2 text-xs font-bold transition-all',
+                                    cycleIdx === i ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
+                                )}
+                            >
+                                {opt.label}
+                                {opt.discount > 0 && <span className="ml-1.5 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-black text-emerald-500">-{opt.discount * 100}%</span>}
+                            </button>
+                        ))}
                     </div>
-                    <CardHeader className="text-center">
-                        <div className="mx-auto bg-primary/20 p-3 rounded-full mb-4">
-                            <ShieldCheck className="w-8 h-8 text-primary" />
-                        </div>
-                        <CardTitle className="text-2xl font-black tracking-tight">Full Clinic Access</CardTitle>
-                        <CardDescription className="text-md">One simple price for every feature Orelis offers.</CardDescription>
-                        <div className="flex items-baseline justify-center gap-1 mt-6">
-                            <span className="text-5xl font-black text-primary">₦2,000</span>
-                            <span className="text-muted-foreground font-bold">/month</span>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="text-center">
-                        <p className="text-sm font-medium text-muted-foreground px-6 leading-relaxed">
-                            No hidden tiers. No locked features. Your subscription covers unlimited patient records, full clinical SOAP encounters, pharmacy, lab, and all future updates.
-                        </p>
-                    </CardContent>
-                    <CardFooter className="pb-8">
-                        {paystackConfig.publicKey ? (
-                            <PaystackButton config={paystackConfig} />
-                        ) : (
-                            <Button className="w-full h-14 rounded-xl text-lg font-black" variant="secondary" disabled>
-                                Payment Gateway Offline
-                            </Button>
-                        )}
-                    </CardFooter>
-                </Card>
+
+                    {/* Plan Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                        {PLANS.map((plan) => {
+                            const Icon = plan.icon;
+                            const isCurrent = plan.id === currentPlanId;
+                            const isSelected = plan.id === (selectedPlanId || currentPlanId);
+                            const total = plan.monthlyPrice ? Math.round(plan.monthlyPrice * cycle.months * (1 - cycle.discount)) : null;
+
+                            return (
+                                <div
+                                    key={plan.id}
+                                    onClick={() => !isCurrent && plan.monthlyPrice && setSelectedPlanId(plan.id)}
+                                    className={cn(
+                                        'relative flex flex-col rounded-xl border p-5 transition-all cursor-pointer overflow-hidden',
+                                        isSelected ? 'ring-2 ring-primary shadow-lg border-primary/50' : 'hover:border-primary/30',
+                                        isCurrent ? 'bg-muted/30 cursor-default' : plan.bgColor
+                                    )}
+                                >
+                                    {isCurrent && (
+                                        <div className="absolute top-3 right-3 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-500 flex items-center gap-1">
+                                            <Check className="h-3 w-3" /> Active
+                                        </div>
+                                    )}
+                                    <div className={cn('mb-3 w-fit rounded-lg border p-2', plan.borderColor, isCurrent ? 'bg-background' : plan.bgColor)}>
+                                        <Icon className={cn('h-4 w-4', plan.color)} />
+                                    </div>
+                                    <h3 className="font-bold text-sm">{plan.name}</h3>
+                                    <p className="text-[11px] text-muted-foreground mt-1 line-clamp-1">{plan.desc}</p>
+                                    
+                                    <div className="mt-4 pt-4 border-t border-border/40">
+                                        {plan.monthlyPrice ? (
+                                            <div className="flex flex-col">
+                                                <span className="text-lg font-black">₦{total?.toLocaleString()}</span>
+                                                <span className="text-[10px] text-muted-foreground">per {cycle.months === 1 ? 'month' : `${cycle.months} months`}</span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-lg font-black">Custom</span>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Checkout Summary */}
+                <div className="lg:col-span-1">
+                    <Card className="sticky top-6 border-dashed bg-muted/20">
+                        <CardHeader>
+                            <CardTitle className="text-lg font-black">Checkout</CardTitle>
+                            <CardDescription className="text-xs">
+                                {isInfinite ? 'You have a lifetime Infinite plan.' : 'Upgrade your practice.'}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex justify-between items-center text-sm border-b pb-4">
+                                <span className="text-muted-foreground">Selected Plan</span>
+                                <span className="font-bold">{selectedPlan?.name}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm border-b pb-4">
+                                <span className="text-muted-foreground">Billing Cycle</span>
+                                <span className="font-bold">{cycle.label}</span>
+                            </div>
+                            <div className="flex justify-between items-center pt-2">
+                                <span className="font-bold">Total Due</span>
+                                <span className="text-xl font-black text-primary">
+                                    {payAmount ? `₦${payAmount.toLocaleString()}` : 'Contact Us'}
+                                </span>
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            {isInfinite ? (
+                                <Button className="w-full" disabled variant="outline">Infinite Access Active</Button>
+                            ) : payAmount > 0 && paystackConfig.publicKey ? (
+                                <PaystackButton config={paystackConfig} />
+                            ) : payAmount === 0 ? (
+                                <Button className="w-full" asChild><a href="/contact">Contact Sales</a></Button>
+                            ) : (
+                                <Button className="w-full" disabled variant="secondary">Gateway Offline</Button>
+                            )}
+                        </CardFooter>
+                    </Card>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Invoices Table */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                 <Card className="md:col-span-2 border-dashed">
                     <CardHeader>
                         <CardTitle>Recent Patient Invoices</CardTitle>
@@ -123,20 +208,12 @@ export default function BillingPage() {
                             <div className="space-y-4">
                                 <Skeleton className="h-10 w-full" />
                                 <Skeleton className="h-20 w-full" />
-                                <Skeleton className="h-20 w-full" />
                             </div>
                         ) : queryError ? (
                             <div className="flex flex-col items-center justify-center py-12 text-center text-destructive bg-destructive/5 rounded-lg border border-destructive/20 p-6">
                                 <ShieldCheck className="h-12 w-12 mb-4 opacity-50" />
                                 <h3 className="font-bold">Missing Database Index</h3>
-                                <p className="text-sm max-w-md mt-2 mb-4">
-                                    Firestore requires a composite index to sort invoices by date. Please ask your administrator to click the activation link in their console.
-                                </p>
-                                <Button variant="outline" size="sm" asChild>
-                                    <a href="https://console.firebase.google.com/v1/r/project/orelis-med/firestore/indexes?create_composite=Cktwcm9qZWN0cy9vcmVsaXMtbWVkL2RhdGFiYXNlcy8oZGVmYXVsdCkvY29sbGVjdGlvbkdyb3Vwcy9pbnZvaWNlcy9pbmRleGVzL18QARoMCghjbGluaWNJZBABGg0KCWNyZWF0ZWRBdBACGgwKCF9fbmFtZV9fEAI" target="_blank">
-                                        Activate Index <ExternalLink className="ml-2 h-3 w-3" />
-                                    </a>
-                                </Button>
+                                <p className="text-sm max-w-md mt-2 mb-4">Firestore requires a composite index to sort invoices by date.</p>
                             </div>
                         ) : invoices && invoices.length > 0 ? (
                             <div className="overflow-x-auto">
@@ -178,7 +255,7 @@ export default function BillingPage() {
                             <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed rounded-lg">
                                 <Receipt className="h-12 w-12 text-muted-foreground/30 mb-4" />
                                 <h3 className="font-medium text-lg">No billing history yet</h3>
-                                <p className="text-muted-foreground max-w-xs">Your clinic's patient invoices and revenue data will appear here once generated.</p>
+                                <p className="text-muted-foreground max-w-xs">Your clinic's patient invoices and revenue data will appear here.</p>
                             </div>
                         )}
                     </CardContent>

@@ -49,7 +49,7 @@ export function useOfflineSync(
     profile: (UserProfile & { id?: string }) | null | undefined
 ): OfflineSyncState {
     const firestore = useFirestore();
-    const clinicId = profile?.clinicId ?? '';
+    const clinicId = profile?.role !== 'patient' ? profile?.clinicId ?? '' : '';
     const userId = profile?.id ?? profile?.uid ?? '';
 
     const [status, setStatus] = useState<HydrationStatus>('idle');

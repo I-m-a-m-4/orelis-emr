@@ -22,7 +22,11 @@ import {
   Eye,
   Grid,
   CalendarDays,
-  Flame
+  Flame,
+  Zap,
+  CheckCircle2,
+  XCircle,
+  Activity
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -464,6 +468,19 @@ export default function SuperAdminPage() {
   const appointmentsCollection = useMemo(() => firestore ? query(collection(firestore, 'appointments')) : null, [firestore]);
   const { data: appointments, loading: appointmentsLoading } = useCollection<Appointment>(appointmentsCollection);
 
+  // AI Usage telemetry — super-admin only, unfiltered global view
+  const aiUsageCollection = useMemo(() =>
+    firestore ? query(collection(firestore, 'aiUsage'), orderBy('createdAt', 'desc'), limit(500)) : null,
+  [firestore]);
+  const { data: aiUsageRaw } = useCollection<{
+    clinicId: string | null;
+    userId: string;
+    flow: string;
+    outcome: 'ok' | 'error';
+    durationMs: number;
+    createdAt: string;
+  }>(aiUsageCollection);
+
   // States
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -471,6 +488,64 @@ export default function SuperAdminPage() {
   const [isIntelOpen, setIsIntelOpen] = useState(false);
 
   const isLoading = clinicsLoading || patientsLoading || usersLoading || encountersLoading || appointmentsLoading;
+
+  // ── AI METRICS COMPUTATION ──
+  const aiMetrics = useMemo(() => {
+    const records = aiUsageRaw ?? [];
+    const total = records.length;
+    const successCount = records.filter(r => r.outcome === 'ok').length;
+    const errorCount = records.filter(r => r.outcome === 'error').length;
+    const totalDurationMs = records.reduce((acc, r) => acc + (r.durationMs || 0), 0);
+    const avgDurationMs = total > 0 ? Math.round(totalDurationMs / total) : 0;
+
+    // Group by flow name
+    const byFlow: Record<string, number> = {};
+    records.forEach(r => {
+      byFlow[r.flow] = (byFlow[r.flow] ?? 0) + 1;
+    });
+    const flowBreakdown = Object.entries(byFlow)
+      .map(([flow, count]) => ({ flow, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
+
+    // Group by clinicId for top-clinics view
+    const byClinic: Record<string, { calls: number; errors: number; durationMs: number }> = {};
+    records.forEach(r => {
+      const key = r.clinicId ?? 'unknown';
+      if (!byClinic[key]) byClinic[key] = { calls: 0, errors: 0, durationMs: 0 };
+      byClinic[key].calls += 1;
+      if (r.outcome === 'error') byClinic[key].errors += 1;
+      byClinic[key].durationMs += r.durationMs || 0;
+    });
+    const topClinics = Object.entries(byClinic)
+      .map(([clinicId, stats]) => ({
+        clinicId,
+        clinicName: clinicId === 'unknown'
+          ? 'Unknown'
+          : (clinics?.find(c => c.id === clinicId)?.name ?? clinicId.slice(0, 10) + '…'),
+        ...stats,
+        errorRate: stats.calls > 0 ? Math.round((stats.errors / stats.calls) * 100) : 0,
+      }))
+      .sort((a, b) => b.calls - a.calls)
+      .slice(0, 10);
+
+    // Daily invocation heatmap (last 14 days)
+    const dailyInvocations: Record<string, number> = {};
+    for (let i = 13; i >= 0; i--) {
+      const d = subDays(new Date(), i);
+      dailyInvocations[format(d, 'MMM d')] = 0;
+    }
+    records.forEach(r => {
+      if (!r.createdAt) return;
+      const d = new Date(r.createdAt);
+      if (isNaN(d.getTime())) return;
+      const key = format(d, 'MMM d');
+      if (key in dailyInvocations) dailyInvocations[key] += 1;
+    });
+    const dailySeries = Object.entries(dailyInvocations).map(([date, calls]) => ({ date, calls }));
+
+    return { total, successCount, errorCount, totalDurationMs, avgDurationMs, flowBreakdown, topClinics, dailySeries };
+  }, [aiUsageRaw, clinics]);
 
   // -------------------------------------------------------------
   // REAL TIME CALCULATIONS FROM SNAPSHOTS (ZERO MOCKS)
@@ -480,7 +555,7 @@ export default function SuperAdminPage() {
   const saasMetrics = useMemo(() => {
     if (!clinics) return { mrrNgn: 0, arrNgn: 0, payingClinics: 0, infiniteClinics: 0, trialClinics: 0, averageLtvNgn: 0 };
 
-    const MONTHLY_PRICE_NGN = 2000; // Orelis Doctor/Clinic baseline license price
+    let mrrNgn = 0;
     let payingCount = 0;
     let infiniteCount = 0;
     let trialCount = 0;
@@ -488,17 +563,24 @@ export default function SuperAdminPage() {
     clinics.forEach(c => {
       const plan = c.subscription?.plan;
       const status = c.subscription?.status;
+      
+      let clinicMonthlyRate = 0;
+      if (plan === 'clinic' || plan === 'price_annual') clinicMonthlyRate = 15000;
+      if (plan === 'hospital') clinicMonthlyRate = 30000;
+      if (plan === 'enterprise') clinicMonthlyRate = 50000;
+
       if (plan === 'infinite') {
         infiniteCount++;
         payingCount++;
-      } else if (plan === 'price_annual' || status === 'active') {
+        mrrNgn += 50000; // Assume enterprise rate for infinite MRR calculation
+      } else if (plan && plan !== 'starter' && status === 'active') {
         payingCount++;
+        mrrNgn += clinicMonthlyRate;
       } else {
         trialCount++;
       }
     });
 
-    const mrrNgn = payingCount * MONTHLY_PRICE_NGN;
     const arrNgn = mrrNgn * 12;
     const averageLtvNgn = payingCount > 0 ? mrrNgn * 18 : 0;
 
@@ -756,6 +838,9 @@ export default function SuperAdminPage() {
           </TabsTrigger>
           <TabsTrigger value="users" className="gap-1.5 text-xs font-semibold shrink-0">
             <Users className="h-3.5 w-3.5" /> Clinicians ({users?.length || 0})
+          </TabsTrigger>
+          <TabsTrigger value="ai" className="gap-1.5 text-xs font-semibold shrink-0">
+            <Zap className="h-3.5 w-3.5 text-yellow-500" /> AI & Voice
           </TabsTrigger>
         </TabsList>
 
@@ -1087,6 +1172,187 @@ export default function SuperAdminPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ── TAB 6: AI & VOICE TELEMETRY ── */}
+        <TabsContent value="ai" className="space-y-4">
+
+          {/* Summary KPI Row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Card className="border-yellow-500/20 bg-yellow-500/5">
+              <CardHeader className="pb-2">
+                <CardDescription className="text-xs font-bold uppercase text-yellow-600">Total AI Calls</CardDescription>
+                <CardTitle className="text-2xl font-black text-yellow-500">{aiMetrics.total.toLocaleString()}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-[11px] text-muted-foreground">All-time invocations across all clinics.</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-emerald-500/20 bg-emerald-500/5">
+              <CardHeader className="pb-2">
+                <CardDescription className="text-xs font-bold uppercase text-emerald-600">Success Rate</CardDescription>
+                <CardTitle className="text-2xl font-black text-emerald-500">
+                  {aiMetrics.total > 0 ? `${Math.round((aiMetrics.successCount / aiMetrics.total) * 100)}%` : '—'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-[11px] text-muted-foreground">{aiMetrics.successCount.toLocaleString()} successful responses.</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-red-500/20 bg-red-500/5">
+              <CardHeader className="pb-2">
+                <CardDescription className="text-xs font-bold uppercase text-red-500">Error Count</CardDescription>
+                <CardTitle className="text-2xl font-black text-red-500">{aiMetrics.errorCount.toLocaleString()}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-[11px] text-muted-foreground">
+                  {aiMetrics.total > 0 ? `${Math.round((aiMetrics.errorCount / aiMetrics.total) * 100)}% error rate` : 'No data yet'}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription className="text-xs font-bold uppercase">Avg Response Time</CardDescription>
+                <CardTitle className="text-2xl font-bold">
+                  {aiMetrics.avgDurationMs > 0 ? `${(aiMetrics.avgDurationMs / 1000).toFixed(1)}s` : '—'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-[11px] text-muted-foreground">
+                  {(aiMetrics.totalDurationMs / 1000 / 60).toFixed(1)} min total compute.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Daily AI Invocations chart + Flow Breakdown side-by-side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+            {/* Daily Invocations Sparkline */}
+            <Card className="border-border/60">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-yellow-500" /> Daily AI Invocations (Last 14 Days)
+                </CardTitle>
+                <CardDescription className="text-xs">Volume of AI calls per day across all clinics.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-56 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={aiMetrics.dailySeries}>
+                      <defs>
+                        <linearGradient id="colorAI" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#eab308" stopOpacity={0.4}/>
+                          <stop offset="95%" stopColor="#eab308" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="date" fontSize={10} tickLine={false} />
+                      <YAxis fontSize={10} tickLine={false} allowDecimals={false} />
+                      <Tooltip contentStyle={{ fontSize: 12 }} />
+                      <Area type="monotone" dataKey="calls" name="AI Calls" stroke="#eab308" strokeWidth={2} fillOpacity={1} fill="url(#colorAI)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Flow Breakdown Bar */}
+            <Card className="border-border/60">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-primary" /> AI Flow Breakdown
+                </CardTitle>
+                <CardDescription className="text-xs">Top AI flows by total invocations.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-56 w-full">
+                  {aiMetrics.flowBreakdown.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={aiMetrics.flowBreakdown} layout="vertical" margin={{ left: 10 }}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" horizontal={false} />
+                        <XAxis type="number" fontSize={10} tickLine={false} allowDecimals={false} />
+                        <YAxis type="category" dataKey="flow" fontSize={10} width={140} tickLine={false} />
+                        <Tooltip contentStyle={{ fontSize: 12 }} />
+                        <Bar dataKey="count" name="Calls" fill="#eab308" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
+                      No AI usage recorded yet.
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Top Clinics by AI Usage Table */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Zap className="h-4 w-4 text-yellow-500" /> Top Clinics by AI Usage
+              </CardTitle>
+              <CardDescription className="text-xs">Breakdown of AI calls, errors, and compute time per hospital node.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Hospital / Clinic</TableHead>
+                      <TableHead className="text-xs text-right">AI Calls</TableHead>
+                      <TableHead className="text-xs text-right">Errors</TableHead>
+                      <TableHead className="text-xs text-right">Error Rate</TableHead>
+                      <TableHead className="text-xs text-right">Total Compute</TableHead>
+                      <TableHead className="text-xs text-right">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {aiMetrics.topClinics.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-xs py-8 text-muted-foreground">
+                          No AI usage data found.
+                        </TableCell>
+                      </TableRow>
+                    ) : aiMetrics.topClinics.map(c => (
+                      <TableRow key={c.clinicId} className="hover:bg-muted/30">
+                        <TableCell className="font-semibold text-xs">{c.clinicName}</TableCell>
+                        <TableCell className="text-xs font-mono font-bold text-right">{c.calls.toLocaleString()}</TableCell>
+                        <TableCell className="text-xs font-mono text-right text-red-500">{c.errors}</TableCell>
+                        <TableCell className="text-right">
+                          <Badge
+                            variant="secondary"
+                            className={cn(
+                              'text-[10px] font-mono',
+                              c.errorRate > 20 && 'bg-red-500/10 text-red-600 border border-red-500/20',
+                              c.errorRate > 0 && c.errorRate <= 20 && 'bg-orange-500/10 text-orange-600 border border-orange-500/20',
+                              c.errorRate === 0 && 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20',
+                            )}
+                          >
+                            {c.errorRate}%
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs font-mono text-right text-muted-foreground">
+                          {(c.durationMs / 1000).toFixed(1)}s
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {c.errorRate === 0
+                            ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 ml-auto" />
+                            : <XCircle className="h-3.5 w-3.5 text-red-500 ml-auto" />
+                          }
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
       </Tabs>
     </div>
   );

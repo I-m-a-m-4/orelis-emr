@@ -393,18 +393,18 @@ function ChartsSection({
             });
         }
 
-        const avgSysBP = bpCount > 0 ? bpVal / bpCount : 120;
-        const avgHR = hrCount > 0 ? hrVal / hrCount : 75;
-        const avgGlu = gluCount > 0 ? gluVal / gluCount : 100;
-        const avgSpO2 = spo2Count > 0 ? spo2Val / spo2Count : 98;
-        const avgResp = respCount > 0 ? respVal / respCount : 16;
+        const avgSysBP = bpCount > 0 ? bpVal / bpCount : 0;
+        const avgHR = hrCount > 0 ? hrVal / hrCount : 0;
+        const avgGlu = gluCount > 0 ? gluVal / gluCount : 0;
+        const avgSpO2 = spo2Count > 0 ? spo2Val / spo2Count : 0;
+        const avgResp = respCount > 0 ? respVal / respCount : 0;
 
-        const cardioScore = Math.min(100, Math.max(0, Math.round(100 - Math.abs(avgSysBP - 120) * 1.2 - Math.abs(avgHR - 72) * 0.4)));
-        const metabolicScore = Math.min(100, Math.max(0, Math.round(100 - Math.abs(avgGlu - 90) * 0.5)));
-        const respScore = Math.min(100, Math.max(0, Math.round(avgSpO2)));
-        const renalScore = Math.min(100, Math.max(0, Math.round(100 - Math.abs(avgResp - 16) * 2)));
-        const neuroScore = Math.min(100, Math.max(0, Math.round((cardioScore + respScore) / 2)));
-        const immunoScore = Math.min(100, Math.max(0, Math.round((metabolicScore + respScore) / 2)));
+        const cardioScore = bpCount > 0 && hrCount > 0 ? Math.min(100, Math.max(0, Math.round(100 - Math.abs(avgSysBP - 120) * 1.2 - Math.abs(avgHR - 72) * 0.4))) : 0;
+        const metabolicScore = gluCount > 0 ? Math.min(100, Math.max(0, Math.round(100 - Math.abs(avgGlu - 90) * 0.5))) : 0;
+        const respScore = spo2Count > 0 ? Math.min(100, Math.max(0, Math.round(avgSpO2))) : 0;
+        const renalScore = respCount > 0 ? Math.min(100, Math.max(0, Math.round(100 - Math.abs(avgResp - 16) * 2))) : 0;
+        const neuroScore = bpCount > 0 && spo2Count > 0 ? Math.min(100, Math.max(0, Math.round((cardioScore + respScore) / 2))) : 0;
+        const immunoScore = gluCount > 0 && spo2Count > 0 ? Math.min(100, Math.max(0, Math.round((metabolicScore + respScore) / 2))) : 0;
 
         return [
             { subject: 'Cardiovascular', score: cardioScore, fullMark: 100 },

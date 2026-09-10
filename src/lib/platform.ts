@@ -81,7 +81,7 @@ const APP_IDENTIFIER = 'com.orelis.emr';
  * handle null by hiding their "update" affordance. Set them via env so a build
  * can point at a draft listing without a code change.
  */
-const MS_STORE_ID = process.env.NEXT_PUBLIC_MS_STORE_ID || '';
+const MS_STORE_ID = process.env.NEXT_PUBLIC_MS_STORE_ID || '9MWDJDS4K9GG';
 const PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${APP_IDENTIFIER}`;
 const APPLE_STORE_URL = process.env.NEXT_PUBLIC_APPLE_STORE_URL || '';
 const MS_STORE_URL = MS_STORE_ID

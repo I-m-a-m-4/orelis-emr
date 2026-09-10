@@ -8,6 +8,7 @@ import type {
     Patient,
     Prescription,
     UserProfile,
+    Ward,
 } from '@/lib/types';
 
 /**
@@ -77,7 +78,8 @@ export interface ClinicMetricsInput {
     prescriptions: Prescription[] | null;
     labOrders: LabOrder[] | null;
     admissions: Admission[] | null;
-    beds: Bed[] | null;
+    beds?: Bed[] | null;
+    wards?: Ward[] | null;
     waitlist: any[] | null;
 }
 
@@ -134,7 +136,7 @@ export interface ClinicMetrics {
 export function computeClinicMetrics(input: ClinicMetricsInput): ClinicMetrics {
     const {
         patients, appointments, encounters, staff, invoices,
-        inventory, medications, prescriptions, labOrders, admissions, beds, waitlist,
+        inventory, medications, prescriptions, labOrders, admissions, beds, wards, waitlist,
     } = input;
 
     const now = Date.now();
@@ -232,9 +234,15 @@ export function computeClinicMetrics(input: ClinicMetricsInput): ClinicMetrics {
     const currentInpatients = allAdmissions.filter((a) => a.status === 'Admitted').length;
 
     const allBeds = beds ?? [];
+    const allWards: Ward[] = wards ?? [];
     // Beds under maintenance are out of the denominator — they are not capacity.
-    const usableBeds = allBeds.filter((b) => b.status !== 'Maintenance').length;
-    const occupiedBeds = allBeds.filter((b) => b.status === 'Occupied').length;
+    // If beds are tracked individually, use them; otherwise, compute total capacity from wards.
+    const usableBeds = allBeds.length > 0
+        ? allBeds.filter((b) => b.status !== 'Maintenance').length
+        : allWards.reduce((acc: number, w: Ward) => acc + (w.totalBeds || 0), 0);
+    const occupiedBeds = allBeds.length > 0
+        ? allBeds.filter((b) => b.status === 'Occupied').length
+        : currentInpatients;
 
     const stays = allAdmissions
         .filter((a) => a.status === 'Discharged')

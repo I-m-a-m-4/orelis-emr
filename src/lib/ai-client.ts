@@ -87,3 +87,14 @@ export function generateAppointmentReminder(input: {
     ...input,
   });
 }
+
+export interface ClinicalAgentAnswer {
+  answer: string;
+}
+
+export function runClinicalAgent(input: {
+  question: string;
+  history?: any[];
+}): Promise<AiResult<ClinicalAgentAnswer>> {
+  return callAiFlow<ClinicalAgentAnswer>('clinical-agent', input);
+}

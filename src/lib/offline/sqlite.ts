@@ -582,11 +582,15 @@ function metadataKey(clinicId: string, type: string): string {
 export async function setLastSyncMetadata(
   clinicId: string,
   type: string,
-  timestamp: number
+  timestamp: number,
+  rowCount?: number
 ): Promise<void> {
   if (typeof window !== 'undefined') {
     try {
       localStorage.setItem(metadataKey(clinicId, type), String(timestamp));
+      if (rowCount !== undefined) {
+        localStorage.setItem(`orelis_sync_count_${clinicId}_${type}`, String(rowCount));
+      }
     } catch {
       /* quota — the SQLite copy below is the authoritative one */
     }
@@ -654,9 +658,17 @@ export async function cacheContradictsStamp(
   if (!stamp) return false;
 
   const { ok, rows } = await getCachedRowsResult(table, clinicId, { limit: 1 });
-  // An unreadable store is a contradiction too: the stamp cannot be trusted
-  // about a mirror we could not even open.
-  return !ok || rows.length === 0;
+  if (!ok) return true;
+
+  // A mirror holding 0 rows when the server legitimately had 0 records is not a contradiction.
+  if (typeof window !== 'undefined') {
+    const countStr = localStorage.getItem(`orelis_sync_count_${clinicId}_${type}`);
+    if (countStr !== null && Number(countStr) === 0 && rows.length === 0) {
+      return false;
+    }
+  }
+
+  return rows.length === 0;
 }
 
 /* -------------------------------------------------------------- sync_queue */

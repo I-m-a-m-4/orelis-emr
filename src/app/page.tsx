@@ -6,7 +6,7 @@ import {
   Menu,
   HeartPulse,
   CalendarDays,
-  Sparkles,
+  Activity,
   Check,
   Shield,
   Quote,
@@ -63,8 +63,7 @@ export default function LandingPage() {
             <div className="relative mt-6 overflow-hidden border border-dashed border-border noisy-bg">
               <div className="pointer-events-none absolute inset-0">
                 <span className="spark-border"></span>
-                <div className="absolute top-1/2 left-1/2 w-1/2 h-1/2 bg-orange-400/20 rounded-full animate-pulse-glow blur-3xl"></div>
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--foreground)/.15)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--foreground)/.15)_1px,transparent_1px)] bg-[size:28px_28px] opacity-[0.45] [mask-image:radial-gradient(80%_80%_at_50%_50%,black,transparent)]"></div>
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--foreground)/.08)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--foreground)/.08)_1px,transparent_1px)] bg-[size:28px_28px] opacity-40"></div>
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background"></div>
               </div>
 
@@ -113,8 +112,7 @@ export default function LandingPage() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="animate-on-scroll relative mt-6 overflow-hidden border border-dashed border-border noisy-bg [animation:fadeSlideIn_0.8s_ease-out_0.1s_both]">
               <div className="pointer-events-none absolute inset-0">
-                <div className="absolute inset-0 bg-[radial-gradient(1200px_400px_at_50%_-10%,rgba(249,115,22,0.25),transparent),radial-gradient(1200px_600px_at_50%_120%,rgba(59,130,246,0.2),transparent)] opacity-70 [mask-image:radial-gradient(65%_65%_at_50%_50%,black,transparent)] card-glow"></div>
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--foreground)/.15)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--foreground)/.15)_1px,transparent_1px)] bg-[size:28px_28px] opacity-[0.45] [mask-image:radial-gradient(80%_80%_at_50%_50%,black,transparent)]"></div>
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--foreground)/.08)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--foreground)/.08)_1px,transparent_1px)] bg-[size:28px_28px] opacity-25"></div>
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background"></div>
               </div>
               <div className="relative p-8 sm:p-16">
@@ -143,9 +141,9 @@ export default function LandingPage() {
                     <p className="mt-2 text-sm text-muted-foreground">Intuitive calendars for receptionists to book, reschedule, and manage appointments.</p>
                   </div>
                   <div className="animate-on-scroll relative overflow-hidden bg-card/40 p-6 ring-1 ring-border [animation:fadeSlideIn_0.8s_ease-out_0.6s_both]">
-                    <Sparkles className="h-8 w-8 text-orange-500 mb-4" />
-                    <h3 className="font-headline text-lg font-medium tracking-tight text-foreground">AI-Powered Reminders</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">Automated, intelligent SMS reminders to reduce no-shows and engage patients.</p>
+                    <Activity className="h-8 w-8 text-primary mb-4" />
+                    <h3 className="font-headline text-lg font-medium tracking-tight text-foreground">Clinical Automation</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">Automated consultation summaries, lab tracking, and intelligent appointment reminders.</p>
                   </div>
                 </div>
               </div>
@@ -158,45 +156,44 @@ export default function LandingPage() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="animate-on-scroll relative mt-6 overflow-hidden border border-dashed border-border noisy-bg [animation:fadeSlideIn_0.8s_ease-out_0.1s_both]">
               <div className="pointer-events-none absolute inset-0">
-                <div className="absolute inset-0 bg-[radial-gradient(1200px_400px_at_50%_-10%,rgba(249,115,22,0.25),transparent),radial-gradient(1200px_600px_at_50%_120%,rgba(59,130,246,0.2),transparent)] opacity-70 [mask-image:radial-gradient(65%_65%_at_50%_50%,black,transparent)]"></div>
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--foreground)/.15)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--foreground)/.15)_1px,transparent_1px)] bg-[size:28px_28px] opacity-[0.45] [mask-image:radial-gradient(80%_80%_at_50%_50%,black,transparent)]"></div>
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--foreground)/.15)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--foreground)/.15)_1px,transparent_1px)] bg-[size:28px_28px] opacity-[0.25]"></div>
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background"></div>
               </div>
               <div className="relative flex flex-col items-center justify-center p-8 text-center sm:py-28 md:px-8 md:py-16">
                 <div className="mb-12 text-center">
-                  <div className="animate-on-scroll mb-6 inline-flex items-center gap-2 rounded-none px-3.5 py-1.5 text-[13px] font-medium text-orange-400 dark:text-orange-300 ring-0 [animation:fadeSlideIn_0.8s_ease-out_0.1s_both]">
-                    <span className="font-headline text-3xl font-light text-blue-500 dark:text-blue-300">02</span>
-                    <span className="text-orange-400/40">/</span>
-                    <span className="text-[11px] uppercase tracking-widest text-orange-500/90 dark:text-orange-200/90">HOW IT WORKS</span>
+                  <div className="animate-on-scroll mb-6 inline-flex items-center gap-2 rounded-none px-3.5 py-1.5 text-[13px] font-medium text-primary ring-0 [animation:fadeSlideIn_0.8s_ease-out_0.1s_both]">
+                    <span className="font-headline text-2xl font-light text-primary">02</span>
+                    <span className="text-primary/40">/</span>
+                    <span className="text-[11px] uppercase tracking-widest text-primary">HOW IT WORKS</span>
                   </div>
                   <h2 className="animate-on-scroll font-headline text-3xl font-light tracking-tight text-foreground [animation:fadeSlideIn_0.8s_ease-out_0.2s_both] sm:text-4xl lg:text-5xl">
-                    Your Clinic, Supercharged in 3 Steps
+                    Standard Clinical Workflow in 3 Steps
                   </h2>
                   <p className="animate-on-scroll mx-auto mt-4 max-w-2xl text-base text-muted-foreground [animation:fadeSlideIn_0.8s_ease-out_0.3s_both] sm:text-lg">
-                    From patient intake to post-visit follow-up, our streamlined workflow makes clinic management effortless.
+                    From patient intake to electronic prescription dispensing, our streamlined workflow keeps practice operations organized.
                   </p>
                 </div>
                 <div className="grid w-full max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
                   <div className="animate-on-scroll flex flex-col items-center text-center [animation:fadeSlideIn_0.8s_ease-out_0.4s_both]">
-                    <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 ring-1 ring-blue-500/20">
-                      <span className="font-headline text-3xl font-light text-blue-500 dark:text-blue-300">01</span>
+                    <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-card border border-border/80 text-primary shadow-sm">
+                      <span className="font-headline text-2xl font-semibold text-primary">01</span>
                     </div>
                     <h3 className="mb-3 font-headline text-xl font-medium tracking-tight text-foreground">Schedule & Intake</h3>
-                    <p className="text-sm leading-relaxed text-muted-foreground">Easily book appointments and capture patient information with our intuitive online forms.</p>
+                    <p className="text-sm leading-relaxed text-muted-foreground">Easily book appointments, register patient demographics, and link national health identifiers.</p>
                   </div>
                   <div className="animate-on-scroll flex flex-col items-center text-center [animation:fadeSlideIn_0.8s_ease-out_0.5s_both]">
-                    <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500/20 to-orange-500/5 ring-1 ring-orange-500/20">
-                      <span className="font-headline text-3xl font-light text-orange-500 dark:text-orange-300">02</span>
+                    <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-card border border-border/80 text-primary shadow-sm">
+                      <span className="font-headline text-2xl font-semibold text-primary">02</span>
                     </div>
-                    <h3 className="mb-3 font-headline text-xl font-medium tracking-tight text-foreground">Manage & Document</h3>
-                    <p className="text-sm leading-relaxed text-muted-foreground">Access and update patient records, vitals, and treatment plans in a centralized, secure dashboard.</p>
+                    <h3 className="mb-3 font-headline text-xl font-medium tracking-tight text-foreground">Chart & Prescribe</h3>
+                    <p className="text-sm leading-relaxed text-muted-foreground">Document encounters with structured SOAP notes, record vital observations, and dispatch e-prescriptions.</p>
                   </div>
                   <div className="animate-on-scroll flex flex-col items-center text-center [animation:fadeSlideIn_0.8s_ease-out_0.6s_both]">
-                    <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 ring-1 ring-purple-500/20">
-                      <span className="font-headline text-3xl font-light text-purple-500 dark:text-purple-300">03</span>
+                    <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-card border border-border/80 text-primary shadow-sm">
+                      <span className="font-headline text-2xl font-semibold text-primary">03</span>
                     </div>
-                    <h3 className="mb-3 font-headline text-xl font-medium tracking-tight text-foreground">Automate & Follow-up</h3>
-                    <p className="text-sm leading-relaxed text-muted-foreground">Send automated appointment reminders and follow-up messages to improve patient engagement.</p>
+                    <h3 className="mb-3 font-headline text-xl font-medium tracking-tight text-foreground">Dispense & Invoice</h3>
+                    <p className="text-sm leading-relaxed text-muted-foreground">Fulfill medications from pharmacy stock, manage inpatient bed stays, and generate itemized billing.</p>
                   </div>
                 </div>
               </div>
@@ -223,8 +220,7 @@ export default function LandingPage() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="animate-on-scroll relative mt-6 overflow-hidden border border-dashed border-border noisy-bg [animation:fadeSlideIn_0.8s_ease-out_0.1s_both]">
               <div className="pointer-events-none absolute inset-0">
-                <div className="absolute inset-0 bg-[radial-gradient(1200px_400px_at_50%_-10%,rgba(16,185,129,0.25),transparent),radial-gradient(1200px_600px_at_50%_120%,rgba(59,130,246,0.2),transparent)] opacity-70 [mask-image:radial-gradient(65%_65%_at_50%_50%,black,transparent)]"></div>
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--foreground)/.15)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--foreground)/.15)_1px,transparent_1px)] bg-[size:28px_28px] opacity-[0.45] [mask-image:radial-gradient(80%_80%_at_50%_50%,black,transparent)]"></div>
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--foreground)/.08)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--foreground)/.08)_1px,transparent_1px)] bg-[size:28px_28px] opacity-25"></div>
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background"></div>
               </div>
               <div className="relative p-8 text-left sm:p-16">
@@ -308,10 +304,7 @@ export default function LandingPage() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="animate-on-scroll relative mt-6 overflow-hidden border border-dashed border-border noisy-bg p-8 sm:p-12 md:p-16 [animation:fadeSlideIn_0.8s_ease-out_0.1s_both]">
               <div className="pointer-events-none absolute inset-0">
-                <div className="absolute inset-0 opacity-70 [mask-image:radial-gradient(65%_65%_at_50%_50%,black,transparent)] bg-[radial-gradient(1200px_400px_at_50%_-10%,rgba(16,185,129,0.25),transparent),radial-gradient(1200px_600px_at_50%_120%,rgba(59,130,246,0.2),transparent)]">
-                </div>
-                <div className="absolute inset-0 opacity-[0.45] [mask-image:radial-gradient(80%_80%_at_50%_50%,black,transparent)] bg-[linear-gradient(to_right,hsl(var(--foreground)/.15)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--foreground)/.15)_1px,transparent_1px)] bg-[size:28px_28px]">
-                </div>
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--foreground)/.08)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--foreground)/.08)_1px,transparent_1px)] bg-[size:28px_28px] opacity-25"></div>
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background"></div>
               </div>
 

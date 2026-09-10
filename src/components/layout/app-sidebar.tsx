@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Stethoscope, LayoutDashboard, Users, Calendar, Settings, UserPlus, LifeBuoy, Shield, FileText, Newspaper, Bell, Hospital, Mailbox, Package, BadgeDollarSign, BarChart3, ExternalLink, Pill, FlaskConical, Bed, CreditCard, ClipboardList, Code, ArrowLeftRight } from 'lucide-react';
+import { Stethoscope, LayoutDashboard, Users, Calendar, Settings, UserPlus, LifeBuoy, Shield, FileText, Newspaper, Bell, Mailbox, Package, BadgeDollarSign, BarChart3, ExternalLink, Pill, FlaskConical, Bed, CreditCard, ClipboardList, ArrowLeftRight } from 'lucide-react';
 import {
   SidebarHeader,
   SidebarContent,
@@ -26,7 +26,7 @@ const navGroups: { label: string, items: NavItem[] }[] = [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'doctor', 'receptionist', 'patient'] },
       { href: '/dashboard/appointments', label: 'Appointments', icon: Calendar, roles: ['admin', 'doctor', 'receptionist', 'patient'] },
       { href: '/dashboard/patients', label: 'Patients', icon: Users, roles: ['admin', 'doctor', 'receptionist'] },
-      { href: '/dashboard/my-records', label: 'My Records', icon: FileText, roles: ['patient', 'admin', 'doctor'] },
+      { href: '/dashboard/my-records', label: 'My Records', icon: FileText, roles: ['patient'] },
       { href: '/dashboard/notifications', label: 'Notifications', icon: Bell, roles: ['admin', 'doctor', 'receptionist', 'patient'] },
     ]
   },
@@ -49,8 +49,6 @@ const navGroups: { label: string, items: NavItem[] }[] = [
       { href: '/dashboard/inventory', label: 'Inventory & Stock', icon: Package, roles: ['admin', 'doctor'] },
       { href: '/dashboard/integrations', label: 'Data Import & Integrations', icon: ArrowLeftRight, roles: ['admin'] },
       { href: '/dashboard/waitlist', label: 'Waitlist', icon: Mailbox, roles: ['admin', 'receptionist'] },
-      { href: '/dashboard/hospital', label: 'Hospital Facility', icon: Hospital, roles: ['admin'] },
-      { href: '/dashboard/developers', label: 'Developer APIs', icon: Code, roles: ['admin'] },
     ]
   }
 ];

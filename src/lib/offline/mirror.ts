@@ -272,9 +272,10 @@ export async function getCachedProfile<T = any>(userId: string): Promise<T | nul
 export async function setLastSyncMetadata(
   clinicId: string,
   type: string,
-  timestamp: number
+  timestamp: number,
+  rowCount?: number
 ): Promise<void> {
-  return ((await backend()) ?? WEB).setLastSyncMetadata(clinicId, type, timestamp);
+  return ((await backend()) ?? WEB).setLastSyncMetadata(clinicId, type, timestamp, rowCount);
 }
 
 export async function getLastSyncMetadata(clinicId: string, type: string): Promise<number> {

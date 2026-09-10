@@ -11,7 +11,7 @@ import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
 import { collection, doc, query, where, orderBy, limit } from "firebase/firestore";
 import type {
     Patient, Appointment, UserProfile, Encounter,
-    Medication, Prescription, LabOrder, Admission, Bed as BedRecord
+    Medication, Prescription, LabOrder, Admission, Ward
 } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo } from "react";
@@ -41,7 +41,7 @@ const AdminDashboard = ({
     prescriptions,
     labOrders,
     admissions,
-    beds,
+    wards,
     waitlist
 }: {
     userProfile: UserProfile,
@@ -55,7 +55,7 @@ const AdminDashboard = ({
     prescriptions: Prescription[] | null,
     labOrders: LabOrder[] | null,
     admissions: Admission[] | null,
-    beds: BedRecord[] | null,
+    wards: Ward[] | null,
     waitlist: any[] | null
 }) => {
     return (
@@ -83,7 +83,7 @@ const AdminDashboard = ({
                 prescriptions={prescriptions}
                 labOrders={labOrders}
                 admissions={admissions}
-                beds={beds}
+                wards={wards}
                 waitlist={waitlist}
             />
         </div>
@@ -333,7 +333,7 @@ function ChartsSection({
     prescriptions,
     labOrders,
     admissions,
-    beds,
+    wards,
     waitlist
 }: { 
     appointments: Appointment[] | null, 
@@ -343,7 +343,7 @@ function ChartsSection({
     prescriptions?: Prescription[] | null,
     labOrders?: LabOrder[] | null,
     admissions?: Admission[] | null,
-    beds?: BedRecord[] | null,
+    wards?: Ward[] | null,
     waitlist?: any[] | null
 }) {
     const COLORS = ['#f97316', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#f59e0b'];
@@ -512,25 +512,17 @@ function ChartsSection({
 
     // 6. NEW ANALYTICS 2: Ward & Bed Capacity Distribution (PURE FIRESTORE)
     const bedCapacityData = useMemo(() => {
-        if (!beds || beds.length === 0) return [
-            { name: 'Available', value: 0 },
-            { name: 'Occupied', value: 0 },
-            { name: 'Maintenance', value: 0 }
-        ];
-
-        const counts = { Available: 0, Occupied: 0, Maintenance: 0 };
-        beds.forEach(b => {
-            if (b.status in counts) {
-                counts[b.status as keyof typeof counts]++;
-            }
-        });
+        const totalBeds = wards?.reduce((acc, w) => acc + (w.totalBeds || 0), 0) || 0;
+        const activeAdmissions = admissions?.filter(a => a.status === 'Admitted') || [];
+        const occupied = activeAdmissions.length;
+        const available = Math.max(0, totalBeds - occupied);
 
         return [
-            { name: 'Available', value: counts.Available },
-            { name: 'Occupied', value: counts.Occupied },
-            { name: 'Maintenance', value: counts.Maintenance }
+            { name: 'Available', value: available },
+            { name: 'Occupied', value: occupied },
+            { name: 'Maintenance', value: 0 }
         ];
-    }, [beds]);
+    }, [wards, admissions]);
 
     // 7. NEW ANALYTICS 3: Laboratory Diagnostic Orders by Priority (PURE FIRESTORE)
     const labPriorityData = useMemo(() => {
@@ -847,19 +839,19 @@ function DashboardContent({ userProfile }: { userProfile: UserProfile }) {
     const { data: allPatients, loading: patientsLoading } = useCollection<Patient>(patientsCountQuery);
 
     const staffQuery = useMemo(() => {
-        if (!firestore || !userProfile.clinicId || userProfile.role === 'patient') return null;
+        if (!firestore || !userProfile.clinicId || userProfile.role !== 'admin') return null;
         return query(collection(firestore, 'users'), where('clinicId', '==', userProfile.clinicId));
     }, [firestore, userProfile]);
     const { data: staff, loading: staffLoading } = useCollection<UserProfile>(staffQuery);
 
     const invoicesQuery = useMemo(() => {
-        if (!firestore || !userProfile.clinicId || userProfile.role === 'patient') return null;
+        if (!firestore || !userProfile.clinicId || userProfile.role !== 'admin') return null;
         return query(collection(firestore, 'invoices'), where('clinicId', '==', userProfile.clinicId));
     }, [firestore, userProfile]);
     const { data: invoices } = useCollection<any>(invoicesQuery);
 
     const inventoryQuery = useMemo(() => {
-        if (!firestore || !userProfile.clinicId || userProfile.role === 'patient') return null;
+        if (!firestore || !userProfile.clinicId || userProfile.role !== 'admin') return null;
         return query(collection(firestore, 'inventory'), where('clinicId', '==', userProfile.clinicId));
     }, [firestore, userProfile]);
     const { data: inventory } = useCollection<any>(inventoryQuery);
@@ -906,11 +898,11 @@ function DashboardContent({ userProfile }: { userProfile: UserProfile }) {
     }, [firestore, userProfile]);
     const { data: admissions } = useCollection<Admission>(admissionsQuery);
 
-    const bedsQuery = useMemo(() => {
+    const wardsQuery = useMemo(() => {
         if (!firestore || !userProfile.clinicId || userProfile.role === 'patient') return null;
-        return query(collection(firestore, 'beds'), where('clinicId', '==', userProfile.clinicId));
+        return query(collection(firestore, 'wards'), where('clinicId', '==', userProfile.clinicId));
     }, [firestore, userProfile]);
-    const { data: beds } = useCollection<BedRecord>(bedsQuery);
+    const { data: wards } = useCollection<Ward>(wardsQuery);
 
     const recentPatients = allPatients
         ?.sort((a, b) => new Date(b.registrationDate).getTime() - new Date(a.registrationDate).getTime())
@@ -925,7 +917,7 @@ function DashboardContent({ userProfile }: { userProfile: UserProfile }) {
         if (appointmentsLoading || staffLoading || patientsLoading) return <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"><Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" /></div>;
 
         switch (userProfile.role) {
-            case 'admin': return <AdminDashboard userProfile={userProfile} patients={allPatients} appointments={appointments} staff={staff} invoices={invoices} inventory={inventory} encounters={encounters} medications={medications} prescriptions={prescriptions} labOrders={labOrders} admissions={admissions} beds={beds} waitlist={waitlist} />;
+            case 'admin': return <AdminDashboard userProfile={userProfile} patients={allPatients} appointments={appointments} staff={staff} invoices={invoices} inventory={inventory} encounters={encounters} medications={medications} prescriptions={prescriptions} labOrders={labOrders} admissions={admissions} wards={wards} waitlist={waitlist} />;
             case 'doctor': return <DoctorDashboard userProfile={userProfile} appointments={appointments} encounters={encounters} />;
             case 'receptionist': return <ReceptionistDashboard userProfile={userProfile} patients={allPatients} appointments={appointments} waitlist={waitlist} />;
             case 'patient': return <PatientDashboard userProfile={userProfile} />;
@@ -959,7 +951,7 @@ function DashboardContent({ userProfile }: { userProfile: UserProfile }) {
                 prescriptions={prescriptions}
                 labOrders={labOrders}
                 admissions={admissions}
-                beds={beds}
+                wards={wards}
                 waitlist={waitlist}
             />
 

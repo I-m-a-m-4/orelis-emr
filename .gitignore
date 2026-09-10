@@ -80,3 +80,5 @@ dist-msix/
 
 # transient typecheck output
 tsc.log
+files_with_button.txt
+.modified

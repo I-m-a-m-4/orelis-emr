@@ -41,6 +41,14 @@ const FLOWS: Record<string, FlowDef> = {
     },
   },
 
+  'clinical-agent': {
+    minRole: 'doctor',
+    run: async (input, caller) => {
+      const { runClinicalAgent } = await import('@/ai/flows/clinical-agent');
+      return runClinicalAgent(input, caller);
+    },
+  },
+
   'appointment-reminder': {
     minRole: 'receptionist',
     run: async (input) => {

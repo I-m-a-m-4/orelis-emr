@@ -565,9 +565,8 @@ export default function SuperAdminPage() {
       const status = c.subscription?.status;
       
       let clinicMonthlyRate = 0;
-      if (plan === 'clinic' || plan === 'price_annual') clinicMonthlyRate = 15000;
-      if (plan === 'hospital') clinicMonthlyRate = 30000;
-      if (plan === 'enterprise') clinicMonthlyRate = 50000;
+      if (plan === 'clinic' || plan === 'pro' || plan === 'price_annual') clinicMonthlyRate = 20000;
+      if (plan === 'hospital' || plan === 'enterprise') clinicMonthlyRate = 50000;
 
       if (plan === 'infinite') {
         infiniteCount++;

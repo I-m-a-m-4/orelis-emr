@@ -31,7 +31,7 @@ const toastVariants = cva(
       variant: {
         default: "glass-morphism text-foreground bg-background/98 backdrop-blur-3xl border-border/60 border-2",
         destructive:
-          "glass-morphism group border-destructive/80 bg-background/98 backdrop-blur-3xl text-foreground border-2",
+          "glass-morphism group border-red-500/80 bg-red-950/90 text-red-100 backdrop-blur-3xl border-2 shadow-lg shadow-red-950/40",
       },
     },
     defaultVariants: {

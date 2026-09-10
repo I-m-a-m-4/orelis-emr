@@ -14,6 +14,8 @@ export interface UserProfile {
   patientId?: string;
   status: 'pending' | 'active';
   country?: string;
+  onboardingCompleted?: boolean;
+  surveyCompleted?: boolean;
   apiConfig?: {
     apiKey: string;
     quotaLimit: number;
@@ -97,12 +99,15 @@ export interface Clinic {
   country?: string;
   staffCount?: number;
   specialties?: string[];
+  accessLevel?: 'trial' | 'pro' | 'hospital' | 'enterprise' | 'lifetime' | 'infinite';
   subscription?: {
-    plan: 'starter' | 'clinic' | 'hospital' | 'enterprise' | 'infinite' | 'price_annual' | 'trial';
-    status: 'active' | 'trialing' | 'expired';
+    plan: 'pro' | 'hospital' | 'enterprise' | 'lifetime' | 'starter' | 'clinic' | 'infinite' | 'trial' | 'price_annual';
+    status: 'active' | 'trialing' | 'expired' | 'canceled';
     billingCycle?: 1 | 3 | 6 | 12; // months
     customerId?: string;
     expiryDate?: string | null; // ISO string
+    trialStartedAt?: string;
+    updatedAt?: string;
   };
   apiConfig?: {
     apiKey: string;
@@ -336,4 +341,17 @@ export interface ImportBatchLog {
   status: 'Completed' | 'Partial' | 'Failed';
   errors?: string[];
 }
+
+export interface SubscriptionHistory {
+  id?: string;
+  action: string;
+  amount: number;
+  currency: string;
+  timestamp: string;
+  reference?: string;
+  status?: string;
+  plan?: string;
+  billingCycle?: number;
+}
+
 

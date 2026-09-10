@@ -14,6 +14,8 @@ import type { UserProfile } from '@/lib/types';
 import { LoadingAnimation } from '@/components/layout/loading-animation';
 import { FloatingAiChat } from '@/components/layout/floating-ai-chat';
 import { OfflineSyncProvider } from '@/lib/offline/use-offline-sync';
+import { NativeNotificationListener } from '@/components/notifications/NativeNotificationListener';
+import ReadOnlyBanner from '@/components/billing/read-only-banner';
 
 function AuthGuard({ children }: { children: ReactNode }) {
   const { user, loading } = useUser();
@@ -23,8 +25,8 @@ function AuthGuard({ children }: { children: ReactNode }) {
   useEffect(() => {
     // If not loading and no user, redirect to login unless on a public-facing page
     if (!loading && !user) {
-      // Allow access to login/signup pages without redirecting
-      const publicRoutes = ['/login', '/signup', '/signup/clinic', '/signup/patient'];
+      // Allow access to login/signup/onboarding pages without redirecting
+      const publicRoutes = ['/login', '/signup', '/signup/clinic', '/signup/patient', '/onboarding'];
       if (!publicRoutes.some(route => pathname.startsWith(route))) {
         router.push('/login');
       }
@@ -101,9 +103,16 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Redirect clinic admin or staff to onboarding if their clinic is not yet configured
+    if (userProfile.role !== 'patient' && (userProfile.onboardingCompleted === false || !userProfile.clinicId)) {
+      router.replace('/onboarding');
+      return;
+    }
+
     // Redirect a patient to link their records if they haven't yet
     if (userProfile.role === 'patient' && !userProfile.patientId && pathname !== '/dashboard/my-records') {
       router.replace('/dashboard/my-records');
+      return;
     }
 
   }, [isLoading, userProfile, router, pathname]);
@@ -130,6 +139,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
             </Sidebar>
             <div className="flex flex-col flex-1 min-w-0">
               <AppHeader />
+              <ReadOnlyBanner />
               <main className="flex-1 p-4 pb-20 md:p-6 lg:p-8 overflow-auto">
                 {children}
               </main>
@@ -138,6 +148,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           </div>
           <FirebaseErrorListener />
           <FloatingAiChat />
+          <NativeNotificationListener />
         </SidebarProvider>
       </OfflineSyncProvider>
     </AuthGuard>

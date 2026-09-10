@@ -1,74 +1,97 @@
-
 'use client';
+
+import React from 'react';
 import Link from 'next/link';
 import { Footer } from '@/components/layout/footer';
-import { AnimatedLegalBackground } from '@/components/layout/animated-legal-background';
 import { PublicHeader } from '@/components/layout/public-header';
+import { ShieldCheck, Lock, ArrowRight } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 export default function PrivacyPage() {
+  const lastUpdated = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
   return (
-    <div className="bg-gradient-to-br from-black via-zinc-900 to-black text-zinc-300 selection:bg-zinc-700 selection:text-white">
+    <div className="bg-background text-foreground min-h-screen flex flex-col">
       <PublicHeader />
 
-      <main className="relative pt-16 overflow-hidden">
-        <AnimatedLegalBackground />
-        <div className="relative z-10">
-            <section className="py-24 sm:py-32">
-                <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
-                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-headline font-semibold my-2">
-                    <span className="legal-word" style={{animationDelay: '100ms'}}>Privacy</span>{' '}
-                    <span className="legal-word" style={{animationDelay: '300ms'}}>Policy</span>
-                    </h1>
-                    <p className="font-mono my-2 text-lg sm:text-xl text-zinc-400 opacity-80 legal-word" style={{animationDelay: '500ms'}}>
-                    Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </p>
-                </div>
-            </section>
+      <main className="flex-1 pt-16">
+        {/* Header Hero */}
+        <section className="py-16 md:py-24 border-b border-border/60 bg-muted/20">
+          <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
+            <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary mb-4 font-semibold text-xs px-3 py-1">
+              Data Protection & Compliance
+            </Badge>
+            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight font-headline">
+              Privacy Policy
+            </h1>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Effective Date: January 1, 2026 | Last Updated: {lastUpdated}
+            </p>
+          </div>
+        </section>
 
-            <section className="py-16">
-            <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 prose prose-invert prose-lg prose-headings:font-headline prose-headings:font-semibold prose-headings:text-primary prose-headings:tracking-tight prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-p:text-zinc-400 prose-p:leading-relaxed prose-h2:mb-4 prose-h2:mt-12 prose-h2:text-3xl">
-                <p>
-                Welcome to Orelis ("we," "our," or "us"). We are committed to protecting your privacy. This Privacy Policy explains how your <u>personal information is collected, used, and disclosed</u> by Orelis. This policy applies to all users of our clinic management software and related services.
-                </p>
+        {/* Content Section */}
+        <section className="py-16">
+          <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 prose dark:prose-invert max-w-none">
+            <h2>1. Our Commitment to Healthcare Privacy</h2>
+            <p>
+              At Orelis, we recognize that patient health information (PHI) and clinical records represent the most sensitive categories of data.
+              This Privacy Policy explains how personal and medical data is gathered, processed, and safeguarded when your medical facility uses the Orelis platform.
+            </p>
 
-                <h2 className="mt-12">Information We Collect</h2>
-                <p>
-                We may collect personal information from you, such as your <u>name, email address, phone number, and medical information</u>, when you register for an account, use our services, or communicate with us. We also collect information about your usage of our services, including but not limited to, appointment details and patient records. For operational purposes, we may also collect technical data such as <u>IP addresses and device information</u>.
-                </p>
-                
-                <h2 className="mt-12">How We Use Your Information</h2>
-                <p>
-                We use the information we collect to <u>provide, operate, and maintain our services</u>. This includes managing your account, providing customer support, processing transactions, and sending you service-related communications. We may also use your information to improve our services, for research and analytics (in an anonymized and aggregated form), and to comply with legal obligations.
-                </p>
+            <h2>2. Information Collected</h2>
+            <p>
+              We collect information strictly necessary to provide hospital operations and clinical record charting:
+            </p>
+            <ul>
+              <li><strong>Practitioner Account Details:</strong> Full name, professional medical license, institutional email address, facility name, and role.</li>
+              <li><strong>Patient Health Information:</strong> Patient demographics, contact numbers, next-of-kin contacts, clinical SOAP notes, vital observations, laboratory test orders, and prescription histories.</li>
+              <li><strong>Financial & Invoicing Data:</strong> Invoice totals, line-item clinical services, and payment confirmation tokens processed securely via Paystack. We do not store raw credit card numbers.</li>
+            </ul>
 
-                <h2 className="mt-12">Information Sharing and Disclosure</h2>
-                <p>
-                We <u>do not sell, trade, or otherwise transfer</u> to outside parties your personally identifiable information unless we provide users with advance notice. This does not include website hosting partners and other parties who assist us in operating our website, conducting our business, or serving our users, so long as those parties agree to keep this information confidential and comply with applicable data protection laws.
-                </p>
+            <h2>3. Healthcare Data Ownership & Zero Data Commercialization</h2>
+            <p>
+              <strong>We do not sell, rent, monetize, or trade patient health records to pharmaceutical companies, advertisers, or third-party data brokers.</strong>
+              All clinical records uploaded or created by your clinic remain under the exclusive custody and legal ownership of your medical facility.
+            </p>
 
-                <h2 className="mt-12">Data Security</h2>
-                <p>
-                We implement a variety of <u>industry-standard security measures</u> to maintain the safety of your personal information. Your personal information is contained behind secured networks and is only accessible by a limited number of persons who have special access rights to such systems, and are required to keep the information confidential. All sensitive information you supply is encrypted via <u>Secure Socket Layer (SSL) technology</u>.
-                </p>
+            <h2>4. Security Standards & Data Encryption</h2>
+            <p>
+              Orelis applies rigorous enterprise security controls:
+            </p>
+            <ul>
+              <li><strong>Encryption in Transit:</strong> All HTTP communications are strictly enforced via Transport Layer Security (TLS 1.3).</li>
+              <li><strong>Encryption at Rest:</strong> Cloud databases and document stores use AES-256 bit encryption.</li>
+              <li><strong>Multi-Tenant Isolation:</strong> Firestore database security rules enforce cryptographic, role-based boundary separation between clinics.</li>
+              <li><strong>Audit Trails:</strong> Staff interactions, record modifications, and patient data downloads are logged in immutable audit records.</li>
+            </ul>
 
-                <h2 className="mt-12">Your Rights</h2>
-                <p>
-                Depending on your location, you may have certain rights regarding your personal information, such as the <u>right to access, correct, or delete your data</u>. You can also object to or restrict certain processing of your data. Please contact us to exercise these rights, and we will respond in accordance with applicable laws.
-                </p>
+            <h2>5. Nigeria Data Protection Regulation (NDPR) & Global Standards</h2>
+            <p>
+              Orelis adheres to the principles of the Nigeria Data Protection Act (NDPA) and international healthcare data privacy standards.
+              Data subjects (patients) have the right through their registered hospital to request access, correction, or export of their health records.
+            </p>
 
-                <h2 className="mt-12">Changes to This Policy</h2>
-                <p>
-                We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date. You are advised to review this Privacy Policy periodically for any changes.
-                </p>
+            <h2>6. Data Retention & Portability</h2>
+            <p>
+              Your facility may export its full patient registry, encounter histories, and invoicing ledgers at any time.
+              Upon formal written request for workspace deletion, all associated tenant database records are permanently purged after a 30-day safety grace period.
+            </p>
 
-                <h2 className="mt-12">Contact Us</h2>
-                <p>
-                If you have any questions about this Privacy Policy, please contact us at <a href="mailto:privacy@orelis.com">privacy@orelis.com</a>.
-                </p>
-            </div>
-            </section>
-        </div>
+            <h2>7. Privacy Inquiries & Data Protection Officer</h2>
+            <p>
+              If you have questions regarding data privacy, compliance auditing, or data processing agreements, please reach out to our Data Protection Officer:
+              <br />
+              <a href="mailto:privacy@orelis.app" className="text-primary font-semibold">privacy@orelis.app</a>
+            </p>
+          </div>
+        </section>
       </main>
+
       <Footer />
     </div>
   );

@@ -253,6 +253,7 @@ service cloud.firestore {
           && (
             request.resource.data.get('clinicId', null) == resource.data.get('clinicId', null)
             || resource.data.get('role', null) == 'patient'
+            || resource.data.get('clinicId', null) == null
           )
         )
       );

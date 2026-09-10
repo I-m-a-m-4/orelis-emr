@@ -1,14 +1,13 @@
-
 'use client';
 
 import { useState } from 'react';
-import { Check, X, Zap, Shield, Building2, Crown, ChevronDown } from 'lucide-react';
+import { Check, X, Zap, Shield, Building2, ChevronDown, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { Footer } from '@/components/layout/footer';
 import { PublicHeader } from '@/components/layout/public-header';
 import { cn } from '@/lib/utils';
-
-// ─── Pricing Data ─────────────────────────────────────────────────────────────
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 const CYCLE_OPTIONS = [
   { label: '1 Month', months: 1, discount: 0 },
@@ -19,298 +18,298 @@ const CYCLE_OPTIONS = [
 
 const PLANS = [
   {
-    id: 'starter',
-    name: 'Starter',
-    tagline: 'For solo practitioners & small clinics',
-    monthlyPrice: 15000 as number | null,
+    id: 'pro',
+    name: 'Pro Clinic',
+    tagline: 'Standard full-featured tier for medical practices and outpatient clinics',
+    monthlyPrice: 20000,
     icon: Zap,
-    color: 'text-sky-400',
-    borderColor: 'border-sky-400/30',
-    bgColor: 'bg-sky-500/5',
-    cta: 'Get Started',
-    ctaHref: '/signup',
-    featured: false,
-    features: [
-      'Up to 300 patients',
-      'Up to 3 staff accounts',
-      'Appointment scheduling',
-      'Clinical SOAP encounters',
-      'Prescription management',
-      'Patient invoicing & receipts',
-      'Basic reports',
-      'Orelis AI — 50 credits/mo',
-    ],
-    notIncluded: [
-      'Lab orders & results',
-      'Pharmacy & medication inventory',
-      'Ward & bed management',
-      'Offline-first sync',
-    ],
-  },
-  {
-    id: 'clinic',
-    name: 'Clinic',
-    tagline: 'For growing multi-doctor practices',
-    monthlyPrice: 35000 as number | null,
-    icon: Shield,
-    color: 'text-orange-400',
-    borderColor: 'border-orange-400/50',
-    bgColor: 'bg-orange-500/5',
-    cta: 'Choose Clinic',
-    ctaHref: '/signup?plan=clinic',
+    cta: 'Start 30-Day Free Trial',
+    ctaHref: '/signup/clinic',
     featured: true,
+    badge: '30-Day Free Trial Included',
     features: [
-      'Up to 2,000 patients',
-      'Up to 15 staff accounts',
-      'Everything in Starter',
-      'Lab orders & results management',
-      'Pharmacy & medication inventory',
-      'Waitlist & bed/ward management',
-      'Offline-first sync',
-      'Staff RBAC permissions',
-      'Audit log',
-      'Orelis AI — 200 credits/mo',
+      'Automatic 30-day free trial on signup',
+      'Unlimited patient records and registrations',
+      'Full clinical SOAP encounters and history',
+      'Prescriptions and pharmacy inventory tracking',
+      'Laboratory investigation orders and results',
+      'Inpatient ward and bed capacity tracking',
+      'Staff role-based access (Doctor, Nurse, Receptionist)',
+      '100% offline-first synchronization',
+      'Automated patient billing and PDF receipts',
     ],
     notIncluded: [
+      'Multi-ward real-time ICU allocation',
       'Telehealth video consultations',
-      'Multi-branch management',
+      'Priority 24/7 SLA telephone support',
     ],
   },
   {
     id: 'hospital',
-    name: 'Hospital',
-    tagline: 'For full-service hospitals & departments',
-    monthlyPrice: 75000 as number | null,
+    name: 'Hospital Enterprise',
+    tagline: 'Comprehensive solution for multi-department hospitals and centres',
+    monthlyPrice: 50000,
     icon: Building2,
-    color: 'text-violet-400',
-    borderColor: 'border-violet-400/30',
-    bgColor: 'bg-violet-500/5',
-    cta: 'Choose Hospital',
-    ctaHref: '/signup?plan=hospital',
+    cta: 'Select Hospital Plan',
+    ctaHref: '/signup/clinic?plan=hospital',
     featured: false,
+    badge: 'Multi-Department Ready',
     features: [
-      'Unlimited patients & staff',
-      'Everything in Clinic',
-      'Full inpatient & admission management',
-      'Multi-ward management',
-      'Telehealth video consultations',
-      'Patient portal access',
-      'Advanced analytics & reports',
-      'Orelis AI — Unlimited credits',
-      'Priority support',
+      'Everything included in Pro Clinic',
+      'Unlimited wards, departments, and beds',
+      'Real-time inpatient admission and bed tracking',
+      'Integrated telehealth video consultations',
+      'Automated clinical billing and insurance invoicing',
+      'Longitudinal clinical risk radar and analytics',
+      'Advanced staff audit logging and compliance tracking',
+      'Priority 24/7 dedicated support and SLA',
+      'Custom report builder and Excel/PDF data export',
     ],
     notIncluded: [],
   },
   {
-    id: 'enterprise',
-    name: 'Enterprise',
-    tagline: 'For government hospitals & multi-branch chains',
+    id: 'institutional',
+    name: 'Institutional Network',
+    tagline: 'Custom infrastructure for hospital groups and government health networks',
     monthlyPrice: null,
-    icon: Crown,
-    color: 'text-amber-400',
-    borderColor: 'border-amber-400/30',
-    bgColor: 'bg-amber-500/5',
-    cta: 'Contact Sales',
+    icon: Shield,
+    cta: 'Contact Medical Sales',
     ctaHref: '/contact',
     featured: false,
+    badge: 'Custom Architecture',
     features: [
-      'Everything in Hospital',
-      'Multi-branch management',
-      'Custom API integrations',
-      'Dedicated onboarding manager',
-      'SLA guarantee',
-      'Custom AI model tuning',
-      'On-premise deployment option',
-      'Government compliance reporting',
+      'Everything in Hospital Enterprise',
+      'Multi-branch federation and centralized registry',
+      'Custom Electronic Health Record (EHR) integrations',
+      'Dedicated compliance and onboarding manager',
+      '99.99% uptime guarantee with enterprise BAA',
+      'On-premise or sovereign private cloud deployment',
+      'Custom data migration from legacy paper/systems',
+      'Staff on-site training and certification workshops',
     ],
     notIncluded: [],
   },
 ];
 
 const COMPARISON_ROWS = [
-  { label: 'Patients', starter: '300', clinic: '2,000', hospital: 'Unlimited', enterprise: 'Unlimited' },
-  { label: 'Staff accounts', starter: '3', clinic: '15', hospital: 'Unlimited', enterprise: 'Unlimited' },
-  { label: 'Appointments & scheduling', starter: true, clinic: true, hospital: true, enterprise: true },
-  { label: 'SOAP encounters & prescriptions', starter: true, clinic: true, hospital: true, enterprise: true },
-  { label: 'Patient invoicing', starter: true, clinic: true, hospital: true, enterprise: true },
-  { label: 'Lab orders & results', starter: false, clinic: true, hospital: true, enterprise: true },
-  { label: 'Pharmacy & medications', starter: false, clinic: true, hospital: true, enterprise: true },
-  { label: 'Ward & bed management', starter: false, clinic: true, hospital: true, enterprise: true },
-  { label: 'Offline-first sync', starter: false, clinic: true, hospital: true, enterprise: true },
-  { label: 'Staff RBAC & audit log', starter: false, clinic: true, hospital: true, enterprise: true },
-  { label: 'Admission & inpatient', starter: false, clinic: false, hospital: true, enterprise: true },
-  { label: 'Telehealth video', starter: false, clinic: false, hospital: true, enterprise: true },
-  { label: 'Patient portal', starter: false, clinic: false, hospital: true, enterprise: true },
-  { label: 'Orelis AI credits', starter: '50/mo', clinic: '200/mo', hospital: 'Unlimited', enterprise: 'Custom' },
-  { label: 'Multi-branch management', starter: false, clinic: false, hospital: false, enterprise: true },
-  { label: 'Dedicated onboarding', starter: false, clinic: false, hospital: false, enterprise: true },
-  { label: 'SLA guarantee', starter: false, clinic: false, hospital: false, enterprise: true },
+  { label: '30-Day Free Trial on Signup', pro: true, hospital: true, institutional: true },
+  { label: 'Patient Registrations', pro: 'Unlimited', hospital: 'Unlimited', institutional: 'Unlimited' },
+  { label: 'Clinical SOAP Charting', pro: true, hospital: true, institutional: true },
+  { label: 'Prescriptions & Pharmacy Inventory', pro: true, hospital: true, institutional: true },
+  { label: 'Lab Orders & Diagnostic Results', pro: true, hospital: true, institutional: true },
+  { label: 'Basic Inpatient Ward Tracking', pro: true, hospital: true, institutional: true },
+  { label: 'Multi-Ward & ICU Real-time Beds', pro: false, hospital: true, institutional: true },
+  { label: 'Telehealth Video Consultations', pro: false, hospital: true, institutional: true },
+  { label: 'Offline-First Local Sync', pro: true, hospital: true, institutional: true },
+  { label: 'Automated Billing & PDF Invoices', pro: true, hospital: true, institutional: true },
+  { label: 'Clinical Risk Radar & Analytics', pro: false, hospital: true, institutional: true },
+  { label: 'Multi-Branch Hospital Federation', pro: false, hospital: false, institutional: true },
+  { label: 'Dedicated Support & SLA Guarantee', pro: 'Standard Support', hospital: 'Priority 24/7 SLA', institutional: 'Dedicated Account Team' },
 ];
 
 const FAQS = [
-  { q: 'Can I switch plans at any time?', a: 'Yes. Upgrades take effect immediately. Downgrades take effect at the end of the current billing period. No data is lost.' },
-  { q: 'Is there a free trial?', a: "We offer a 14-day full-feature demo for new clinics. Contact our team and we'll set you up instantly." },
-  { q: 'What happens when I reach my patient limit?', a: "Existing records remain fully accessible. You just won't register new patients until you upgrade — we'll notify you at 80% and 100% of your limit." },
-  { q: 'What are Orelis AI credits?', a: 'Credits power AI features: SOAP note generation, drug interaction checks, triage assistance, and diagnostic suggestions. Each action consumes credits based on complexity.' },
-  { q: 'Is patient data safe?', a: 'All data is encrypted at rest and in transit on Google Cloud infrastructure. Strict security rules and RBAC ensure only authorised staff access patient records.' },
-  { q: 'Do you support government hospitals?', a: 'Yes. Our Enterprise plan includes on-premise deployment, government compliance reporting, and a dedicated onboarding team. Contact us for a quote.' },
+  {
+    q: 'How does the 30-day free trial work?',
+    a: 'Every newly registered clinic automatically receives 30 days of unrestricted access to the Pro Clinic plan upon completing onboarding. No payment details are required to begin charting and managing patients.',
+  },
+  {
+    q: 'What happens when my 30-day trial ends?',
+    a: 'If your 30-day trial expires without an active subscription, your workspace switches to Read-Only Mode. All existing patient charts, medical histories, and invoices remain completely intact and searchable. To create new records, encounters, or prescriptions, simply activate your subscription on the Billing page.',
+  },
+  {
+    q: 'Can we switch between Pro and Hospital Enterprise at any time?',
+    a: 'Yes. Upgrades apply immediately with prorated billing. You can adjust your billing cycle (1 month, 3 months, 6 months, or 1 year) whenever your operational needs change.',
+  },
+  {
+    q: 'What payment methods are supported in Nigeria and internationally?',
+    a: 'We accept debit cards, bank transfers, USSD, and Apple Pay through our secure Paystack integration in Nigerian Naira (NGN). International cards in USD are also accepted.',
+  },
+  {
+    q: 'Is our medical data safe and compliant?',
+    a: 'Yes. All clinical observations, vitals, and patient records are encrypted both in transit and at rest on Google Cloud. Strict multi-tenant row-level access rules guarantee that each hospital only sees its own data.',
+  },
+  {
+    q: 'Do you offer custom setups for teaching hospitals and state health boards?',
+    a: 'Yes. Our Institutional plan supports multi-facility federated registries, on-premise local server deployments, and custom data migration from paper records. Contact our team for an enterprise consultation.',
+  },
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function fmt(n: number): string { return `\u20a6${n.toLocaleString()}`; }
-
 function CellVal({ val }: { val: boolean | string }) {
-  if (val === true) return <Check className="h-4 w-4 text-emerald-500 mx-auto" />;
+  if (val === true) return <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mx-auto" />;
   if (val === false) return <X className="h-4 w-4 text-muted-foreground/30 mx-auto" />;
-  return <span className="text-xs font-semibold">{val}</span>;
+  return <span className="text-xs font-semibold text-foreground">{val}</span>;
 }
 
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border-b border-border/60">
-      <button onClick={() => setOpen(o => !o)} className="flex w-full items-center justify-between py-4 text-left text-sm font-semibold hover:text-primary transition-colors gap-4">
+    <div className="border-b border-border/70">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between py-4 text-left text-sm font-semibold hover:text-primary transition-colors gap-4"
+      >
         <span>{q}</span>
-        <ChevronDown className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform', open && 'rotate-180')} />
+        <ChevronDown
+          className={cn(
+            'h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200',
+            open && 'rotate-180'
+          )}
+        />
       </button>
       {open && <p className="pb-4 text-sm text-muted-foreground leading-relaxed">{a}</p>}
     </div>
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export function PricingClientPage() {
   const [cycleIdx, setCycleIdx] = useState(0);
   const cycle = CYCLE_OPTIONS[cycleIdx];
 
   return (
-    <div className="bg-background text-foreground">
+    <div className="bg-background text-foreground min-h-screen flex flex-col">
       <PublicHeader />
 
-      <main className="noisy-bg pt-16">
-
-        {/* Hero */}
-        <section className="relative py-24 xl:py-32 text-center">
+      <main className="flex-1 pt-16">
+        {/* Header Hero */}
+        <section className="py-20 md:py-28 text-center border-b border-border/50">
           <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary mb-6">
-              <Zap className="h-3.5 w-3.5" /> Transparent, clinic-first pricing
-            </div>
-            <h1 className="text-4xl font-black tracking-tight text-foreground sm:text-5xl lg:text-6xl font-headline">
-              Plans that grow<br />with your practice
+            <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary mb-4 font-semibold text-xs px-3 py-1">
+              Transparent Medical Practice Pricing
+            </Badge>
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground font-headline">
+              Predictable Pricing for Healthcare Facilities
             </h1>
-            <p className="mt-6 text-lg leading-8 text-muted-foreground max-w-xl mx-auto">
-              From solo GP to 200-bed hospital. No hidden fees, no per-doctor surcharges — one clear subscription for your whole clinic.
+            <p className="mt-4 text-base md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              Every clinic enjoys a 30-day complimentary trial on the Pro Plan. No credit card required to start charting patient records.
             </p>
+
+            {/* Billing Cycle Switcher */}
+            <div className="mt-10 flex justify-center">
+              <div className="flex items-center gap-1.5 rounded-xl border border-border bg-card p-1.5 shadow-sm">
+                {CYCLE_OPTIONS.map((opt, i) => (
+                  <button
+                    key={opt.label}
+                    type="button"
+                    onClick={() => setCycleIdx(i)}
+                    className={cn(
+                      'relative rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all',
+                      cycleIdx === i
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    {opt.label}
+                    {opt.discount > 0 && (
+                      <span className="ml-1.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 px-1.5 py-0.5 text-[10px] font-black">
+                        -{opt.discount * 100}%
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* Billing cycle toggle */}
-        <div className="flex justify-center px-4 mb-10">
-          <div className="flex items-center gap-1 rounded-xl border border-border bg-muted/40 p-1">
-            {CYCLE_OPTIONS.map((opt, i) => (
-              <button
-                key={opt.label}
-                onClick={() => setCycleIdx(i)}
-                className={cn(
-                  'relative rounded-lg px-4 py-2 text-xs font-bold transition-all',
-                  cycleIdx === i ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                {opt.label}
-                {opt.discount > 0 && (
-                  <span className="ml-1.5 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-black text-emerald-500">
-                    -{opt.discount * 100}%
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Plan cards */}
-        <section className="relative pb-16">
+        {/* Pricing Cards Grid */}
+        <section className="py-16 md:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
               {PLANS.map((plan) => {
                 const Icon = plan.icon;
                 const total = plan.monthlyPrice
                   ? Math.round(plan.monthlyPrice * cycle.months * (1 - cycle.discount))
                   : null;
-                const perMonth = plan.monthlyPrice && cycle.months > 1
-                  ? Math.round(total! / cycle.months)
-                  : plan.monthlyPrice;
 
                 return (
                   <div
                     key={plan.id}
                     className={cn(
-                      'relative flex flex-col rounded-2xl border p-7 overflow-hidden transition-transform hover:-translate-y-1',
-                      plan.borderColor, plan.bgColor,
-                      plan.featured && 'ring-2 ring-orange-400/60 shadow-xl shadow-orange-500/10'
+                      'relative flex flex-col justify-between rounded-2xl border p-8 bg-card shadow-sm transition-all',
+                      plan.featured
+                        ? 'border-primary ring-2 ring-primary/20 bg-primary/[0.015]'
+                        : 'border-border/70 hover:border-border'
                     )}
                   >
-                    <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,.7)_1px,transparent_1px)] bg-[size:28px_28px] opacity-[0.025]" />
-
-                    {plan.featured && (
-                      <div className="absolute top-4 right-4 rounded-full bg-orange-400/15 px-3 py-1 text-[10px] font-black text-orange-400 uppercase tracking-wider">
-                        Most Popular
+                    {plan.badge && (
+                      <div className="absolute -top-3 left-8">
+                        <Badge
+                          className={cn(
+                            'text-[10px] font-bold uppercase tracking-wider px-3 py-0.5 shadow-sm',
+                            plan.featured
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted text-muted-foreground border'
+                          )}
+                        >
+                          {plan.badge}
+                        </Badge>
                       </div>
                     )}
 
-                    <div className={cn('mb-4 w-fit rounded-xl border p-2.5', plan.borderColor, plan.bgColor)}>
-                      <Icon className={cn('h-5 w-5', plan.color)} />
-                    </div>
+                    <div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
+                          <p className="text-xs text-muted-foreground line-clamp-1">{plan.tagline}</p>
+                        </div>
+                      </div>
 
-                    <h3 className={cn('text-xl font-black font-headline', plan.color)}>{plan.name}</h3>
-                    <p className="mt-1 text-xs text-muted-foreground leading-snug">{plan.tagline}</p>
-
-                    <div className="mt-6">
-                      {plan.monthlyPrice ? (
-                        <>
-                          <div className="flex items-baseline gap-1">
-                            <span className="text-4xl font-black text-foreground">{fmt(perMonth!)}</span>
-                            <span className="text-sm text-muted-foreground font-medium">/mo</span>
+                      {/* Price Tag */}
+                      <div className="my-6 p-4 rounded-xl bg-muted/40 border border-border/50">
+                        {total !== null ? (
+                          <>
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="text-3xl md:text-4xl font-black">
+                                ₦{total.toLocaleString()}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                / {cycle.months === 1 ? 'month' : `${cycle.months} months`}
+                              </span>
+                            </div>
+                            {cycle.discount > 0 && (
+                              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
+                                Saves {(plan.monthlyPrice! * cycle.months * cycle.discount).toLocaleString()} NGN on this cycle
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <div className="py-2">
+                            <span className="text-2xl md:text-3xl font-black">Custom Pricing</span>
+                            <p className="text-xs text-muted-foreground mt-0.5">Contact us for institutional volume licensing</p>
                           </div>
-                          {cycle.months > 1 && (
-                            <p className="mt-1 text-[11px] text-muted-foreground">
-                              Billed {fmt(total!)} every {cycle.months} months
-                              {cycle.discount > 0 && <span className="ml-1 font-bold text-emerald-500">(save {cycle.discount * 100}%)</span>}
-                            </p>
-                          )}
-                        </>
-                      ) : (
-                        <div className="text-4xl font-black text-foreground">Custom</div>
-                      )}
+                        )}
+                      </div>
+
+                      {/* Features */}
+                      <div className="space-y-3 pt-2">
+                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          What is included
+                        </p>
+                        {plan.features.map((f, i) => (
+                          <div key={i} className="flex items-start gap-2.5 text-xs text-foreground/90">
+                            <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                            <span>{f}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
-                    <Link
-                      href={plan.ctaHref}
-                      className={cn(
-                        'mt-6 inline-flex items-center justify-center rounded-xl py-2.5 px-4 text-sm font-bold transition-all',
-                        plan.featured
-                          ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                          : 'border border-border bg-background/60 hover:bg-background text-foreground'
-                      )}
-                    >
-                      {plan.cta}
-                    </Link>
-
-                    <ul className="mt-6 space-y-2.5 flex-1">
-                      {plan.features.map(f => (
-                        <li key={f} className="flex items-start gap-2.5 text-xs text-muted-foreground">
-                          <Check className={cn('h-3.5 w-3.5 shrink-0 mt-0.5', plan.color)} />
-                          {f}
-                        </li>
-                      ))}
-                      {plan.notIncluded.map(f => (
-                        <li key={f} className="flex items-start gap-2.5 text-xs text-muted-foreground/35 line-through">
-                          <X className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="pt-8 mt-8 border-t">
+                      <Button
+                        asChild
+                        variant={plan.featured ? 'default' : 'outline'}
+                        className="w-full h-11 font-bold text-sm shadow-sm gap-2"
+                      >
+                        <Link href={plan.ctaHref}>
+                          {plan.cta}
+                          <ArrowRight className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
@@ -318,64 +317,67 @@ export function PricingClientPage() {
           </div>
         </section>
 
-        {/* Feature comparison table */}
-        <section className="py-16 border-t border-border/40">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        {/* Feature Comparison Matrix */}
+        <section className="py-16 border-t border-border/60 bg-muted/20">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10">
-              <h2 className="text-2xl font-black font-headline">Compare all features</h2>
-              <p className="text-sm text-muted-foreground mt-2">See exactly what's included in each plan.</p>
+              <h2 className="text-2xl md:text-3xl font-bold font-headline">Compare System Capabilities</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Detailed breakdown of operational and clinical tools across each plan tier.
+              </p>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="py-3 text-left font-semibold text-muted-foreground w-52">Feature</th>
-                    {PLANS.map(p => (
-                      <th key={p.id} className={cn('py-3 text-center font-black text-sm', p.color)}>{p.name}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {COMPARISON_ROWS.map((row, i) => (
-                    <tr key={row.label} className={cn('border-b border-border/40', i % 2 === 0 && 'bg-muted/20')}>
-                      <td className="py-3 text-xs text-muted-foreground font-medium pr-4">{row.label}</td>
-                      <td className="py-3 text-center"><CellVal val={row.starter} /></td>
-                      <td className="py-3 text-center"><CellVal val={row.clinic} /></td>
-                      <td className="py-3 text-center"><CellVal val={row.hospital} /></td>
-                      <td className="py-3 text-center"><CellVal val={row.enterprise} /></td>
+
+            <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
+                      <th className="py-4 px-6 font-bold">Feature</th>
+                      <th className="py-4 px-4 text-center font-bold">Pro Clinic</th>
+                      <th className="py-4 px-4 text-center font-bold">Hospital</th>
+                      <th className="py-4 px-4 text-center font-bold">Institutional</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-border/60">
+                    {COMPARISON_ROWS.map((row, i) => (
+                      <tr key={i} className="hover:bg-muted/30 transition-colors">
+                        <td className="py-3 px-6 text-xs md:text-sm font-medium">{row.label}</td>
+                        <td className="py-3 px-4 text-center">
+                          <CellVal val={row.pro} />
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <CellVal val={row.hospital} />
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <CellVal val={row.institutional} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* FAQ */}
-        <section className="py-16 border-t border-border/40">
-          <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
+        {/* FAQ Section */}
+        <section className="py-20 border-t border-border/60">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10">
-              <h2 className="text-2xl font-black font-headline">Frequently asked questions</h2>
+              <h2 className="text-2xl md:text-3xl font-bold font-headline">Frequently Asked Questions</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Everything you need to know about Orelis EMR licensing and billing.
+              </p>
             </div>
-            {FAQS.map(faq => <FaqItem key={faq.q} q={faq.q} a={faq.a} />)}
-          </div>
-        </section>
-
-        {/* Bottom CTA */}
-        <section className="py-20 border-t border-border/40 text-center">
-          <div className="mx-auto max-w-xl px-4">
-            <h2 className="text-3xl font-black font-headline">Ready to digitise your clinic?</h2>
-            <p className="text-muted-foreground mt-3 text-sm">Join hospitals already using Orelis to deliver faster, safer care.</p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
-              <Link href="/signup" className="contact-button px-8 py-3">Start Free Trial</Link>
-              <Link href="/contact" className="inline-flex items-center justify-center border border-border rounded-lg px-8 py-3 text-sm font-semibold hover:bg-muted/50 transition-colors">
-                Talk to Sales
-              </Link>
+            <div className="rounded-2xl border bg-card p-6 md:p-8 shadow-sm">
+              {FAQS.map((faq, i) => (
+                <FaqItem key={i} q={faq.q} a={faq.a} />
+              ))}
             </div>
           </div>
         </section>
-
       </main>
+
       <Footer />
     </div>
   );

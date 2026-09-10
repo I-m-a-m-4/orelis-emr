@@ -1,6 +1,6 @@
 {
   "name": "nextn",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack -p 9006",
@@ -90,6 +90,7 @@
     "react-paystack": "^5.0.0",
     "recharts": "^2.15.1",
     "remark-gfm": "^4.0.0",
+    "resend": "^6.26.0",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.165.0",

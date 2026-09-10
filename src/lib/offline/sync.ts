@@ -200,7 +200,6 @@ const TARGETS: SyncTarget[] = [
     // is worse than none — it makes a drug look unavailable rather than unloaded.
     { table: 'medications', type: 'medications', scoped: true, limit: 2000 },
     { table: 'wards', type: 'wards', scoped: true, limit: 200 },
-    { table: 'beds', type: 'beds', scoped: true, limit: 1000 },
 ];
 
 /**
@@ -360,9 +359,9 @@ async function syncOneTarget(
     let forcedByContradiction = false;
     if (!force && stamp > 0 && age < SYNC_THROTTLE_MS && !forcedThisSession.has(stampKey)) {
         if (await cacheContradictsStamp(target.table, clinicId, target.type)) {
-            console.warn(
-                `[sync] ${target.table}: stamped as synced but the mirror is empty or unreadable. ` +
-                    `Forcing one re-sync.`
+            console.info(
+                `[sync] ${target.table}: cache empty while records were previously synced. ` +
+                    `Re-syncing once.`
             );
             forcedThisSession.add(stampKey);
             forcedByContradiction = true;
@@ -426,7 +425,7 @@ async function syncOneTarget(
             }
         }
 
-        await setLastSyncMetadata(clinicId, target.type, Date.now());
+        await setLastSyncMetadata(clinicId, target.type, Date.now(), rows.length);
         return { table: target.table, ok: true, fetched: rows.length, skipped: null, reconciled };
     } catch (err: any) {
         // Offline is the expected case here, not an anomaly: hydration runs on

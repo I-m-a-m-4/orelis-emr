@@ -200,6 +200,7 @@ const TARGETS: SyncTarget[] = [
     // is worse than none — it makes a drug look unavailable rather than unloaded.
     { table: 'medications', type: 'medications', scoped: true, limit: 2000 },
     { table: 'wards', type: 'wards', scoped: true, limit: 200 },
+    { table: 'beds', type: 'beds', scoped: true, limit: 200 },
 ];
 
 /**

@@ -550,7 +550,7 @@ export default function SettingsPage() {
   const paystackConfig = {
     reference: new Date().getTime().toString(),
     email: user?.email || '',
-    amount: 200000, // ₦2,000 in kobo
+    amount: 2000000, // ₦20,000 in kobo
     publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
   };
 
@@ -592,7 +592,7 @@ export default function SettingsPage() {
             <Card className="border-dashed">
               <CardHeader>
                 <CardTitle className='flex items-center gap-2'><CreditCard className='w-5 h-5' />Subscription</CardTitle>
-                <CardDescription>Orelis Doctor Business (₦2,000/mo)</CardDescription>
+                <CardDescription>Orelis Doctor Business (₦20,000/mo)</CardDescription>
               </CardHeader>
               <CardContent>
                 <PaystackButton config={paystackConfig} />

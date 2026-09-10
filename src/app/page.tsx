@@ -101,6 +101,15 @@ export default function LandingPage() {
                   >
                     Explore Features
                   </Link>
+
+                  <Link
+                    href="https://apps.microsoft.com/detail/9MWDJDS4K9GG"
+                    target="_blank"
+                    className="inline-flex items-center justify-center gap-2 overflow-hidden border border-border bg-card px-5 py-2.5 text-sm font-medium text-foreground transition hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <Download className="h-4 w-4" />
+                    Get from Microsoft Store
+                  </Link>
                 </div>
               </div>
             </div>
@@ -388,7 +397,7 @@ export default function LandingPage() {
                     <CardHeader className="text-center pt-8">
                       <CardTitle className="text-2xl font-bold">Orelis Doctor Business</CardTitle>
                       <div className="flex items-baseline justify-center gap-1 mt-4">
-                        <span className="text-5xl font-bold text-foreground">₦2,000</span>
+                        <span className="text-5xl font-bold text-foreground">₦20,000</span>
                         <span className="text-muted-foreground text-lg">/month</span>
                       </div>
                     </CardHeader>

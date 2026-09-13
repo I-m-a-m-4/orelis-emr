@@ -101,14 +101,14 @@ export function StatCard({
             )}
             title={formula}
         >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium group-hover:text-primary transition-colors">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <CardTitle className="text-base font-bold group-hover:text-primary transition-colors">
                     {title}
                 </CardTitle>
-                <span className={TONE_ICON[tone]}>{icon}</span>
+                <span className={cn(TONE_ICON[tone], "scale-125")}>{icon}</span>
             </CardHeader>
             <CardContent>
-                <div className={cn("text-2xl font-bold tabular-nums", TONE_VALUE[tone])}>{value}</div>
+                <div className={cn("text-4xl font-black tabular-nums", TONE_VALUE[tone])}>{value}</div>
 
                 {clamped !== undefined && (
                     <div

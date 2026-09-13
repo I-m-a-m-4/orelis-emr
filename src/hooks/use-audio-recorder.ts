@@ -19,7 +19,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  * which is the one thing the meter exists to tell you.
  */
 
-export type RecorderState = 'idle' | 'requesting' | 'recording' | 'stopped';
+export type RecorderState = 'idle' | 'requesting' | 'recording' | 'paused' | 'stopped';
 
 /** Containers in preference order. Chromium gives Opus; Safari gives AAC in MP4. */
 const CANDIDATE_TYPES = [
@@ -66,6 +66,8 @@ export function useAudioRecorder() {
     const analyserRef = useRef<AnalyserNode | null>(null);
     const frameRef = useRef<number | null>(null);
     const startedAtRef = useRef<number>(0);
+
+    const accumulatedMsRef = useRef<number>(0);
 
     const supported =
         typeof window !== 'undefined' &&
@@ -166,12 +168,21 @@ export function useAudioRecorder() {
         const mimeType = pickMimeType();
         let recorder: MediaRecorder;
         try {
-            recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+            const options: MediaRecorderOptions = {
+                audioBitsPerSecond: 24000, // 24kbps is optimal for speech: ~5.4 MB for 30 minutes
+            };
+            if (mimeType) options.mimeType = mimeType;
+            recorder = new MediaRecorder(stream, options);
         } catch (err: any) {
-            teardown();
-            setState('idle');
-            setError(err?.message ?? 'This browser could not start a recording.');
-            return false;
+            // Fallback without audioBitsPerSecond if unsupported
+            try {
+                recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+            } catch (err2: any) {
+                teardown();
+                setState('idle');
+                setError(err2?.message ?? 'This browser could not start a recording.');
+                return false;
+            }
         }
 
         recorder.ondataavailable = (event) => {
@@ -180,6 +191,7 @@ export function useAudioRecorder() {
 
         recorderRef.current = recorder;
         startedAtRef.current = Date.now();
+        accumulatedMsRef.current = 0;
         setDurationMs(0);
         // A timeslice means chunks arrive as we go, so a crash mid-consultation
         // still leaves whatever was captured up to that point.
@@ -187,6 +199,31 @@ export function useAudioRecorder() {
         setState('recording');
         return true;
     }, [supported, teardown]);
+
+    const pause = useCallback(() => {
+        const recorder = recorderRef.current;
+        if (!recorder || recorder.state !== 'recording') return;
+        try {
+            recorder.pause();
+            accumulatedMsRef.current += Date.now() - startedAtRef.current;
+            setState('paused');
+            setLevels(SILENT_BARS);
+        } catch (e) {
+            console.warn('[recorder] pause failed:', e);
+        }
+    }, []);
+
+    const resume = useCallback(() => {
+        const recorder = recorderRef.current;
+        if (!recorder || recorder.state !== 'paused') return;
+        try {
+            recorder.resume();
+            startedAtRef.current = Date.now();
+            setState('recording');
+        } catch (e) {
+            console.warn('[recorder] resume failed:', e);
+        }
+    }, []);
 
     /** Stop and resolve the recording, or null if nothing was captured. */
     const stop = useCallback((): Promise<AudioRecording | null> => {
@@ -201,7 +238,7 @@ export function useAudioRecorder() {
             recorder.onstop = () => {
                 const mimeType = recorder.mimeType || 'audio/webm';
                 const blob = new Blob(chunksRef.current, { type: mimeType });
-                const elapsed = Date.now() - startedAtRef.current;
+                const elapsed = accumulatedMsRef.current + (startedAtRef.current ? (Date.now() - startedAtRef.current) : 0);
 
                 setDurationMs(elapsed);
                 setState('stopped');
@@ -238,18 +275,20 @@ export function useAudioRecorder() {
     const reset = useCallback(() => {
         teardown();
         chunksRef.current = [];
+        accumulatedMsRef.current = 0;
         setState('idle');
         setDurationMs(0);
         setError(null);
     }, [teardown]);
 
-    // A visible timer while recording: dictation has a size ceiling on the server
-    // and a clinician should be able to see how long they have been going.
+    // A visible timer while recording
     useEffect(() => {
         if (state !== 'recording') return;
-        const id = setInterval(() => setDurationMs(Date.now() - startedAtRef.current), 500);
+        const id = setInterval(() => {
+            setDurationMs(accumulatedMsRef.current + (Date.now() - startedAtRef.current));
+        }, 500);
         return () => clearInterval(id);
     }, [state]);
 
-    return { state, levels, durationMs, error, supported, start, stop, reset };
+    return { state, levels, durationMs, error, supported, start, pause, resume, stop, reset };
 }

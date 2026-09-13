@@ -28,7 +28,7 @@ const BILLING_CYCLES = [
 const PLANS = [
   {
     id: 'pro',
-    name: 'Pro Clinic',
+    name: 'Orelis Independent Practice',
     tagline: 'Complete medical suite with 30-day trial for every practice',
     monthlyPrice: 20000,
     icon: Zap,
@@ -45,13 +45,13 @@ const PLANS = [
   },
   {
     id: 'hospital',
-    name: 'Hospital Enterprise',
+    name: 'Orelis Enterprise Hospital',
     tagline: 'Multi-department tier for full-service hospitals',
     monthlyPrice: 50000,
     icon: Building2,
     popular: false,
     features: [
-      'Everything in the Pro Clinic Plan',
+      'Everything in the Independent Practice Plan',
       'Multi-Ward & ICU Real-time Bed Allocation',
       'Integrated Telehealth Video Consultations',
       'Patient Invoicing & Automated Billing Engine',

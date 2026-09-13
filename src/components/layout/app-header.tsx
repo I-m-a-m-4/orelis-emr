@@ -109,7 +109,22 @@ function NotificationBell() {
 
 export function AppHeader() {
   const { user, loading } = useUser();
+  const firestore = useFirestore();
   const router = useRouter();
+
+  const userProfileRef = useMemo(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [user, firestore]);
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+
+  const clinicRef = useMemo(() => {
+    if (!userProfile?.clinicId || !firestore) return null;
+    return doc(firestore, 'clinics', userProfile.clinicId);
+  }, [userProfile?.clinicId, firestore]);
+  const { data: clinic } = useDoc<any>(clinicRef);
+
+  const isPro = ['pro', 'hospital', 'enterprise', 'lifetime'].includes(clinic?.subscription?.plan || '');
 
   const handleSignOut = async () => {
     await signOut();
@@ -123,14 +138,19 @@ export function AppHeader() {
       <CommandPalette />
 
       <div className="ml-auto flex items-center gap-2">
+        {!isPro && userProfile?.role !== 'patient' && (
+          <Button asChild variant="default" size="sm" className="hidden md:flex bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0 shadow-md">
+            <Link href="/dashboard/settings">Upgrade Now</Link>
+          </Button>
+        )}
         <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="relative h-8 w-8 rounded-full cursor-pointer"
+              className={`relative h-10 w-10 rounded-full cursor-pointer p-0.5 ${isPro ? 'bg-gradient-to-tr from-orange-500 via-red-500 to-yellow-500 shadow-[0_0_15px_rgba(249,115,22,0.6)] animate-pulse' : ''}`}
             >
-              <Avatar className="h-9 w-9">
+              <Avatar className="h-full w-full border-2 border-background">
                 {user?.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User'} />}
                 <AvatarFallback>{user?.displayName ? getInitials(user.displayName) : <User />}</AvatarFallback>
               </Avatar>

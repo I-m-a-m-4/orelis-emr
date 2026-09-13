@@ -36,8 +36,6 @@ import { LoadingAnimation } from '@/components/layout/loading-animation';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TwinVisualizer } from '@/components/dashboard/TwinVisualizer';
-import { WhatIfCoach } from '@/components/dashboard/WhatIfCoach';
-import { LabReportExplainer } from '@/components/dashboard/LabReportExplainer';
 import { DrugSafetyChecker } from '@/components/dashboard/DrugSafetyChecker';
 import type { Patient } from '@/lib/types';
 
@@ -256,7 +254,7 @@ export default function PatientPortal() {
                     {/* Main Content */}
                     <div className="md:col-span-2 space-y-6">
                         <Tabs defaultValue="records" className="w-full">
-                            <TabsList className="grid w-full grid-cols-4 bg-muted/60 p-1 border border-border/50 rounded-xl">
+                            <TabsList className="grid w-full grid-cols-3 bg-muted/60 p-1 border border-border/50 rounded-xl">
                                 <TabsTrigger value="records" className="text-xs py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                                     <ClipboardList className="mr-2 h-4 w-4" /> Records
                                 </TabsTrigger>
@@ -265,9 +263,6 @@ export default function PatientPortal() {
                                 </TabsTrigger>
                                 <TabsTrigger value="appointments" className="text-xs py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                                     <Calendar className="mr-2 h-4 w-4" /> Appts
-                                </TabsTrigger>
-                                <TabsTrigger value="twin" className="text-xs py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                                    <Activity className="mr-2 h-4 w-4" /> Health Twin
                                 </TabsTrigger>
                             </TabsList>
 
@@ -375,9 +370,6 @@ export default function PatientPortal() {
                                         )}
                                     </CardContent>
                                 </Card>
-
-                                {/* Lab Report Explainer Widget */}
-                                <LabReportExplainer />
                             </TabsContent>
 
                             {/* Appointments Tab */}
@@ -427,9 +419,6 @@ export default function PatientPortal() {
                             <TabsContent value="twin" className="mt-6 space-y-6">
                                 {/* Digital Twin Platform Visualizer */}
                                 <TwinVisualizer patientId={patient.id} />
-                                
-                                {/* What-if trajectories simulator */}
-                                <WhatIfCoach />
 
                                 {/* Drug safety checker */}
                                 <DrugSafetyChecker />

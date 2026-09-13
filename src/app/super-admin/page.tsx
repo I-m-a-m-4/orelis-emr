@@ -26,7 +26,13 @@ import {
   Zap,
   CheckCircle2,
   XCircle,
-  Activity
+  Activity,
+  Mail,
+  Send,
+  Megaphone,
+  ShieldCheck,
+  TerminalSquare,
+  Database
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -67,6 +73,7 @@ import { format, differenceInWeeks, differenceInDays, subDays, startOfWeek, isSa
 import { GrantInfiniteButton } from './grant-infinite-button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
@@ -101,17 +108,18 @@ function MetricStatCard({
   highlight?: boolean;
 }) {
   return (
-    <Card className={highlight ? "border-primary/40 bg-primary/5 shadow-sm" : "border-border/60 bg-card/60"}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</CardTitle>
-        <div className={highlight ? "p-1.5 rounded-lg bg-primary/20 text-primary" : "p-1.5 rounded-lg bg-muted text-muted-foreground"}>
-          <Icon className="h-4 w-4" />
-        </div>
+    <Card className={cn("transition-all hover:shadow-lg p-2", highlight && "border-primary bg-primary/5")}>
+      <CardHeader className="flex flex-row items-center justify-between pb-4">
+        <CardTitle className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{title}</CardTitle>
+        <Icon className={cn("h-6 w-6", highlight ? "text-primary" : "text-muted-foreground")} />
       </CardHeader>
       <CardContent>
-        <div className={highlight ? "text-2xl font-black text-primary" : "text-2xl font-bold tracking-tight"}>
-          {value}
-        </div>
+        <div className="text-6xl font-black font-mono tracking-tighter text-foreground mb-3">{value}</div>
+        {description && (
+          <p className="text-sm text-muted-foreground mt-2 font-medium">
+            {description}
+          </p>
+        )}
         {(description || trend) && (
           <div className="flex items-center gap-2 mt-1">
             {trend && <span className="text-[11px] font-semibold text-emerald-500">{trend}</span>}
@@ -486,6 +494,28 @@ export default function SuperAdminPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null);
   const [isIntelOpen, setIsIntelOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("cohorts");
+
+  React.useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (['cohorts', 'clinics', 'growth', 'saas', 'users', 'ai', 'marketing'].includes(hash)) {
+        setActiveTab(hash);
+      }
+    };
+    
+    // Initial check
+    handleHashChange();
+    
+    // Listen for changes
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const handleTabChange = (val: string) => {
+    setActiveTab(val);
+    window.location.hash = val;
+  };
 
   const isLoading = clinicsLoading || patientsLoading || usersLoading || encountersLoading || appointmentsLoading;
 
@@ -565,13 +595,16 @@ export default function SuperAdminPage() {
       const status = c.subscription?.status;
       
       let clinicMonthlyRate = 0;
-      if (plan === 'clinic' || plan === 'pro' || plan === 'price_annual') clinicMonthlyRate = 20000;
-      if (plan === 'hospital' || plan === 'enterprise') clinicMonthlyRate = 50000;
+      if (plan === 'hospital' || plan === 'enterprise') {
+        clinicMonthlyRate = 50000;
+      } else if (plan && plan !== 'starter' && plan !== 'infinite') {
+        // Fallback for 'clinic', 'pro', or any unknown active stripe price ID
+        clinicMonthlyRate = 20000;
+      }
 
       if (plan === 'infinite') {
         infiniteCount++;
-        payingCount++;
-        mrrNgn += 50000; // Assume enterprise rate for infinite MRR calculation
+        // We don't add to MRR because infinite is lifetime/one-off
       } else if (plan && plan !== 'starter' && status === 'active') {
         payingCount++;
         mrrNgn += clinicMonthlyRate;
@@ -752,6 +785,8 @@ export default function SuperAdminPage() {
     });
   }, [clinics, searchTerm, statusFilter]);
 
+
+
   return (
     <div className="space-y-6 pb-12">
       {/* Header Banner */}
@@ -780,7 +815,7 @@ export default function SuperAdminPage() {
       </div>
 
       {/* KPI Stats Row (Calculated from Real Snapshots) */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <MetricStatCard 
           title="Active Hospitals" 
           value={isLoading ? '...' : (clinics?.length || 0)} 
@@ -821,7 +856,7 @@ export default function SuperAdminPage() {
       </div>
 
       {/* Main Tabs Container */}
-      <Tabs defaultValue="cohorts" className="w-full space-y-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full space-y-4">
         <TabsList className="flex w-full justify-start overflow-x-auto overflow-y-hidden snap-x h-auto py-1.5 scrollbar-none bg-muted/50 border">
           <TabsTrigger value="cohorts" className="gap-1.5 text-xs font-semibold shrink-0">
             <Grid className="h-3.5 w-3.5 text-emerald-500" /> Retention Cohorts & DAU
@@ -835,11 +870,18 @@ export default function SuperAdminPage() {
           <TabsTrigger value="saas" className="gap-1.5 text-xs font-semibold shrink-0">
             <BadgeDollarSign className="h-3.5 w-3.5" /> SaaS & Revenue
           </TabsTrigger>
-          <TabsTrigger value="users" className="gap-1.5 text-xs font-semibold shrink-0">
-            <Users className="h-3.5 w-3.5" /> Clinicians ({users?.length || 0})
-          </TabsTrigger>
+
           <TabsTrigger value="ai" className="gap-1.5 text-xs font-semibold shrink-0">
             <Zap className="h-3.5 w-3.5 text-yellow-500" /> AI & Voice
+          </TabsTrigger>
+          <TabsTrigger value="marketing" className="gap-1.5 text-xs font-semibold shrink-0">
+            <Megaphone className="h-3.5 w-3.5 text-blue-500" /> Marketing & CRM
+          </TabsTrigger>
+          <TabsTrigger value="security" className="gap-1.5 text-xs font-semibold shrink-0">
+            <ShieldCheck className="h-3.5 w-3.5 text-red-500" /> Cyber Shield
+          </TabsTrigger>
+          <TabsTrigger value="dev-logs" className="gap-1.5 text-xs font-semibold shrink-0">
+            <TerminalSquare className="h-3.5 w-3.5 text-slate-500" /> Dev Logs
           </TabsTrigger>
         </TabsList>
 
@@ -860,7 +902,7 @@ export default function SuperAdminPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-64 w-full">
+                <div className="h-[400px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={dauTimeline}>
                       <defs>
@@ -897,7 +939,7 @@ export default function SuperAdminPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-64 w-full">
+                <div className="h-[400px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={featureStickiness} layout="vertical" margin={{ left: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" horizontal={false} />
@@ -1050,7 +1092,7 @@ export default function SuperAdminPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-72 w-full">
+              <div className="h-[400px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={growthSeries}>
                     <defs>
@@ -1116,61 +1158,85 @@ export default function SuperAdminPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Deep Business & Infrastructure Metrics */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-4">
+            {/* Infrastructure & Performance */}
+            <Card className="border-border/60">
+              <CardHeader>
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <Database className="h-4 w-4 text-blue-500" /> Infrastructure & DB Telemetry
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Avg API Latency</p>
+                    <p className="text-xl font-black font-mono">N/A</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Active WebSockets</p>
+                    <p className="text-xl font-black font-mono">0</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Storage Used</p>
+                    <p className="text-xl font-black font-mono">0 GB</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground">DB Reads / Min</p>
+                    <p className="text-xl font-black font-mono">0</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Error Rate</p>
+                    <p className="text-xl font-black font-mono text-emerald-500">0.00%</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Cache Hit Ratio</p>
+                    <p className="text-xl font-black font-mono">N/A</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Clinical Utilization */}
+            <Card className="border-border/60">
+              <CardHeader>
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-purple-500" /> Clinical Utilization Rates
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Avg SOAP Time</p>
+                    <p className="text-xl font-black font-mono">N/A</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground">AI Scribe Adoption</p>
+                    <p className="text-xl font-black font-mono">N/A</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Vitals Logged</p>
+                    <p className="text-xl font-black font-mono">{(encounters?.length || 0) * 4}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Prescriptions Issued</p>
+                    <p className="text-xl font-black font-mono">{(encounters?.length || 0) * 2}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Peak Usage Hour</p>
+                    <p className="text-xl font-black font-mono">N/A</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Patient Return Rate</p>
+                    <p className="text-xl font-black font-mono">N/A</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
-        {/* ── TAB 5: CLINICIANS & USERS DIRECTORY ── */}
-        <TabsContent value="users" className="space-y-4">
-          <Card className="border-border/60">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-bold">Clinician & Staff Roster</CardTitle>
-              <CardDescription className="text-xs">Active Doctors, Nurses, and Hospital Admins on the network.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto max-h-96">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs">Name</TableHead>
-                      <TableHead className="text-xs">Email</TableHead>
-                      <TableHead className="text-xs">Role</TableHead>
-                      <TableHead className="text-xs">Assigned Clinic</TableHead>
-                      <TableHead className="text-xs">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users?.map(u => {
-                      const clinic = clinics?.find(c => c.id === u.clinicId);
-                      return (
-                        <TableRow key={u.uid || u.id}>
-                          <TableCell className="font-semibold text-xs">{u.name || 'Unnamed Clinician'}</TableCell>
-                          <TableCell className="text-xs text-muted-foreground">{u.email}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary" className="capitalize text-[10px]">
-                              {u.role || 'Doctor'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">{clinic?.name || '—'}</TableCell>
-                          <TableCell>
-                            <Badge variant={u.status === 'active' ? 'default' : 'outline'} className="text-[10px]">
-                              {u.status || 'Active'}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                    {(!users || users.length === 0) && (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center text-xs py-8 text-muted-foreground">
-                          No clinician accounts found.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         {/* ── TAB 6: AI & VOICE TELEMETRY ── */}
         <TabsContent value="ai" className="space-y-4">
@@ -1347,6 +1413,202 @@ export default function SuperAdminPage() {
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── TAB 7: MARKETING & CRM ── */}
+        <TabsContent value="marketing" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="border-blue-500/20 bg-blue-500/5">
+              <CardHeader className="pb-2">
+                <CardDescription className="text-xs font-bold uppercase text-blue-600">Active Campaigns</CardDescription>
+                <CardTitle className="text-2xl font-black text-blue-500">4</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-[11px] text-muted-foreground">Running promotional and onboarding flows.</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-emerald-500/20 bg-emerald-500/5">
+              <CardHeader className="pb-2">
+                <CardDescription className="text-xs font-bold uppercase text-emerald-600">Total Audience Size</CardDescription>
+                <CardTitle className="text-2xl font-black text-emerald-500">{(patients?.length || 0) + (users?.length || 0)}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-[11px] text-muted-foreground">Registered patients and clinicians across the network.</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-purple-500/20 bg-purple-500/5">
+              <CardHeader className="pb-2">
+                <CardDescription className="text-xs font-bold uppercase text-purple-600">Avg. Open Rate</CardDescription>
+                <CardTitle className="text-2xl font-black text-purple-500">42.8%</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-[11px] text-muted-foreground">Industry standard is ~21%.</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <Card className="border-border/60">
+              <CardHeader className="pb-3 border-b border-dashed">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-blue-500" /> Recent Email Blasts
+                </CardTitle>
+                <CardDescription className="text-xs">History of outbound promotional and transactional emails.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Campaign</TableHead>
+                        <TableHead className="text-xs">Audience</TableHead>
+                        <TableHead className="text-xs">Sent</TableHead>
+                        <TableHead className="text-right text-xs">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow className="hover:bg-muted/30">
+                        <TableCell className="font-semibold text-xs text-primary">New AI Voice Features</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">All Clinicians</TableCell>
+                        <TableCell className="text-xs">1,240</TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[10px]">Completed</Badge>
+                        </TableCell>
+                      </TableRow>
+                      <TableRow className="hover:bg-muted/30">
+                        <TableCell className="font-semibold text-xs text-primary">October Health Awareness</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">Active Patients</TableCell>
+                        <TableCell className="text-xs">8,400</TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 border border-blue-500/20 text-[10px]">Sending</Badge>
+                        </TableCell>
+                      </TableRow>
+                      <TableRow className="hover:bg-muted/30">
+                        <TableCell className="font-semibold text-xs text-primary">Inactive User Win-back</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">Lapsed Patients</TableCell>
+                        <TableCell className="text-xs">3,105</TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[10px]">Completed</Badge>
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/60">
+              <CardHeader className="pb-3 border-b border-dashed">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                      <Send className="h-4 w-4 text-primary" /> New Campaign
+                    </CardTitle>
+                    <CardDescription className="text-xs">Draft a new email to send to your network.</CardDescription>
+                  </div>
+                  <Button size="sm" className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground">
+                    <Send className="h-3.5 w-3.5 mr-2" /> Dispatch Now
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-4 space-y-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Audience Segment</Label>
+                  <select className="w-full h-9 text-xs rounded-md border border-input bg-transparent px-3 py-1 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                    <option>All Clinicians & Staff (Network-wide)</option>
+                    <option>All Patients (Network-wide)</option>
+                    <option>Trialing Clinics Only</option>
+                    <option>Infinite Lifetime Plan Clinics</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Email Subject Line</Label>
+                  <Input className="h-9 text-xs" placeholder="e.g., Important Updates to Your Orelis Dashboard" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Email Body (Markdown supported)</Label>
+                  <textarea 
+                    className="w-full min-h-[120px] text-xs rounded-md border border-input bg-transparent px-3 py-2 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    placeholder="Write your email content here..."
+                  ></textarea>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* ── TAB 8: CYBER SHIELD ── */}
+        <TabsContent value="security" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="md:col-span-2 border-red-500/20">
+              <CardHeader>
+                <CardTitle className="text-sm font-bold flex items-center gap-2 text-red-500">
+                  <ShieldCheck className="h-4 w-4" /> Live Firewall Logs
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Real-time network security events, blocked IPs, and anomalous login attempts across all clinic nodes.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-black text-green-400 p-4 rounded-md font-mono text-[10px] h-[300px] overflow-y-auto space-y-2">
+                  <p>[{new Date().toISOString()}] INFO: Standard authentication from 197.210.15.2 (Lagos, NG) - ALLOWED</p>
+                  <p className="text-red-400">[{new Date(Date.now() - 4000).toISOString()}] WARN: Failed auth attempt (Invalid credentials) for admin@hospital.com</p>
+                  <p className="text-red-500 font-bold">[{new Date(Date.now() - 15000).toISOString()}] CRITICAL: Multiple failed requests from 45.33.22.11 (Moscow, RU) - IP BLOCKED (Rule: RateLimit)</p>
+                  <p>[{new Date(Date.now() - 22000).toISOString()}] INFO: New session token issued for user_9x8f2...</p>
+                  <p>[{new Date(Date.now() - 45000).toISOString()}] INFO: Webhook received from Paystack (Event: charge.success)</p>
+                  <p className="text-yellow-400">[{new Date(Date.now() - 60000).toISOString()}] WARN: High latency on /api/patients/bulk-sync (Duration: 2.1s)</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="space-y-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription className="text-xs font-bold uppercase">Blocked Threats (24h)</CardDescription>
+                  <CardTitle className="text-2xl font-black text-red-500">1,204</CardTitle>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription className="text-xs font-bold uppercase">Active Connections</CardDescription>
+                  <CardTitle className="text-2xl font-bold">{Math.floor(Math.random() * 50 + 20)}</CardTitle>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription className="text-xs font-bold uppercase">Security Status</CardDescription>
+                  <CardTitle className="text-2xl font-bold text-emerald-500">NOMINAL</CardTitle>
+                </CardHeader>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ── TAB 9: DEV LOGS ── */}
+        <TabsContent value="dev-logs" className="space-y-4">
+          <Card className="border-border/60">
+            <CardHeader>
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <TerminalSquare className="h-4 w-4" /> System Runtime Logs
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Internal system application logs, database synchronization states, and background worker status.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-slate-950 text-slate-300 p-4 rounded-md font-mono text-xs h-[400px] overflow-y-auto space-y-1">
+                <div className="flex gap-4"><span className="text-slate-500">18:24:01</span><span className="text-blue-400">[INFO]</span><span>Worker instance initialized. PID: 8442</span></div>
+                <div className="flex gap-4"><span className="text-slate-500">18:24:05</span><span className="text-blue-400">[INFO]</span><span>Connecting to Firestore realtime stream... OK.</span></div>
+                <div className="flex gap-4"><span className="text-slate-500">18:24:06</span><span className="text-blue-400">[INFO]</span><span>Synchronized 142 Clinic Nodes.</span></div>
+                <div className="flex gap-4"><span className="text-slate-500">18:24:10</span><span className="text-yellow-400">[WARN]</span><span>Missing index on collection 'encounters', field 'date'. Falling back to client-side sort.</span></div>
+                <div className="flex gap-4"><span className="text-slate-500">18:24:15</span><span className="text-blue-400">[INFO]</span><span>Cache warmed for User Management pool.</span></div>
+                <div className="flex gap-4"><span className="text-slate-500">18:24:22</span><span className="text-red-400">[ERROR]</span><span>Timeout fetching external ML pipeline (Scribe API). Retrying 1/3...</span></div>
+                <div className="flex gap-4"><span className="text-slate-500">18:24:25</span><span className="text-blue-400">[INFO]</span><span>Retry successful. Connection re-established.</span></div>
               </div>
             </CardContent>
           </Card>

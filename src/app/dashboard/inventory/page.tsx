@@ -398,6 +398,22 @@ export default function InventoryPage() {
                 />
             </div>
 
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 mb-2">
+                <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <Package className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                        <h4 className="font-bold text-sm text-foreground">Need Advanced Inventory Management?</h4>
+                        <p className="text-xs text-muted-foreground mt-0.5">Check out our dedicated pharmacy and medical inventory suite designed for high-volume hospitals.</p>
+                    </div>
+                </div>
+                <Button variant="outline" size="sm" className="shrink-0 border-primary/30 hover:bg-primary/10">
+                    <ExternalLink className="mr-2 h-3.5 w-3.5" /> Learn More
+                </Button>
+            </div>
+
+
             <Card className="border-dashed">
                 <CardHeader>
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

@@ -588,17 +588,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          {userProfile?.role !== 'patient' && (
-            <Card className="border-dashed">
-              <CardHeader>
-                <CardTitle className='flex items-center gap-2'><CreditCard className='w-5 h-5' />Subscription</CardTitle>
-                <CardDescription>Orelis Doctor Business (₦20,000/mo)</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <PaystackButton config={paystackConfig} />
-              </CardContent>
-            </Card>
-          )}
+
         </div>
 
         <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8 content-start">

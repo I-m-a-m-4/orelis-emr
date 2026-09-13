@@ -520,48 +520,48 @@ export default function ComprehensiveClinicalReportsPage() {
       </div>
 
       {/* ── ROW 1: CORE CLINICAL STATS (8 KEY METRICS - ZERO MOCK DATA) ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
-        <Card className="p-3 border-dashed bg-card/60">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase">Patient Base</p>
-          <p className="text-xl font-black mt-1 text-foreground">{patients?.length || 0}</p>
-          <span className="text-[10px] text-muted-foreground font-semibold">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="p-6 border-dashed bg-card/60 flex flex-col justify-center">
+          <p className="text-sm font-bold text-muted-foreground uppercase">Patient Base</p>
+          <p className="text-4xl font-black mt-2 text-foreground">{patients?.length || 0}</p>
+          <span className="text-xs text-muted-foreground font-semibold mt-1">
             {patients?.length ? `${patients.length} registered` : 'Active registry'}
           </span>
         </Card>
-        <Card className="p-3 border-dashed bg-card/60">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase">Encounters</p>
-          <p className="text-xl font-black mt-1 text-primary">{encounters?.length || 0}</p>
-          <span className="text-[10px] text-muted-foreground">SOAP notes filed</span>
+        <Card className="p-6 border-dashed bg-card/60 flex flex-col justify-center">
+          <p className="text-sm font-bold text-muted-foreground uppercase">Encounters</p>
+          <p className="text-4xl font-black mt-2 text-primary">{encounters?.length || 0}</p>
+          <span className="text-xs text-muted-foreground mt-1">SOAP notes filed</span>
         </Card>
-        <Card className="p-3 border-dashed bg-card/60">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase">Skin Disorders</p>
-          <p className="text-xl font-black mt-1 text-amber-500">{analytics.skinDiseasesCount}</p>
-          <span className="text-[10px] text-muted-foreground">Dermatological cases</span>
+        <Card className="p-6 border-dashed bg-card/60 flex flex-col justify-center">
+          <p className="text-sm font-bold text-muted-foreground uppercase">Skin Disorders</p>
+          <p className="text-4xl font-black mt-2 text-amber-500">{analytics.skinDiseasesCount}</p>
+          <span className="text-xs text-muted-foreground mt-1">Dermatological cases</span>
         </Card>
-        <Card className="p-3 border-dashed bg-card/60">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase">Fatality Rate</p>
-          <p className="text-xl font-black mt-1 text-red-500">{analytics.overallFatalityRate}</p>
-          <span className="text-[10px] text-emerald-600 font-semibold">Clinical risk index</span>
+        <Card className="p-6 border-dashed bg-card/60 flex flex-col justify-center">
+          <p className="text-sm font-bold text-muted-foreground uppercase">Fatality Rate</p>
+          <p className="text-4xl font-black mt-2 text-red-500">{analytics.overallFatalityRate}</p>
+          <span className="text-xs text-emerald-600 font-semibold mt-1">Clinical risk index</span>
         </Card>
-        <Card className="p-3 border-dashed bg-card/60">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase">Recovery Rate</p>
-          <p className="text-xl font-black mt-1 text-emerald-500">{analytics.overallRecoveryRate}</p>
-          <span className="text-[10px] text-emerald-600 font-semibold">Discharged resolved</span>
+        <Card className="p-6 border-dashed bg-card/60 flex flex-col justify-center">
+          <p className="text-sm font-bold text-muted-foreground uppercase">Recovery Rate</p>
+          <p className="text-4xl font-black mt-2 text-emerald-500">{analytics.overallRecoveryRate}</p>
+          <span className="text-xs text-emerald-600 font-semibold mt-1">Discharged resolved</span>
         </Card>
-        <Card className="p-3 border-dashed bg-card/60">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase">Antibiotic Rate</p>
-          <p className="text-xl font-black mt-1 text-blue-500">{analytics.antibioticRate}</p>
-          <span className="text-[10px] text-muted-foreground">Stewardship target</span>
+        <Card className="p-6 border-dashed bg-card/60 flex flex-col justify-center">
+          <p className="text-sm font-bold text-muted-foreground uppercase">Antibiotic Rate</p>
+          <p className="text-4xl font-black mt-2 text-blue-500">{analytics.antibioticRate}</p>
+          <span className="text-xs text-muted-foreground mt-1">Stewardship target</span>
         </Card>
-        <Card className="p-3 border-dashed bg-card/60">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase">Lab Yield</p>
-          <p className="text-xl font-black mt-1 text-purple-500">{analytics.labMetrics.positiveYieldRate}</p>
-          <span className="text-[10px] text-muted-foreground">Diagnostic positives</span>
+        <Card className="p-6 border-dashed bg-card/60 flex flex-col justify-center">
+          <p className="text-sm font-bold text-muted-foreground uppercase">Lab Yield</p>
+          <p className="text-4xl font-black mt-2 text-purple-500">{analytics.labMetrics.positiveYieldRate}</p>
+          <span className="text-xs text-muted-foreground mt-1">Diagnostic positives</span>
         </Card>
-        <Card className="p-3 border-dashed bg-card/60">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase">Readmissions</p>
-          <p className="text-xl font-black mt-1 text-rose-500">{analytics.readmissionRate30Days}</p>
-          <span className="text-[10px] text-emerald-600 font-semibold">30-day index</span>
+        <Card className="p-6 border-dashed bg-card/60 flex flex-col justify-center">
+          <p className="text-sm font-bold text-muted-foreground uppercase">Readmissions</p>
+          <p className="text-4xl font-black mt-2 text-rose-500">{analytics.readmissionRate30Days}</p>
+          <span className="text-xs text-emerald-600 font-semibold mt-1">30-day index</span>
         </Card>
       </div>
 
@@ -599,7 +599,7 @@ export default function ComprehensiveClinicalReportsPage() {
                 <CardDescription className="text-xs">Live tracking of Malaria, Hypertension, Skin Disorders, and Respiratory infections.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-64 w-full">
+                <div className="h-[400px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={analytics.trendline}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -626,7 +626,7 @@ export default function ComprehensiveClinicalReportsPage() {
               </CardHeader>
               <CardContent>
                 {analytics.baseDiseases.length > 0 ? (
-                  <div className="h-64 w-full">
+                  <div className="h-[400px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={analytics.baseDiseases.slice(0, 6)} layout="vertical" margin={{ left: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" horizontal={false} />
@@ -638,7 +638,7 @@ export default function ComprehensiveClinicalReportsPage() {
                     </ResponsiveContainer>
                   </div>
                 ) : (
-                  <div className="h-64 flex flex-col items-center justify-center text-muted-foreground text-xs gap-2">
+                  <div className="h-[400px] flex flex-col items-center justify-center text-muted-foreground text-xs gap-2">
                     <Inbox className="h-8 w-8 text-muted-foreground/40" />
                     <span>No clinical diagnoses recorded yet for this facility.</span>
                   </div>
@@ -738,7 +738,7 @@ export default function ComprehensiveClinicalReportsPage() {
                 <CardDescription className="text-xs">Real patient registry distribution across pediatric, adult, and geriatric groups.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-64 w-full">
+                <div className="h-[400px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={analytics.ageCohorts}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -761,7 +761,7 @@ export default function ComprehensiveClinicalReportsPage() {
               </CardHeader>
               <CardContent>
                 {patients && patients.length > 0 ? (
-                  <div className="h-64 w-full flex items-center justify-center">
+                  <div className="h-[400px] w-full flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie 
@@ -783,7 +783,7 @@ export default function ComprehensiveClinicalReportsPage() {
                     </ResponsiveContainer>
                   </div>
                 ) : (
-                  <div className="h-64 flex flex-col items-center justify-center text-muted-foreground text-xs gap-2">
+                  <div className="h-[400px] flex flex-col items-center justify-center text-muted-foreground text-xs gap-2">
                     <Inbox className="h-8 w-8 text-muted-foreground/40" />
                     <span>No patient records in registry yet.</span>
                   </div>
@@ -971,7 +971,7 @@ export default function ComprehensiveClinicalReportsPage() {
               </CardHeader>
               <CardContent>
                 {analytics.totalRevenue > 0 ? (
-                  <div className="h-64 w-full flex items-center justify-center">
+                  <div className="h-[400px] w-full flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie 
@@ -993,7 +993,7 @@ export default function ComprehensiveClinicalReportsPage() {
                     </ResponsiveContainer>
                   </div>
                 ) : (
-                  <div className="h-64 flex flex-col items-center justify-center text-muted-foreground text-xs gap-2">
+                  <div className="h-[400px] flex flex-col items-center justify-center text-muted-foreground text-xs gap-2">
                     <Inbox className="h-8 w-8 text-muted-foreground/40" />
                     <span>No paid invoices recorded for this time window.</span>
                   </div>

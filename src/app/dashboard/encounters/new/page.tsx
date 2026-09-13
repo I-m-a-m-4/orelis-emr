@@ -644,8 +644,20 @@ export default function NewEncounterPage() {
                         </Badge>
                     </div>
 
-                    {/* Integrated Ambient Voice Scribe */}
+                    {/* Integrated Ambient Voice Scribe with Groq */}
                     <AmbientVoiceScribe 
+                        context={patient ? `Patient: ${patient.firstName} ${patient.surname}, Sex: ${patient.sex || 'Unknown'}, DOB: ${patient.dob || 'Unknown'}` : undefined}
+                        onApplyVitals={(v) => {
+                            setVitals(prev => ({
+                                ...prev,
+                                bp_sys: v.bpSys || prev.bp_sys,
+                                bp_dia: v.bpDia || prev.bp_dia,
+                                hr: v.pulse || prev.hr,
+                                temp: v.temp || prev.temp,
+                                spo2: v.spo2 || prev.spo2,
+                                weight: v.weight || prev.weight,
+                            }));
+                        }}
                         onApplySoap={(parsed) => {
                             setSoap({
                                 subjective: parsed.subjective,
@@ -653,6 +665,17 @@ export default function NewEncounterPage() {
                                 assessment: parsed.assessment,
                                 plan: parsed.plan
                             });
+                            if (parsed.vitals) {
+                                setVitals(prev => ({
+                                    ...prev,
+                                    bp_sys: parsed.vitals?.bpSys || prev.bp_sys,
+                                    bp_dia: parsed.vitals?.bpDia || prev.bp_dia,
+                                    hr: parsed.vitals?.pulse || prev.hr,
+                                    temp: parsed.vitals?.temp || prev.temp,
+                                    spo2: parsed.vitals?.spo2 || prev.spo2,
+                                    weight: parsed.vitals?.weight || prev.weight,
+                                }));
+                            }
                             if (parsed.prescriptions && parsed.prescriptions.length > 0) {
                                 setPrescriptions(prev => Array.from(new Set([...prev, ...parsed.prescriptions!])));
                             }

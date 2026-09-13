@@ -38,7 +38,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
                 {hint && <span className="text-xs text-muted-foreground/70">{hint}</span>}
                 <div className="h-px flex-1 bg-border" />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
                 {children}
             </div>
         </section>
@@ -289,7 +289,7 @@ export function ClinicMetrics(props: ClinicMetricsInput) {
                     value={naira(m.totalRevenue)}
                     icon={<BadgeDollarSign className={ic} />}
                     formula="Sum of invoices marked paid"
-                    href="/dashboard/reports"
+                    href="/dashboard/billing"
                 />
                 <StatCard
                     title="Collected (30d)"

@@ -23,9 +23,8 @@ import { saveEncounter } from '@/lib/data/encounters';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MedicalLetterhead } from '@/components/medical/letterhead';
 import { TwinVisualizer } from '@/components/dashboard/TwinVisualizer';
-import { WhatIfCoach } from '@/components/dashboard/WhatIfCoach';
-import { DrugSafetyChecker } from '@/components/dashboard/DrugSafetyChecker';
-import { LabReportExplainer } from '@/components/dashboard/LabReportExplainer';
+import { AmbientScribe } from '@/components/medical/ambient-scribe';
+
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -130,6 +129,38 @@ function EditPatientForm({ patient, clinic, actor }: EditPatientFormProps) {
 
     const removePlan = (index: number) => {
         setPlanOfCare(planOfCare.filter((_, i) => i !== index));
+    };
+
+    /**
+     * Handles saving the AI ambient scribe summary as a new encounter
+     */
+    const handleAppendAmbientSummary = async (summaryText: string) => {
+        if (!firestore || !actor) return;
+        
+        try {
+            await saveEncounter(firestore, actor, {
+                patientId: patient.id,
+                patientName: `${patient.firstName} ${patient.surname}`,
+                doctorId: actor.uid,
+                doctorName: actor.name || 'Clinician',
+                clinicId: patient.clinicId,
+                date: new Date().toISOString(),
+                type: 'Consultation',
+                status: 'Draft',
+                vitals: [],
+                prescriptions: [],
+                diagnosis: '',
+                soap: {
+                    subjective: summaryText,
+                    objective: '',
+                    assessment: 'AI Generated Encounter',
+                    plan: ''
+                },
+            });
+            toast({ title: 'Success', description: 'AI Summary appended to encounter log.', variant: 'default' });
+        } catch (e) {
+            toast({ title: 'Error', description: 'Failed to append AI summary', variant: 'destructive' });
+        }
     };
 
     /**
@@ -768,6 +799,7 @@ function EditPatientPageInner() {
 
     const { data: patient, loading: patientLoading } = useDoc<Patient>(patientDocRef);
 
+    const { toast } = useToast();
     const { user } = useUser();
     const userProfileRef = useMemo(() => {
         if (!user || !firestore) return null;
@@ -814,10 +846,38 @@ function EditPatientPageInner() {
         return <Skeleton className="h-48 w-full" />;
     }
 
+    const handleAppendAmbientSummary = async (summaryText: string) => {
+        if (!firestore || !userProfile || !patient) return;
+        try {
+            await saveEncounter(firestore, userProfile, {
+                patientId: patient.id,
+                patientName: `${patient.firstName} ${patient.surname}`,
+                doctorId: userProfile.uid,
+                doctorName: userProfile.name || 'Clinician',
+                clinicId: patient.clinicId,
+                date: new Date().toISOString(),
+                type: 'Consultation',
+                status: 'Draft',
+                vitals: [],
+                prescriptions: [],
+                diagnosis: '',
+                soap: {
+                    subjective: summaryText,
+                    objective: '',
+                    assessment: 'AI Generated Encounter',
+                    plan: ''
+                },
+            });
+            toast({ title: 'Success', description: 'AI Summary appended to encounter log.', variant: 'default' });
+        } catch (e) {
+            toast({ title: 'Error', description: 'Failed to append AI summary', variant: 'destructive' });
+        }
+    };
+
     return (
         <div className="flex flex-col gap-6 noisy-bg pb-20">
             {/* Header controls */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 w-full">
                 <Button variant="outline" size="icon" onClick={() => router.back()}>
                     <ArrowLeft />
                 </Button>
@@ -827,6 +887,14 @@ function EditPatientPageInner() {
                         : `Edit Encounter: ${encounters?.[currentPage - 2]?.type}`
                     }
                 </h1>
+                <div className="ml-auto flex items-center gap-2">
+                    <Button variant="default" size="sm" onClick={() => {
+                        const url = `${window.location.origin}/patient-portal?code=${patient.patientCode}`;
+                        navigator.clipboard.writeText(url);
+                    }}>
+                        <Copy className="h-4 w-4 mr-2" /> Share Portal Link
+                    </Button>
+                </div>
             </div>
 
             {/* Main edit form matching detail sheet */}
@@ -877,13 +945,8 @@ function EditPatientPageInner() {
                 </div>
 
                 <div className="lg:col-span-2 flex flex-col gap-6">
-                    <WhatIfCoach />
-
-                    {/* HOLON Drug Safety and Clinical Translator */}
-                    <div className="grid grid-cols-1 gap-6">
-                        <DrugSafetyChecker />
-                        <LabReportExplainer />
-                    </div>
+                    {/* AI Ambient Scribe */}
+                    <AmbientScribe onAppendSummary={handleAppendAmbientSummary} />
 
                     {/* Interactive Encounter Log for Doctors (Past consultation notes) */}
                     <Card className="border-border bg-card shadow-sm">

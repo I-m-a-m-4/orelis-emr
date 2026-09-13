@@ -25,9 +25,7 @@ import {
     PolarRadiusAxis, Radar, AreaChart, Area, Legend
 } from 'recharts';
 import { TwinVisualizer } from "@/components/dashboard/TwinVisualizer";
-import { WhatIfCoach } from "@/components/dashboard/WhatIfCoach";
-import { DrugSafetyChecker } from "@/components/dashboard/DrugSafetyChecker";
-import { LabReportExplainer } from "@/components/dashboard/LabReportExplainer";
+
 
 const AdminDashboard = ({
     userProfile,
@@ -316,8 +314,6 @@ const PatientDashboard = ({ userProfile }: { userProfile: UserProfile }) => {
                     </div>
 
                     <div className="grid gap-6 lg:grid-cols-2 mt-6">
-                        <WhatIfCoach />
-                        <LabReportExplainer />
                     </div>
                 </>
             )}

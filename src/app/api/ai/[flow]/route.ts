@@ -74,11 +74,10 @@ const FLOWS: Record<string, FlowDef> = {
       if (!audioDataUrl.startsWith('data:audio/')) {
         throw new Error('An audio data URL is required.');
       }
-      // ~10 MB of base64 is a little over 7 MB of audio, comfortably more than a
-      // long consultation at Opus bitrates. Bounded because this string is held
-      // in memory and forwarded to the model.
-      if (audioDataUrl.length > 10_000_000) {
-        throw new Error('That recording is too long. Record in shorter segments.');
+      // ~35 MB of base64 accommodates up to ~25 MB of audio (Groq's Whisper limit),
+      // comfortably supporting 45-60+ minutes of ambient consultation recording at 24kbps Opus.
+      if (audioDataUrl.length > 35_000_000) {
+        throw new Error('Recording exceeds 25 MB. For very long consultations, transcribe in 45-minute blocks.');
       }
 
       return transcribeEncounter({

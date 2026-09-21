@@ -33,12 +33,12 @@ const ADMIN_EMAILS = ['belloimam431@gmail.com', 'admin@orelis.app'];
 
 const navLinks = [
   { href: '/super-admin', label: 'Dashboard', icon: LayoutDashboard, primary: true },
-  { href: '/super-admin#clinics', label: 'Clinics', icon: Hospital, primary: true },
+  { href: '/super-admin/clinics', label: 'Clinics', icon: Hospital, primary: true },
   { href: '/super-admin/users', label: 'Users', icon: Users, primary: true },
-  { href: '/super-admin#revenue', label: 'SaaS & Revenue', icon: TrendingUp },
-  { href: '/super-admin#ai', label: 'AI & Voice', icon: Zap },
-  { href: '/super-admin#security', label: 'Cyber Shield', icon: ShieldCheck },
-  { href: '/super-admin#dev-logs', label: 'Dev Logs', icon: Bug, primary: true },
+  { href: '/super-admin/revenue', label: 'SaaS & Revenue', icon: TrendingUp },
+  { href: '/super-admin/ai', label: 'AI & Voice', icon: Zap },
+  { href: '/super-admin/security', label: 'Cyber Shield', icon: ShieldCheck },
+  { href: '/super-admin/dev-logs', label: 'Dev Logs', icon: Bug, primary: true },
   { href: '/super-admin/blog', label: 'Medical Blog', icon: Newspaper },
   { href: '/super-admin/waitlist', label: 'Waitlist', icon: Clock },
 ];

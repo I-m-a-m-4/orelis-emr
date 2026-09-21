@@ -61,6 +61,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { getAuth, signInWithCustomToken } from 'firebase/auth';
 
 // Helper inline components and utilities to replace missing Zeneva dependencies
 function toDate(input?: any): Date | null {
@@ -167,6 +168,56 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = React.useState('all');
   const [statusFilter, setStatusFilter] = React.useState('all');
   const [sortBy, setSortBy] = React.useState<'active' | 'joined' | 'name'>('active');
+  const [isImpersonating, setIsImpersonating] = React.useState(false);
+  const [isSendingEmails, setIsSendingEmails] = React.useState(false);
+
+  const handleSendRetentionEmails = async () => {
+    if (!currentUser?.uid) return;
+    setIsSendingEmails(true);
+    toast({ title: 'Sending emails...', description: 'This might take a moment.' });
+    try {
+      const res = await fetch('/api/admin/send-retention-emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: currentUser.uid })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast({ title: 'Success', description: data.message });
+      } else {
+        throw new Error(data.message || 'Failed to send emails');
+      }
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSendingEmails(false);
+    }
+  };
+
+  const handleImpersonate = async (targetUid: string) => {
+    if (!currentUser?.uid) return;
+    setIsImpersonating(true);
+    toast({ title: 'Initiating impersonation...', description: 'Please wait.' });
+    try {
+      const res = await fetch('/api/admin/impersonate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: currentUser.uid, targetUid })
+      });
+      const data = await res.json();
+      if (data.success && data.customToken) {
+        const auth = getAuth();
+        await signInWithCustomToken(auth, data.customToken);
+        toast({ title: 'Impersonation successful', description: 'Redirecting to dashboard...' });
+        router.push('/dashboard');
+      } else {
+        throw new Error(data.message || 'Failed to get custom token');
+      }
+    } catch (error: any) {
+      toast({ title: 'Impersonation failed', description: error.message, variant: 'destructive' });
+      setIsImpersonating(false);
+    }
+  };
 
   const canManageUsers = currentUser?.email === 'belloimam431@gmail.com' || currentUser?.email === 'admin@orelis.app';
 
@@ -420,6 +471,9 @@ export default function UsersPage() {
                                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                   <DropdownMenuItem className="cursor-pointer" onSelect={() => openUser(u.id)}>
                                     <User className="mr-2 h-4 w-4" /> View full profile
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="cursor-pointer" disabled={isImpersonating} onSelect={() => handleImpersonate(u.uid)}>
+                                    <UserCheck className="mr-2 h-4 w-4" /> Impersonate user
                                   </DropdownMenuItem>
                                   {(u as any).status === 'inactive' ? (
                                     <DropdownMenuItem className="cursor-pointer" onSelect={(e) => { e.preventDefault(); setUserToUpdate({ user: u, action: 'activate' }); }}>

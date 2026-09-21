@@ -494,7 +494,7 @@ export default function SuperAdminPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null);
   const [isIntelOpen, setIsIntelOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("cohorts");
+  const [activeTab, setActiveTab] = useState("saas");
 
   React.useEffect(() => {
     const handleHashChange = () => {
@@ -1611,3 +1611,4 @@ export default function SuperAdminPage() {
     </div>
   );
 }
+

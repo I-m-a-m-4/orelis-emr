@@ -20,6 +20,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { LoadingAnimation } from "@/components/layout/loading-animation";
+import { apiFetch } from "@/lib/api-client";
 
 
 function LinkRecordForm({ user }: { user: User }) {
@@ -51,23 +52,20 @@ function LinkRecordForm({ user }: { user: User }) {
         }
 
         try {
-            const patientsRef = collection(firestore, 'patients');
-            const q = query(patientsRef, where("clinicId", "==", clinicId), where("patientCode", "==", patientCode.toUpperCase()));
+            const result = await apiFetch('/api/patient/link', {
+                method: 'POST',
+                body: { clinicId, patientCode: patientCode.toUpperCase() },
+            });
 
-            const querySnapshot = await getDocs(q);
-
-            if (querySnapshot.empty) {
-                toast({ title: "Record Not Found", description: "The Patient Code could not be found for the selected clinic. Please check your details and try again.", variant: "destructive" });
+            if (!result.ok) {
+                if (result.status === 404) {
+                    toast({ title: "Record Not Found", description: "The Patient Code could not be found for the selected clinic. Please check your details and try again.", variant: "destructive" });
+                } else {
+                    toast({ title: "Error", description: result.error || "Failed to link your record.", variant: "destructive" });
+                }
                 setIsLinking(false);
                 return;
             }
-
-            const patientDoc = querySnapshot.docs[0];
-
-            const userRef = doc(firestore, 'users', user.uid);
-            await updateDoc(userRef, {
-                patientId: patientDoc.id
-            });
 
             toast({ title: "Success!", description: "Your account has been linked to your medical record." });
             router.push('/dashboard');

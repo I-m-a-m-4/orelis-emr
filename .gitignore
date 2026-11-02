@@ -82,3 +82,7 @@ dist-msix/
 tsc.log
 files_with_button.txt
 .modified
+
+*.bak
+downloads/
+scripts/*_screenshots/

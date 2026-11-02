@@ -50,7 +50,7 @@ import {
   DropdownMenuSubTrigger, 
   DropdownMenuPortal 
 } from '@/components/ui/dropdown-menu';
-import { setExpiryDateAction, revokeAccessAction } from '../actions';
+import { setExpiryDateAction, revokeAccessAction } from '@/app/actions';
 import { apiFetch } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -70,7 +70,7 @@ import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format, differenceInWeeks, differenceInDays, subDays, startOfWeek, isSameDay } from 'date-fns';
-import { GrantInfiniteButton } from './grant-infinite-button';
+import { GrantInfiniteButton } from '../grant-infinite-button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

@@ -30,6 +30,7 @@
     // only exists mid-build, and its contents are compiled by the *web* build
     // from their real location — type-checking them here would fail the native
     // build over code it is deliberately not shipping.
-    ".native-stash"
+    ".native-stash",
+    "scratch"
   ]
 }

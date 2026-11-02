@@ -38,7 +38,6 @@ yarn-error.log*
 next-env.d.ts
 
 .genkit/*
-.env*
 
 # firebase
 firebase-debug.log
@@ -86,3 +85,4 @@ files_with_button.txt
 *.bak
 downloads/
 scripts/*_screenshots/
+config.bat

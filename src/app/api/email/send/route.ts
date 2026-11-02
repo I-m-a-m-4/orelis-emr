@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/server/api-auth';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+export const dynamic = 'force-dynamic';
+
+const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_build_key');
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://orelis-med.vercel.app';
 
 // Premium Email Layout wrapper
@@ -95,6 +97,10 @@ export async function POST(req: Request) {
       
     } else {
       return NextResponse.json({ error: 'Unknown template' }, { status: 400 });
+    }
+
+    if (!process.env.RESEND_API_KEY) {
+      return NextResponse.json({ error: 'RESEND_API_KEY is not configured' }, { status: 500 });
     }
 
     const data = await resend.emails.send({

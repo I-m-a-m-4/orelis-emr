@@ -11,6 +11,14 @@ export { FirebaseClientProvider } from './client-provider';
 export { FirebaseProvider, useFirebase, useFirebaseApp, useAuth, useFirestore, useUser } from './provider';
 export { useCollection, useDoc } from './firestore/use-collection';
 
+import { useMemo } from 'react';
+import { useFirestore } from './provider';
+
+export function useMemoFirebase<T>(factory: () => T, deps: any[]): T | null {
+  const firestore = useFirestore();
+  return useMemo(() => firestore ? factory() : null, [firestore, ...deps]);
+}
+
 type FirebaseInstances = {
   app: FirebaseApp;
   auth: Auth;
